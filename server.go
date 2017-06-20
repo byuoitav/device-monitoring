@@ -14,7 +14,7 @@ func main() {
 		log.Printf("Houston, we have a problem.")
 	}
 
-	device.PingAddresses(devices)
+	device.PingAddresses("ITB", "1101", devices)
 
 }
 

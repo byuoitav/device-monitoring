@@ -6,8 +6,10 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/byuoitav/av-api/dbo"
+	"github.com/byuoitav/device-monitoring-microservice/logstash"
 )
 
 func GetAddresses(building string, room string) (map[string]string, error) {
@@ -34,7 +36,7 @@ func GetAddresses(building string, room string) (map[string]string, error) {
 
 }
 
-func PingAddresses(addresses map[string]string) error {
+func PingAddresses(building, room string, addresses map[string]string) error {
 
 	log.Printf("Pinging with bash commands...")
 
@@ -57,16 +59,28 @@ func PingAddresses(addresses map[string]string) error {
 		cmd.Stderr = &stderr
 
 		log.Printf("Running command...")
-		cmd.Run()
+		err := cmd.Run()
+		if err != nil {
+			log.Printf("Error running command: %s", err.Error())
+			continue
+		}
 
 		log.Printf("Command output: %s", out.String())
 
 		if strings.Contains(out.String(), "Request timeout") {
+
 			log.Printf("Alert! No response from device %s at address %s", device, address)
-		} else if strings.Contains(out.String(), "0.0%") {
-			log.Printf("Device %s at address %s responding normally", device, address)
+			err = logstash.SendEvent(building, room, TimeStamp3339(), device, "Not responding")
+
 		} else {
-			log.Printf("Houston, we have a problem")
+
+			log.Printf("Device %s at address %s responding normally", device, address)
+			err = logstash.SendEvent(building, room, TimeStamp3339(), device, "Responding")
+
+		}
+
+		if err != nil {
+			log.Printf("Error sending event: %s", err.Error())
 		}
 
 	}
@@ -74,4 +88,10 @@ func PingAddresses(addresses map[string]string) error {
 	log.Printf("Done")
 
 	return nil
+}
+
+//gives a timestamp in RFC 3339 format
+func TimeStamp3339() string {
+
+	return string(time.Now().Format(time.RFC3339))
 }
