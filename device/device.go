@@ -103,7 +103,7 @@ func ScanNetwork() (bool, error) {
 
 func Bash(addresses map[string]net.IP) error {
 
-	log.Printf("Bashing Hacking")
+	log.Printf("Pinging with bash commands...")
 
 	for device, address := range addresses {
 
@@ -124,12 +124,14 @@ func Bash(addresses map[string]net.IP) error {
 		cmd.Stderr = &stderr
 
 		log.Printf("Running command...")
-		err := cmd.Run()
+		cmd.Run()
 
-		if err != nil && strings.Contains(stderr.String(), "0 packets received") {
-			log.Print("Alert! No response from device %s at address %s", device, address.String())
+		log.Printf("Command output: %s", out.String())
+
+		if strings.Contains(out.String(), "Request timeout") {
+			log.Printf("Alert! No response from device %s at address %s", device, address.String())
 		} else if strings.Contains(out.String(), "0.0%") {
-			log.Printf("Device %s at address %s responding normally")
+			log.Printf("Device %s at address %s responding normally", device, address.String())
 		} else {
 			log.Printf("Houston, we have a problem")
 		}
