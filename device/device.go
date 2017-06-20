@@ -59,6 +59,7 @@ func PingAddresses(building, room string, addresses map[string]string) error {
 		cmd.Stderr = &stderr
 
 		log.Printf("Running command...")
+		timestamp := string(time.Now().Format(time.RFC3339))
 		err := cmd.Run()
 		if err != nil {
 			log.Printf("Error running command: %s", err.Error())
@@ -70,12 +71,12 @@ func PingAddresses(building, room string, addresses map[string]string) error {
 		if strings.Contains(out.String(), "Request timeout") {
 
 			log.Printf("Alert! No response from device %s at address %s", device, address)
-			err = logstash.SendEvent(building, room, TimeStamp3339(), device, "Not responding")
+			err = logstash.SendEvent(building, room, timestamp, device, "Not responding")
 
 		} else {
 
 			log.Printf("Device %s at address %s responding normally", device, address)
-			err = logstash.SendEvent(building, room, TimeStamp3339(), device, "Responding")
+			err = logstash.SendEvent(building, room, timestamp, device, "Responding")
 
 		}
 
@@ -88,10 +89,4 @@ func PingAddresses(building, room string, addresses map[string]string) error {
 	log.Printf("Done")
 
 	return nil
-}
-
-//gives a timestamp in RFC 3339 format
-func TimeStamp3339() string {
-
-	return string(time.Now().Format(time.RFC3339))
 }
