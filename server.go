@@ -1,33 +1,22 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
-	"github.com/byuoitav/device-monitoring-microservice/devices"
+	"github.com/byuoitav/device-monitoring-microservice/device"
 	"github.com/labstack/echo"
 )
 
 func main() {
+	devices, err := device.GetAddresses("ITB", "1101")
+	if err != nil {
+		log.Printf("Houston, we have a problem.")
+	}
 
-	devices.PingDevices()
+	device.Bash(devices)
 
-	//	port := ":10000"
-	//	router := echo.New()
-	//	router.Pre(middleware.RemoveTrailingSlash())
-	//	router.Use(middleware.CORS())
-	//
-	//	// Use the `secure` routing group to require authentication
-	//	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
-	//
-	//	// GET requests
-	//	secure.GET("/health", Health)
-	//
-	//	server := http.Server{
-	//		Addr:           port,
-	//		MaxHeaderBytes: 1024 * 10,
-	//	}
-	//
-	//	router.StartServer(&server)
+	//	device.ScanNetwork()
 }
 
 func Health(context echo.Context) error {
