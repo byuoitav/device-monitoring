@@ -1,0 +1,161 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/dgrijalva/jwt-go",
+			"repository": "https://github.com/dgrijalva/jwt-go",
+			"vcs": "git",
+			"revision": "a539ee1a749a2b895533f979515ac7e6e0f5b650",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/labstack/echo",
+			"repository": "https://github.com/labstack/echo",
+			"vcs": "git",
+			"revision": "3fafadf89554d7fbb4d04c075de4ca4fcf113c55",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/labstack/gommon/bytes",
+			"repository": "https://github.com/labstack/gommon",
+			"vcs": "git",
+			"revision": "1121fd3e243c202482226a7afe4dcd07ffc4139a",
+			"branch": "master",
+			"path": "bytes",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/labstack/gommon/color",
+			"repository": "https://github.com/labstack/gommon",
+			"vcs": "git",
+			"revision": "1121fd3e243c202482226a7afe4dcd07ffc4139a",
+			"branch": "master",
+			"path": "color",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/labstack/gommon/log",
+			"repository": "https://github.com/labstack/gommon",
+			"vcs": "git",
+			"revision": "1121fd3e243c202482226a7afe4dcd07ffc4139a",
+			"branch": "master",
+			"path": "/log",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/labstack/gommon/random",
+			"repository": "https://github.com/labstack/gommon",
+			"vcs": "git",
+			"revision": "1121fd3e243c202482226a7afe4dcd07ffc4139a",
+			"branch": "master",
+			"path": "random",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/mattn/go-colorable",
+			"repository": "https://github.com/mattn/go-colorable",
+			"vcs": "git",
+			"revision": "ded68f7a9561c023e790de24279db7ebf473ea80",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/mattn/go-isatty",
+			"repository": "https://github.com/mattn/go-isatty",
+			"vcs": "git",
+			"revision": "fc9e8d8ef48496124e79ae0df75490096eccf6fe",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/tatsushid/go-fastping",
+			"repository": "https://github.com/tatsushid/go-fastping",
+			"vcs": "git",
+			"revision": "d7bb493dee3e090e2ffb6914adddf17c1e7c026c",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/valyala/fasttemplate",
+			"repository": "https://github.com/valyala/fasttemplate",
+			"vcs": "git",
+			"revision": "dcecefd839c4193db0d35b88ec65b4c12d360ab0",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/crypto/acme",
+			"repository": "https://go.googlesource.com/crypto",
+			"vcs": "git",
+			"revision": "850760c427c516be930bc91280636328f1a62286",
+			"branch": "master",
+			"path": "acme",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/bpf",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd",
+			"branch": "master",
+			"path": "bpf",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/icmp",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd",
+			"branch": "master",
+			"path": "icmp",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/internal/iana",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd",
+			"branch": "master",
+			"path": "internal/iana",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/internal/socket",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd",
+			"branch": "master",
+			"path": "internal/socket",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/ipv4",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd",
+			"branch": "master",
+			"path": "ipv4",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/ipv6",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd",
+			"branch": "master",
+			"path": "/ipv6",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/sys/unix",
+			"repository": "https://go.googlesource.com/sys",
+			"vcs": "git",
+			"revision": "0b25a408a50076fbbcae6b7ac0ea5fbb0b085e79",
+			"branch": "master",
+			"path": "/unix",
+			"notests": true
+		}
+	]
+}
