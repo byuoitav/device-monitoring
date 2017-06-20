@@ -14,9 +14,8 @@ func main() {
 		log.Printf("Houston, we have a problem.")
 	}
 
-	device.Bash(devices)
+	device.PingAddresses(devices)
 
-	//	device.ScanNetwork()
 }
 
 func Health(context echo.Context) error {
