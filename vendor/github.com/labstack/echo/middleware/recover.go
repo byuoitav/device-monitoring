@@ -32,7 +32,7 @@ type (
 var (
 	// DefaultRecoverConfig is the default Recover middleware config.
 	DefaultRecoverConfig = RecoverConfig{
-		Skipper:           DefaultSkipper,
+		Skipper:           defaultSkipper,
 		StackSize:         4 << 10, // 4 KB
 		DisableStackAll:   false,
 		DisablePrintStack: false,

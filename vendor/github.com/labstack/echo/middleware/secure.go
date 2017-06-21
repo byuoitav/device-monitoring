@@ -59,7 +59,7 @@ type (
 var (
 	// DefaultSecureConfig is the default Secure middleware config.
 	DefaultSecureConfig = SecureConfig{
-		Skipper:            DefaultSkipper,
+		Skipper:            defaultSkipper,
 		XSSProtection:      "1; mode=block",
 		ContentTypeNosniff: "nosniff",
 		XFrameOptions:      "SAMEORIGIN",
