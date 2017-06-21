@@ -1,2 +1,2 @@
 # device-monitoring-microservice
-A microservice that monitors the health of a room
+A microservice that pings all the devices in a given room (according to the ```configuration-database-microservice```). The building and room are specified based on the ```PI_HOSTNAME``` environment variable, e.g. ```ITB-1101-CP1```. After each device is pinged, a heartbeat event is sent to a Logstash shipper which must be specified by the ```ELASTIC_API_EVENTS``` environment variable.
