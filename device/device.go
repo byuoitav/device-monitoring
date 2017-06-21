@@ -42,46 +42,10 @@ func PingAddresses(building, room string, addresses map[string]string) error {
 
 	for device, address := range addresses {
 
-		if address == "0.0.0.0" {
-			continue
-		}
+		if address != "0.0.0.0" {
 
-		log.Printf("Building command...")
-		cmd := exec.Command("ping", address, "-c 5", "-i 3")
-		log.Printf("cmd: %v", cmd)
+			go Ping(building, room, device, address)
 
-		cmd.Stdin = strings.NewReader(address)
-
-		var out bytes.Buffer
-		cmd.Stdout = &out
-
-		var stderr bytes.Buffer
-		cmd.Stderr = &stderr
-
-		log.Printf("Running command...")
-		timestamp := string(time.Now().Format(time.RFC3339))
-		err := cmd.Run()
-		if err != nil {
-			log.Printf("Error running command: %s", err.Error())
-			continue
-		}
-
-		log.Printf("Command output: %s", out.String())
-
-		if strings.Contains(out.String(), "Request timeout") {
-
-			log.Printf("Alert! No response from device %s at address %s", device, address)
-			err = logstash.SendEvent(building, room, timestamp, device, "Not responding")
-
-		} else {
-
-			log.Printf("Device %s at address %s responding normally", device, address)
-			err = logstash.SendEvent(building, room, timestamp, device, "Responding")
-
-		}
-
-		if err != nil {
-			log.Printf("Error sending event: %s", err.Error())
 		}
 
 	}
@@ -89,4 +53,48 @@ func PingAddresses(building, room string, addresses map[string]string) error {
 	log.Printf("Done")
 
 	return nil
+}
+
+func Ping(building, room, device, address string) {
+
+	log.Printf("Pinging %s", address)
+
+	log.Printf("Building command...")
+	cmd := exec.Command("ping", address, "-c 5", "-i 3")
+	log.Printf("cmd: %v", cmd)
+
+	cmd.Stdin = strings.NewReader(address)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	log.Printf("Running command...")
+	timestamp := string(time.Now().Format(time.RFC3339))
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("Error running command: %s", err.Error())
+		return
+	}
+
+	log.Printf("Command output: %s", out.String())
+
+	if strings.Contains(out.String(), "Request timeout") {
+
+		log.Printf("Alert! No response from device %s at address %s", device, address)
+		err = logstash.SendEvent(building, room, timestamp, device, "Not responding")
+
+	} else {
+
+		log.Printf("Device %s at address %s responding normally", device, address)
+		err = logstash.SendEvent(building, room, timestamp, device, "Responding")
+
+	}
+
+	if err != nil {
+		log.Printf("Error sending event: %s", err.Error())
+	}
+
 }
