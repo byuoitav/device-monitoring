@@ -24,7 +24,7 @@ func main() {
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
 	if err != nil {
-		log.Printf("Houston, we have a problem.")
+		log.Printf("Error getting devices from database: %s", err.Error())
 	}
 
 	//figure out how often to ping devices and start process in new goroutine
