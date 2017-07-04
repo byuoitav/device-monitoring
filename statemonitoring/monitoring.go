@@ -117,14 +117,14 @@ func GetAndReportStatus(addr string) error {
 	for _, dev := range room.AudioDevices {
 		log.Printf("[api-status] Reporting status for %v", dev.Name)
 		if dev.Muted != nil {
-			err = SendEvent(et, ec, dev.Name, ro, bu, "input", fmt.Sprintf("%v", *dev.Muted, false), false)
+			err = SendEvent(et, ec, dev.Name, ro, bu, "muted", fmt.Sprintf("%v", *dev.Muted), false)
 			if err != nil {
 				log.Printf("[api-status] error sending error: %v", err)
 				return err
 			}
 		}
 		if dev.Volume != nil {
-			err = SendEvent(et, ec, dev.Name, ro, bu, "volume", fmt.Sprintf("%v", *dev.Volume, false), false)
+			err = SendEvent(et, ec, dev.Name, ro, bu, "volume", fmt.Sprintf("%v", *dev.Volume), false)
 			if err != nil {
 				log.Printf("[api-status] error sending error: %v", err)
 				return err
