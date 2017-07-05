@@ -24,7 +24,7 @@ func main() {
 
 	statemonitoring.StartPublisher()
 
-	statemonitoring.StartMonitoring(time.Second*30, "localhost:8000", building, room)
+	statemonitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room)
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
