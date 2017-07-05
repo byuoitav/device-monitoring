@@ -10,6 +10,7 @@ import (
 
 	"github.com/byuoitav/authmiddleware"
 	"github.com/byuoitav/device-monitoring-microservice/device"
+	"github.com/byuoitav/device-monitoring-microservice/statemonitoring"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -20,6 +21,10 @@ func main() {
 	hostname := os.Getenv("PI_HOSTNAME")
 	building := strings.Split(hostname, "-")[0]
 	room := strings.Split(hostname, "-")[1]
+
+	statemonitoring.StartPublisher()
+
+	statemonitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room)
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
