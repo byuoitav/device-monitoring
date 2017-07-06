@@ -20,7 +20,7 @@ dependencies:
             if [ $CIRCLE_BRANCH = "testing" ]; then
                 gvt fetch -branch production github.com/byuoitav/event-router-microservice
                 gvt fetch -branch testing github.com/byuoitav/av-api
-            if [ $CIRCLE_BRANCH = "stage" ]; then
+            elif [ $CIRCLE_BRANCH = "stage" ]; then
                 gvt fetch -branch production github.com/byuoitav/event-router-microservice
                 gvt fetch -branch stage github.com/byuoitav/av-api
             elif [ $CIRCLE_BRANCH = "production" ]; then
