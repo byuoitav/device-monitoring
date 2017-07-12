@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +16,8 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
+var addr string
+
 func main() {
 
 	//get building and room info
@@ -25,6 +28,7 @@ func main() {
 	statemonitoring.StartPublisher()
 
 	statemonitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room)
+	addr = fmt.Sprintf("http://%s/buildings/%s/rooms/%s", "localhost:8000", building, room)
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
@@ -62,6 +66,7 @@ func main() {
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
 	secure.GET("/health", Health)
+	secure.GET("/pulse", Pulse)
 
 	server := http.Server{
 		Addr:           port,
@@ -74,4 +79,13 @@ func main() {
 
 func Health(context echo.Context) error {
 	return context.JSON(http.StatusOK, "The fleet has moved out of lightspeed and we're preparing to - augh!")
+}
+
+func Pulse(context echo.Context) error {
+	err := statemonitoring.GetAndReportStatus(addr)
+	if err != nil {
+		return context.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return context.JSON(http.StatusOK, "Pulse sent.")
 }
