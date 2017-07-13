@@ -1,0 +1,20 @@
+FROM golang:alpine
+
+ARG GITHUB_BRANCH
+
+RUN apk update && apk add git
+RUN go get -u github.com/FiloSottile/gvt
+
+RUN mkdir -p /go/src/github.com/byuoitav
+ADD . /go/src/github.com/byuoitav/device-monitoring-microservice
+
+WORKDIR /go/src/github.com/byuoitav/device-monitoring-microservice
+
+RUN gvt fetch -branch ${GITHUB_BRANCH} github.com/byuoitav/configuration-database-microservice
+
+RUN go get -d -v
+RUN go install -v
+
+CMD ["/go/bin/device-monitoring-microservice"]
+
+EXPOSE 10000

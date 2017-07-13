@@ -7,7 +7,7 @@ type (
 	// request matching and URL path parameter parsing.
 	Router struct {
 		tree   *node
-		routes map[string]*Route
+		routes map[string]Route
 		echo   *Echo
 	}
 	node struct {
@@ -47,7 +47,7 @@ func NewRouter(e *Echo) *Router {
 		tree: &node{
 			methodHandler: new(methodHandler),
 		},
-		routes: map[string]*Route{},
+		routes: make(map[string]Route),
 		echo:   e,
 	}
 }
@@ -101,7 +101,7 @@ func (r *Router) insert(method, path string, h HandlerFunc, t kind, ppath string
 
 	cn := r.tree // Current node as root
 	if cn == nil {
-		panic("echo: invalid method")
+		panic("echo ⇛ invalid method")
 	}
 	search := path
 
@@ -177,8 +177,8 @@ func (r *Router) insert(method, path string, h HandlerFunc, t kind, ppath string
 				}
 				for i, n := range pnames {
 					// Param name aliases
-					if i < len(cn.pnames) && !strings.Contains(cn.pnames[i], n) {
-						cn.pnames[i] += "," + n
+					if !strings.Contains(n, pnames[i]) {
+						cn.pnames[i] += "," + pnames[i]
 					}
 				}
 			}
@@ -288,7 +288,7 @@ func (n *node) checkMethodNotAllowed() HandlerFunc {
 	return NotFoundHandler
 }
 
-// Find lookup a handler registered for method and path. It also parses URL for path
+// Find lookup a handler registed for method and path. It also parses URL for path
 // parameters and load them into context.
 //
 // For performance:
@@ -296,19 +296,17 @@ func (n *node) checkMethodNotAllowed() HandlerFunc {
 // - Get context from `Echo#AcquireContext()`
 // - Reset it `Context#Reset()`
 // - Return it `Echo#ReleaseContext()`.
-func (r *Router) Find(method, path string, c Context) {
-	ctx := c.(*context)
-	ctx.path = path
+func (r *Router) Find(method, path string, context Context) {
 	cn := r.tree // Current node as root
 
 	var (
 		search  = path
-		child   *node         // Child node
-		n       int           // Param counter
-		nk      kind          // Next kind
-		nn      *node         // Next node
-		ns      string        // Next search
-		pvalues = ctx.pvalues // Use the internal slice so the interface can keep the illusion of a dynamic slice
+		c       *node  // Child node
+		n       int    // Param counter
+		nk      kind   // Next kind
+		nn      *node  // Next node
+		ns      string // Next search
+		pvalues = context.ParamValues()
 	)
 
 	// Search order static > param > any
@@ -353,20 +351,20 @@ func (r *Router) Find(method, path string, c Context) {
 		}
 
 		// Static node
-		if child = cn.findChild(search[0], skind); child != nil {
+		if c = cn.findChild(search[0], skind); c != nil {
 			// Save next
 			if cn.prefix[len(cn.prefix)-1] == '/' { // Issue #623
 				nk = pkind
 				nn = cn
 				ns = search
 			}
-			cn = child
+			cn = c
 			continue
 		}
 
 		// Param node
 	Param:
-		if child = cn.findChildByKind(pkind); child != nil {
+		if c = cn.findChildByKind(pkind); c != nil {
 			// Issue #378
 			if len(pvalues) == n {
 				continue
@@ -379,7 +377,7 @@ func (r *Router) Find(method, path string, c Context) {
 				ns = search
 			}
 
-			cn = child
+			cn = c
 			i, l := 0, len(search)
 			for ; i < l && search[i] != '/'; i++ {
 			}
@@ -410,13 +408,13 @@ func (r *Router) Find(method, path string, c Context) {
 	}
 
 End:
-	ctx.handler = cn.findHandler(method)
-	ctx.path = cn.ppath
-	ctx.pnames = cn.pnames
+	context.SetHandler(cn.findHandler(method))
+	context.SetPath(cn.ppath)
+	context.SetParamNames(cn.pnames...)
 
 	// NOTE: Slow zone...
-	if ctx.handler == nil {
-		ctx.handler = cn.checkMethodNotAllowed()
+	if context.Handler() == nil {
+		context.SetHandler(cn.checkMethodNotAllowed())
 
 		// Dig further for any, might have an empty value for *, e.g.
 		// serving a directory. Issue #207.
@@ -424,12 +422,12 @@ End:
 			return
 		}
 		if h := cn.findHandler(method); h != nil {
-			ctx.handler = h
+			context.SetHandler(h)
 		} else {
-			ctx.handler = cn.checkMethodNotAllowed()
+			context.SetHandler(cn.checkMethodNotAllowed())
 		}
-		ctx.path = cn.ppath
-		ctx.pnames = cn.pnames
+		context.SetPath(cn.ppath)
+		context.SetParamNames(cn.pnames...)
 		pvalues[len(cn.pnames)-1] = ""
 	}
 
