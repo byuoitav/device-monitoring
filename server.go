@@ -19,7 +19,6 @@ import (
 var addr string
 
 func main() {
-
 	//get building and room info
 	hostname := os.Getenv("PI_HOSTNAME")
 	building := strings.Split(hostname, "-")[0]
