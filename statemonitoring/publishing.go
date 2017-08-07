@@ -1,59 +1,23 @@
 package statemonitoring
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
-	"github.com/byuoitav/event-router-microservice/subscription"
-	"github.com/xuther/go-message-router/common"
-	"github.com/xuther/go-message-router/publisher"
 )
 
-var Publisher publisher.Publisher
+var Pub *eventinfrastructure.Publisher
 
 func StartPublisher() {
 	//Start our publisher for publishing satate events
-	var err error
-	Publisher, err = publisher.NewPublisher("7004", 1000, 10)
-	if err != nil {
-		errstr := fmt.Sprintf("[publisher] Could not start publisher. Error: %v\n", err.Error())
-		log.Fatalf(errstr)
-	}
-
-	go func() {
-		Publisher.Listen()
-		if err != nil {
-			errstr := fmt.Sprintf("[publisher] Could not start publisher listening. Error: %v\n", err.Error())
-			log.Fatalf(errstr)
-		} else {
-			log.Printf("[publisher] Publisher started on port :7004")
-		}
-	}()
+	Pub = eventinfrastructure.NewPublisher("7004")
 
 	if len(os.Getenv("LOCAL_ENVIRONMENT")) > 0 {
-		go func() {
-			var s subscription.SubscribeRequest
-			s.Address = "localhost:7004"
-			body, err := json.Marshal(s)
-			if err != nil {
-				log.Printf("[error] %s", err.Error())
-			}
-			_, err = http.Post("http://localhost:6999/subscribe", "application/json", bytes.NewBuffer(body))
-
-			for err != nil {
-				_, err = http.Post("http://localhost:6999/subscribe", "application/json", bytes.NewBuffer(body))
-				log.Printf("[error] The router hasn't subscribed to me yet. Trying again...")
-				time.Sleep(3 * time.Second)
-			}
-			log.Printf("[publisher] Router is subscribed to me")
-		}()
+		var req eventinfrastructure.ConnectionRequest
+		req.PublisherAddr = "localhost:7004"
+		go eventinfrastructure.SendConnectionRequest("http://localhost:6999/subscribe", req, true)
 	}
 }
 
@@ -131,20 +95,11 @@ func Publish(e eventinfrastructure.Event, Error bool) error {
 
 	e.LocalEnvironment = len(os.Getenv("LOCAL_ENVIRONMENT")) > 0
 
-	toSend, err := json.Marshal(&e)
-	if err != nil {
-		return err
-	}
-
-	header := [24]byte{}
 	if !Error {
-		copy(header[:], eventinfrastructure.APISuccess)
+		Pub.PublishEvent(e, eventinfrastructure.APISuccess)
 	} else {
-		copy(header[:], eventinfrastructure.APIError)
+		Pub.PublishEvent(e, eventinfrastructure.APIError)
 	}
-
-	log.Printf("Publishing event: %s", toSend)
-	Publisher.Write(common.Message{MessageHeader: header, MessageBody: toSend})
 
 	return err
 }
