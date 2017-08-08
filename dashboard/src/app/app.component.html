@@ -1,0 +1,11 @@
+<div class="dashboard">
+	<div class="hostname">
+		<span *ngIf="api.hostname != null">{{api.hostname}}</span>
+		<span *ngIf="api.hostname == null">Unable to get hostname</span>
+	</div>
+	<div class="status-container">
+		<div class="status-child" *ngFor="let m of micros">
+			<microservice [microservice]="m"></microservice>
+		</div>
+	</div>
+</div>

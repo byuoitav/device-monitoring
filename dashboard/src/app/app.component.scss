@@ -1,0 +1,37 @@
+.dashboard {
+	position: fixed;
+	min-height: 100%;
+	min-width: 100%;
+	top: 0;
+	left: 0;
+
+	background: url('/assets/bg1.jpg');
+	background-size: cover;
+	background-repeat: no-repeat;
+	background-posotion: center center;
+}
+
+.hostname {
+	width: 100%;
+	text-align: center;
+	color: white;
+	margin-top: 1.5vh;
+	margin-bottom: 1vh;
+	font-size: 5vh;
+}
+
+.status-container {
+	position: fixed;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	flex-wrap: wrap;
+	align-content: space-around;
+	right: 0;
+	min-height: 90vh;
+	width: 70%;
+}
+
+.status-child {
+	min-width: 30%;
+}
