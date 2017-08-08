@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
 )
 
@@ -55,4 +56,13 @@ func GetNetworkConnectedStatus(context echo.Context) error {
 	}
 
 	return context.JSON(http.StatusOK, true)
+}
+
+func RebootPi(context echo.Context) error {
+	defer color.Unset()
+	color.Set(color.FgRed, color.Bold)
+	log.Printf("\n\n\nRebooting Pi\n\n\n")
+
+	http.Get("http://localhost:7010/reboot")
+	return nil
 }

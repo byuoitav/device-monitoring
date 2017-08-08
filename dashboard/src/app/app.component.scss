@@ -9,7 +9,7 @@
 	background-size: cover;
 	background-repeat: no-repeat;
 	background-posotion: center center;
-}
+} 
 
 .hostname {
 	width: 100%;
@@ -53,6 +53,21 @@
 	flex-direction: column;
 	justify-content: space-around;
 	align-items: center;
+
+	.icon-align {
+		display: inline;	
+		vertical-align: middle;
+	}
+
+	.connected {
+		color: #8bd22f;
+		font-size: 7vh;
+	}
+
+	.disconnected {
+		color: #f0ad4e;	
+		font-size: 7vh;
+	}
 }
 
 .control {
@@ -67,4 +82,11 @@
 	box-shadow: 1px 1px 4px rgba(0,0,0,0.20); 
 	border: 0;
 	border-radius: 2vh;
+
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: space-around;
+	align-items: center;
+	align-content: space-around;
 }

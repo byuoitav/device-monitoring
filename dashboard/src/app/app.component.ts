@@ -11,8 +11,20 @@ import { APIService } from './api.service';
 export class AppComponent {
 	micros: Microservice[];	
 
+	red: string = "#d9534f";
+	green: string = "#8bd22f";
+	yellow: string = "#e7ba08";
+
 	constructor(private api: APIService) {
 		this.micros = ms;	
+	}
+
+	reboot() {
+		this.api.localget(":10000/reboot").subscribe()	
+	}
+
+	toUI() {
+		window.location.assign("http://" + location.hostname + ":8888/")
 	}
 }
 

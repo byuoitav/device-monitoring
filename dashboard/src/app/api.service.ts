@@ -26,7 +26,11 @@ export class APIService {
 		})
 	}
 	
-	public get(url): Observable<Object> {
+	public get(url: string): Observable<Object> {
 		return this.http.get(url).map(res => res.json());	
+	}
+
+	public localget(endpoint: string): Observable<Object> {
+		return this.http.get("http://" + location.hostname + endpoint).map(res => res.json());	
 	}
 }

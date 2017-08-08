@@ -72,6 +72,10 @@ func main() {
 	secure.GET("/ip", handlers.GetIP)
 	secure.GET("/network", handlers.GetNetworkConnectedStatus)
 
+	secure.GET("/reboot", handlers.RebootPi)
+
+	router.Static("/dash", "dash")
+
 	server := http.Server{
 		Addr:           port,
 		MaxHeaderBytes: 1024 * 10,
