@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ViewChild, Output, EventEmitter } from '@angular/core';
 import { Http, Response, Headers, RequestOptions } from '@angular/http';
 import { Observable, Subject } from 'rxjs/Rx';
 import 'rxjs/add/operator/map';
@@ -8,7 +8,7 @@ import { APIService } from './api.service';
 
 @Component({ selector: 'microservice',
   template: `
- 	<div class="container">
+ 	<div class="container" (click)="modal.show()">
 		<div class="icon">
 			<i *ngIf="s.statuscode == 0" class="material-icons healthy">check_circle</i>
 			<i *ngIf="s.statuscode == 1" class="material-icons sick">warning</i>
@@ -19,6 +19,9 @@ import { APIService } from './api.service';
 			<span class="version">{{s.version}}</span>
 		</div>
     </div>	
+	<side-modal #modal [vertical]="false" [opposite]="true">
+		<span>{{s.statusinfo}}</span>
+	</side-modal>
   `,
   styles: [`
 	  .container {
@@ -81,6 +84,8 @@ import { APIService } from './api.service';
 })
 export class MicroserviceComponent {
 	@Input('microservice') m: Microservice;
+	@Output() modalVisible = new EventEmitter<boolean>();
+
 	s: Status; 
 
 	constructor(private api: APIService) {
