@@ -18,10 +18,10 @@ dependencies:
         - go get -d -v
         - >
             if [ $CIRCLE_BRANCH = "testing" ]; then
-                gvt fetch -branch production github.com/byuoitav/event-router-microservice
+                gvt fetch -branch testing github.com/byuoitav/event-router-microservice
                 gvt fetch -branch testing github.com/byuoitav/av-api
             elif [ $CIRCLE_BRANCH = "stage" ]; then
-                gvt fetch -branch production github.com/byuoitav/event-router-microservice
+                gvt fetch -branch stage github.com/byuoitav/event-router-microservice
                 gvt fetch -branch stage github.com/byuoitav/av-api
             elif [ $CIRCLE_BRANCH = "production" ]; then
                 gvt fetch -branch production github.com/byuoitav/event-router-microservice
