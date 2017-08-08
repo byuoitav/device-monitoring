@@ -35,7 +35,7 @@ const ms: Microservice[] = [
 	},	
 	{
 		name: "event router",
-		endpoint: ":6999/health",
+		endpoint: ":6999/status",
 	},	
 	{
 		name: "event translator",
