@@ -1,7 +1,10 @@
 export class Microservice {
 	name: string;
-	healthy: boolean;
 	endpoint: string;
+}
+
+export class Status {
 	version: string;
-	statusInfo?: string;
+	statuscode: number;
+	statusinfo: string;
 }

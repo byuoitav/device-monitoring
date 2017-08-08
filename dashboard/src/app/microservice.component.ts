@@ -3,21 +3,20 @@ import { Http, Response, Headers, RequestOptions } from '@angular/http';
 import { Observable, Subject } from 'rxjs/Rx';
 import 'rxjs/add/operator/map';
 
-import { Microservice } from './objects';
+import { Microservice, Status } from './objects';
 import { APIService } from './api.service';
 
-@Component({
-  selector: 'microservice',
+@Component({ selector: 'microservice',
   template: `
  	<div class="container">
 		<div class="icon">
-			<i *ngIf="m.healthy" class="material-icons healthy">check_circle</i>
-			<i *ngIf="!m.healthy" class="material-icons dead">cancel</i>
-			<i *ngIf="false" class="material-icons sick">warning</i>
+			<i *ngIf="s.statuscode == 0" class="material-icons healthy">check_circle</i>
+			<i *ngIf="s.statuscode == 1" class="material-icons sick">warning</i>
+			<i *ngIf="s.statuscode == 2" class="material-icons dead">cancel</i>
 		</div>
 		<div class="info">
 			<span class="name">{{m.name}}</span>
-			<span class="version">{{m.version}}</span>
+			<span class="version">{{s.version}}</span>
 		</div>
     </div>	
   `,
@@ -82,8 +81,10 @@ import { APIService } from './api.service';
 })
 export class MicroserviceComponent {
 	@Input('microservice') m: Microservice;
+	s: Status; 
 
 	constructor(private api: APIService) {
+		this.s = new Status();
 		setTimeout(() => {
 			this.checkHealth();
 		}, 0);
@@ -96,14 +97,15 @@ export class MicroserviceComponent {
 	checkHealth() {
 		this.api.get("http://" + location.hostname + this.m.endpoint)
 		.subscribe(data => {
-			console.log("data", data);
-			// if response is good
-			if (data != null) {
-				this.m.healthy = true;	
-			}	
+			this.s.statuscode = 1;
+			Object.assign(this.s, data);
+			if (this.s.version == null || this.s.statusinfo == null) {
+				this.s.statusinfo = "Incorrect response from server: " + JSON.stringify(data);
+			}
+			console.log("obj", this.s)
 		}, err => {
-			console.log("error!", err);	
-			this.m.healthy = false;
+			console.error("error!", err);
+			this.s.statuscode = 2;
 		})
 	}
 }

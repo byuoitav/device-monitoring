@@ -31,32 +31,22 @@ export class AppComponent {
 const ms: Microservice[] = [
 	{
 		name: "av api",
-		healthy: false,
-		endpoint: ":8000/health",
-		version: "v1.0"
+		endpoint: ":8000/mstatus",
 	},	
 	{
 		name: "event router",
-		healthy: false,
 		endpoint: ":7000/health",
-		version: "v1.0"
 	},	
 	{
 		name: "event translator",
-		healthy: false,
 		endpoint: ":7000/health",
-		version: "v1.0"
 	},	
 	{
 		name: "ui",
-		healthy: false,
 		endpoint: ":8888/health",
-		version: "v1.0"
 	},	
 	{
-		name: "config-db",
-		healthy: false,
+		name: "config db",
 		endpoint: ":8006/health",
-		version: "v1.0"
 	},	
 ]
