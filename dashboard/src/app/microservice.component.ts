@@ -15,8 +15,9 @@ import { APIService } from './api.service';
 			<i *ngIf="!m.healthy" class="material-icons dead">cancel</i>
 			<i *ngIf="false" class="material-icons sick">warning</i>
 		</div>
-		<div class="name">
-			<span>{{m.name}}</span>
+		<div class="info">
+			<span class="name">{{m.name}}</span>
+			<span class="version">{{m.version}}</span>
 		</div>
     </div>	
   `,
@@ -27,7 +28,7 @@ import { APIService } from './api.service';
 		width: 50vh;
 	 	box-shadow: 1px 1px 4px rgba(0,0,0,0.20); 
 		border: 0;
-		border-radius: 6%;
+		border-radius: 2vh;
 
 		display: flex;
 		flex-direction: row;
@@ -44,17 +45,26 @@ import { APIService } from './api.service';
 	  }
 
 	  .icon i {
-	 	font-size: 500%; 
+		position: absolute;
+	 	font-size: 13vh; 
 	  }
 
-	  .name {
+	  .info {
 		width: 60%;
 		height: 100%;
 
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
+		justify-content: space-around;
 		align-items: center;
+	  }
+
+	  .name {
+		font-size: 3.5vh;
+	  }
+
+	  .version {
+	 	font-size: 2.5vh; 
 	  }
 
 	  .healthy {

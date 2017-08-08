@@ -4,12 +4,14 @@ import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
 import { MicroserviceComponent } from './microservice.component'
+import { ButtonComponent } from './button.component'
 import { APIService } from './api.service'
 
 @NgModule({
   declarations: [
     AppComponent,
-	MicroserviceComponent
+	MicroserviceComponent,
+	ButtonComponent
   ],
   imports: [
     BrowserModule,

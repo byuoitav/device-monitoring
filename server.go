@@ -11,6 +11,7 @@ import (
 
 	"github.com/byuoitav/authmiddleware"
 	"github.com/byuoitav/device-monitoring-microservice/device"
+	"github.com/byuoitav/device-monitoring-microservice/handlers"
 	"github.com/byuoitav/device-monitoring-microservice/statemonitoring"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -41,7 +42,7 @@ func main() {
 	if err != nil {
 
 		log.Printf("Error reading check interval. Terminating...")
-		os.Exit(1)
+		//		os.Exit(1)
 
 	} else {
 
@@ -66,6 +67,10 @@ func main() {
 
 	secure.GET("/health", Health)
 	secure.GET("/pulse", Pulse)
+
+	secure.GET("/hostname", handlers.GetHostname)
+	secure.GET("/ip", handlers.GetIP)
+	secure.GET("/network", handlers.GetNetworkConnectedStatus)
 
 	server := http.Server{
 		Addr:           port,

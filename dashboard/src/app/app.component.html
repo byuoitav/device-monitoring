@@ -1,11 +1,25 @@
 <div class="dashboard">
+	<!-->
 	<div class="hostname">
 		<span *ngIf="api.hostname != null">{{api.hostname}}</span>
 		<span *ngIf="api.hostname == null">Unable to get hostname</span>
 	</div>
+	-->
 	<div class="status-container">
 		<div class="status-child" *ngFor="let m of micros">
 			<microservice [microservice]="m"></microservice>
 		</div>
+	</div>
+	<div class="deviceinfo">
+		<span>Hostname: {{api.hostname}}</span>
+		<span>IP Address: {{api.ipaddress}}</span>
+		<div>
+			<span>Internet:</span>
+			<i *ngIf="api.network == 'true'" class="material-icons v-center">check_circle</i> 
+			<i *ngIf="api.network != 'true'" class="material-icons v-center">cancel</i> 
+		</div>
+	</div>
+	<div class="control">
+		
 	</div>
 </div>

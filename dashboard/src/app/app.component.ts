@@ -20,26 +20,31 @@ const ms: Microservice[] = [
 	{
 		name: "av api",
 		healthy: false,
-		endpoint: ":8000/health"
+		endpoint: ":8000/health",
+		version: "v1.0"
 	},	
 	{
 		name: "event router",
 		healthy: false,
-		endpoint: ":8000/health"
+		endpoint: ":8000/health",
+		version: "v1.0"
 	},	
 	{
 		name: "event translator",
 		healthy: false,
-		endpoint: ":8000/health"
+		endpoint: ":8000/health",
+		version: "v1.0"
 	},	
 	{
 		name: "ui",
 		healthy: false,
-		endpoint: ":8000/health"
+		endpoint: ":8000/health",
+		version: "v1.0"
 	},	
 	{
 		name: "config-db",
 		healthy: false,
-		endpoint: ":8000/health"
+		endpoint: ":8000/health",
+		version: "v1.0"
 	},	
 ]
