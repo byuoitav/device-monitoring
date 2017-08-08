@@ -1,0 +1,20 @@
+<div class="dashboard">
+	<div class="status-container">
+		<div class="status-child" *ngFor="let m of micros">
+			<microservice [microservice]="m"></microservice>
+		</div>
+	</div>
+	<div class="deviceinfo">
+		<span>Hostname: {{api.hostname}}</span>
+		<span>IP Address: {{api.ipaddress}}</span>
+		<div >
+			<span class="icon-align">Network:</span>
+			<i *ngIf="api.network == 'true'" class="connected material-icons icon-align">check_circle</i> 
+			<i *ngIf="api.network != 'true'" class="disconnected material-icons icon-align">cancel</i> 
+		</div>
+	</div>
+	<div class="control">
+		<mybtn (click)="reboot()" name="Reboot" icon="power_settings_new" [color]="red"></mybtn>	
+		<mybtn (click)="toUI()" name="Back" icon="arrow_back" [color]="green"></mybtn>	
+	</div>
+</div>
