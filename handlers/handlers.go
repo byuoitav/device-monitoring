@@ -10,6 +10,11 @@ import (
 	"github.com/labstack/echo"
 )
 
+type HealthResponse struct {
+	Version string `json:"version"`
+	Status  int    `json:"statuscode"`
+}
+
 func GetHostname(context echo.Context) error {
 	pihn := os.Getenv("PI_HOSTNAME")
 	if len(pihn) == 0 {
