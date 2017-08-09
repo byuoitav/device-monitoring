@@ -20,11 +20,15 @@ export class AppComponent {
 	}
 
 	reboot() {
-		this.api.localget(":10000/reboot").subscribe()	
+		this.api.localget(":10000/reboot").subscribe();
+	}
+
+	refresh() {
+		window.location.assign("http://" + location.hostname + ":10000/dash");
 	}
 
 	toUI() {
-		window.location.assign("http://" + location.hostname + ":8888/")
+		window.location.assign("http://" + location.hostname + ":8888/");
 	}
 }
 
@@ -35,18 +39,18 @@ const ms: Microservice[] = [
 	},	
 	{
 		name: "event router",
-		endpoint: ":6999/status",
+		endpoint: ":6999/mstatus",
 	},	
 	{
 		name: "event translator",
-		endpoint: ":7000/health",
+		endpoint: ":6998/mstatus",
 	},	
 	{
 		name: "ui",
-		endpoint: ":8888/health",
+		endpoint: ":8888/mstatus",
 	},	
 	{
 		name: "config db",
-		endpoint: ":8006/health",
+		endpoint: ":8006/mstatus",
 	},	
 ]

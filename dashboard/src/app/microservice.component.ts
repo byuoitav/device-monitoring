@@ -102,6 +102,7 @@ export class MicroserviceComponent {
 	checkHealth() {
 		this.api.get("http://" + location.hostname + this.m.endpoint)
 		.subscribe(data => {
+			this.s = new Status();
 			this.s.statuscode = 1;
 			Object.assign(this.s, data);
 			if (this.s.version == null || this.s.statusinfo == null) {
