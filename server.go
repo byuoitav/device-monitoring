@@ -67,6 +67,7 @@ func main() {
 
 	secure.GET("/health", Health)
 	secure.GET("/pulse", Pulse)
+	secure.GET("/eventstatus", EventStatus)
 
 	secure.GET("/hostname", handlers.GetHostname)
 	secure.GET("/ip", handlers.GetIP)
@@ -96,4 +97,8 @@ func Pulse(context echo.Context) error {
 	}
 
 	return context.JSON(http.StatusOK, "Pulse sent.")
+}
+
+func EventStatus(context echo.Context) error {
+	return nil
 }

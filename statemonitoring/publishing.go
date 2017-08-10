@@ -8,11 +8,11 @@ import (
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 )
 
-var Pub *eventinfrastructure.Publisher
+var en *eventinfrastructure.EventNode
 
 func StartPublisher() {
 	//Start our publisher for publishing satate events
-	Pub = eventinfrastructure.NewPublisher("7004")
+	en = eventinfrastructure.NewEventNode([]string{eventinfrastructure.TestExternal, eventinfrastructure.TestEnd}, "7004", "Device Monitoring")
 
 	if len(os.Getenv("LOCAL_ENVIRONMENT")) > 0 {
 		var req eventinfrastructure.ConnectionRequest
@@ -86,8 +86,10 @@ func Publish(e eventinfrastructure.Event, Error bool) error {
 			e.Hostname = os.Getenv("DEVELOPMENT_HOSTNAME")
 		}
 	} else {
-		// isn't it running in a docker container in aws? this won't work?
 		e.Hostname, err = os.Hostname()
+		if err != nil {
+			return err
+		}
 	}
 	if err != nil {
 		return err
@@ -96,9 +98,9 @@ func Publish(e eventinfrastructure.Event, Error bool) error {
 	e.LocalEnvironment = len(os.Getenv("LOCAL_ENVIRONMENT")) > 0
 
 	if !Error {
-		Pub.PublishEvent(e, eventinfrastructure.APISuccess)
+		en.PublishEvent(e, eventinfrastructure.APISuccess)
 	} else {
-		Pub.PublishEvent(e, eventinfrastructure.APIError)
+		en.PublishEvent(e, eventinfrastructure.APIError)
 	}
 
 	return err
