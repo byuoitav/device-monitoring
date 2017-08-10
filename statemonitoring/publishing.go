@@ -8,11 +8,11 @@ import (
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 )
 
-var en *eventinfrastructure.EventNode
+var EventNode *eventinfrastructure.EventNode
 
 func StartPublisher() {
 	//Start our publisher for publishing satate events
-	en = eventinfrastructure.NewEventNode([]string{eventinfrastructure.TestExternal, eventinfrastructure.TestEnd}, "7004", "Device Monitoring")
+	EventNode = eventinfrastructure.NewEventNode("Device Monitoring", "7004", []string{eventinfrastructure.TestExternal, eventinfrastructure.TestEnd})
 
 	if len(os.Getenv("LOCAL_ENVIRONMENT")) > 0 {
 		var req eventinfrastructure.ConnectionRequest
@@ -98,9 +98,9 @@ func Publish(e eventinfrastructure.Event, Error bool) error {
 	e.LocalEnvironment = len(os.Getenv("LOCAL_ENVIRONMENT")) > 0
 
 	if !Error {
-		en.PublishEvent(e, eventinfrastructure.APISuccess)
+		EventNode.PublishEvent(e, eventinfrastructure.APISuccess)
 	} else {
-		en.PublishEvent(e, eventinfrastructure.APIError)
+		EventNode.PublishEvent(e, eventinfrastructure.APIError)
 	}
 
 	return err
