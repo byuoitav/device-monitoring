@@ -1,4 +1,4 @@
-package microservicestatus
+package statusinfrastructure
 
 import (
 	"bufio"
@@ -6,15 +6,20 @@ import (
 )
 
 const (
-	StatusOK   = 0
-	StatusSick = 1
-	StatusDead = 2
+	StatusOK            = 0
+	StatusSick          = 1
+	StatusDead          = 2
+	EventStatusEndpoint = "http://localhost:10000/eventstatus"
 )
 
 type Status struct {
 	Version    string `json:"version"`
 	Status     int    `json:"statuscode"`
 	StatusInfo string `json:"statusinfo"`
+}
+
+type EventNodeStatus struct {
+	Name string `json:"name"`
 }
 
 func GetVersion(fileLocation string) (string, error) {

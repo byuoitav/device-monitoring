@@ -16,6 +16,14 @@ type HealthResponse struct {
 	Status  int    `json:"statuscode"`
 }
 
+func Health(context echo.Context) error {
+	return context.JSON(http.StatusOK, "The fleet has moved out of lightspeed and we're preparing to - augh!")
+}
+
+func EventStatus(context echo.Context) error {
+	return nil
+}
+
 func GetHostname(context echo.Context) error {
 	pihn := os.Getenv("PI_HOSTNAME")
 	if len(pihn) == 0 {
