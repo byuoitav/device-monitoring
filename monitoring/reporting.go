@@ -1,4 +1,4 @@
-package statemonitoring
+package monitoring
 
 import (
 	"os"
@@ -7,19 +7,6 @@ import (
 
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 )
-
-var EventNode *eventinfrastructure.EventNode
-
-func StartPublisher() {
-	//Start our publisher for publishing satate events
-	EventNode = eventinfrastructure.NewEventNode("Device Monitoring", "7004", []string{eventinfrastructure.TestExternal, eventinfrastructure.TestEnd})
-
-	if len(os.Getenv("LOCAL_ENVIRONMENT")) > 0 {
-		var req eventinfrastructure.ConnectionRequest
-		req.PublisherAddr = "localhost:7004"
-		go eventinfrastructure.SendConnectionRequest("http://localhost:6999/subscribe", req, true)
-	}
-}
 
 func SendEvent(Type eventinfrastructure.EventType,
 	Cause eventinfrastructure.EventCause,
@@ -98,9 +85,9 @@ func Publish(e eventinfrastructure.Event, Error bool) error {
 	e.LocalEnvironment = len(os.Getenv("LOCAL_ENVIRONMENT")) > 0
 
 	if !Error {
-		EventNode.PublishEvent(e, eventinfrastructure.APISuccess)
+		eventnode.PublishEvent(e, eventinfrastructure.APISuccess)
 	} else {
-		EventNode.PublishEvent(e, eventinfrastructure.APIError)
+		eventnode.PublishEvent(e, eventinfrastructure.APIError)
 	}
 
 	return err
