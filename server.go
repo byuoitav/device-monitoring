@@ -21,7 +21,7 @@ var addr string
 
 func main() {
 	// start event node
-	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", []string{eventinfrastructure.TestExternal, eventinfrastructure.TestEnd})
+	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", []string{eventinfrastructure.UI, eventinfrastructure.TestExternal, eventinfrastructure.TestEnd})
 	if len(os.Getenv("LOCAL_ENVIRONMENT")) > 0 {
 		var req eventinfrastructure.ConnectionRequest
 		req.PublisherAddr = "localhost:7004"
@@ -34,7 +34,7 @@ func main() {
 	room := strings.Split(hostname, "-")[1]
 
 	// start monitoring av-api
-	addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room)
+	addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
@@ -56,6 +56,15 @@ func main() {
 		}()
 	}
 
+	go func() {
+		for {
+			select {
+			case msg, _ := <-en.Read:
+				log.Printf("msg %s", msg)
+			}
+		}
+	}()
+
 	port := ":10000"
 	router := echo.New()
 	router.Pre(middleware.RemoveTrailingSlash())
@@ -66,6 +75,10 @@ func main() {
 	secure.GET("/health", handlers.Health)
 	secure.GET("/pulse", Pulse)
 	secure.GET("/eventstatus", handlers.EventStatus, BindEventNode(en))
+	secure.GET("/testevents", func(context echo.Context) error {
+		en.PublishMessageByEventType(eventinfrastructure.TestStart, []byte("test event"))
+		return nil
+	})
 
 	secure.GET("/hostname", handlers.GetHostname)
 	secure.GET("/ip", handlers.GetIP)
