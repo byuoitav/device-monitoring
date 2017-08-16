@@ -14,7 +14,7 @@ import (
 
 func SendEvent(building, room, timestamp, device, message string) error {
 
-	address := os.Getenv("ELASTIC_API_EVENTS")
+	address := os.Getenv("ELASTIC_HEARTBEAT_EVENTS")
 	log.Printf("Sending alert to: %s", address)
 
 	data := make(map[string]interface{})
