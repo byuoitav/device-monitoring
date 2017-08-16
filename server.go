@@ -21,10 +21,12 @@ var addr string
 
 func main() {
 	// start event node
-	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", []string{eventinfrastructure.UI, eventinfrastructure.TestExternal, eventinfrastructure.TestEnd})
+	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply}
+	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters)
 	if len(os.Getenv("LOCAL_ENVIRONMENT")) > 0 {
 		var req eventinfrastructure.ConnectionRequest
 		req.PublisherAddr = "localhost:7004"
+		req.SubscriberEndpoint = "http://localhost:10000/subscribe"
 		go eventinfrastructure.SendConnectionRequest("http://localhost:6999/subscribe", req, true)
 	}
 
@@ -56,21 +58,14 @@ func main() {
 		}()
 	}
 
-	go func() {
-		for {
-			select {
-			case msg, _ := <-en.Read:
-				log.Printf("msg %s", msg)
-			}
-		}
-	}()
-
 	port := ":10000"
 	router := echo.New()
 	router.Pre(middleware.RemoveTrailingSlash())
 	router.Use(middleware.CORS())
 
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
+
+	secure.POST("/subscribe", Subscribe, BindEventNode(en))
 
 	secure.GET("/health", handlers.Health)
 	secure.GET("/pulse", Pulse)
@@ -113,4 +108,18 @@ func BindEventNode(en *eventinfrastructure.EventNode) echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
+}
+
+func Subscribe(context echo.Context) error {
+	var cr eventinfrastructure.ConnectionRequest
+	context.Bind(&cr)
+
+	e := context.Get(eventinfrastructure.ContextEventNode)
+	if en, ok := e.(*eventinfrastructure.EventNode); ok {
+		err := eventinfrastructure.HandleSubscriptionRequest(cr, en)
+		if err != nil {
+			return context.JSON(http.StatusBadRequest, err.Error())
+		}
+	}
+	return context.JSON(http.StatusOK, nil)
 }
