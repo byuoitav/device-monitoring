@@ -13,6 +13,7 @@ import (
 	"github.com/byuoitav/device-monitoring-microservice/device"
 	"github.com/byuoitav/device-monitoring-microservice/handlers"
 	"github.com/byuoitav/device-monitoring-microservice/statemonitoring"
+	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -65,8 +66,9 @@ func main() {
 
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
-	secure.GET("/health", Health)
+	secure.GET("/health", handlers.Health)
 	secure.GET("/pulse", Pulse)
+	secure.GET("/eventstatus", handlers.EventStatus, BindEventNode(statemonitoring.EventNode))
 
 	secure.GET("/hostname", handlers.GetHostname)
 	secure.GET("/ip", handlers.GetIP)
@@ -85,10 +87,6 @@ func main() {
 
 }
 
-func Health(context echo.Context) error {
-	return context.JSON(http.StatusOK, "The fleet has moved out of lightspeed and we're preparing to - augh!")
-}
-
 func Pulse(context echo.Context) error {
 	err := statemonitoring.GetAndReportStatus(addr)
 	if err != nil {
@@ -96,4 +94,13 @@ func Pulse(context echo.Context) error {
 	}
 
 	return context.JSON(http.StatusOK, "Pulse sent.")
+}
+
+func BindEventNode(en *eventinfrastructure.EventNode) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set(eventinfrastructure.ContextEventNode, en)
+			return next(c)
+		}
+	}
 }
