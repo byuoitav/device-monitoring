@@ -22,13 +22,7 @@ var addr string
 func main() {
 	// start event node
 	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply}
-	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters)
-	if len(os.Getenv("LOCAL_ENVIRONMENT")) > 0 {
-		var req eventinfrastructure.ConnectionRequest
-		req.PublisherAddr = "localhost:7004"
-		req.SubscriberEndpoint = "http://localhost:10000/subscribe"
-		go eventinfrastructure.SendConnectionRequest("http://localhost:6999/subscribe", req, true)
-	}
+	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
 
 	//get building and room info
 	hostname := os.Getenv("PI_HOSTNAME")
@@ -64,8 +58,6 @@ func main() {
 	router.Use(middleware.CORS())
 
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
-
-	secure.POST("/subscribe", Subscribe, BindEventNode(en))
 
 	secure.GET("/health", handlers.Health)
 	secure.GET("/pulse", Pulse)
@@ -108,18 +100,4 @@ func BindEventNode(en *eventinfrastructure.EventNode) echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
-}
-
-func Subscribe(context echo.Context) error {
-	var cr eventinfrastructure.ConnectionRequest
-	context.Bind(&cr)
-
-	e := context.Get(eventinfrastructure.ContextEventNode)
-	if en, ok := e.(*eventinfrastructure.EventNode); ok {
-		err := eventinfrastructure.HandleSubscriptionRequest(cr, en)
-		if err != nil {
-			return context.JSON(http.StatusBadRequest, err.Error())
-		}
-	}
-	return context.JSON(http.StatusOK, nil)
 }
