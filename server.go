@@ -23,6 +23,7 @@ func main() {
 	// start event node
 	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply}
 	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
+	en.ConnectToRouter()
 
 	//get building and room info
 	hostname := os.Getenv("PI_HOSTNAME")
