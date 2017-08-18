@@ -30,7 +30,9 @@ func main() {
 	room := strings.Split(hostname, "-")[1]
 
 	// start monitoring av-api
-	addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
+	if monitoring.ShouldIMonitorAPI() {
+		addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
+	}
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
