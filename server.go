@@ -13,6 +13,7 @@ import (
 	"github.com/byuoitav/device-monitoring-microservice/handlers"
 	"github.com/byuoitav/device-monitoring-microservice/monitoring"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -31,7 +32,14 @@ func main() {
 
 	// start monitoring av-api
 	if monitoring.ShouldIMonitorAPI() {
+		color.Set(color.FgYellow, color.Bold)
+		log.Printf("Starting monitoring of API")
+		color.Unset()
 		addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
+	} else {
+		color.Set(color.FgYellow, color.Bold)
+		log.Printf("Not monitoring API")
+		color.Unset()
 	}
 
 	//get addresses from database

@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/byuoitav/av-api/base"
@@ -192,6 +194,11 @@ func ShouldIMonitorAPI() bool {
 	json.Unmarshal(tmp, &config)
 
 	// use config
-
+	if config.Enabled {
+		if strings.EqualFold(config.One, os.Getenv("PI_HOSTNAME")) || strings.EqualFold(config.One, "localhost") {
+			return true
+		}
+		return false
+	}
 	return true
 }
