@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,21 +11,30 @@ import (
 
 	"github.com/byuoitav/authmiddleware"
 	"github.com/byuoitav/device-monitoring-microservice/device"
+	"github.com/byuoitav/device-monitoring-microservice/handlers"
+	"github.com/byuoitav/device-monitoring-microservice/statemonitoring"
+	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
 
-func main() {
+var addr string
 
+func main() {
 	//get building and room info
 	hostname := os.Getenv("PI_HOSTNAME")
 	building := strings.Split(hostname, "-")[0]
 	room := strings.Split(hostname, "-")[1]
 
+	statemonitoring.StartPublisher()
+
+	statemonitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room)
+	addr = fmt.Sprintf("http://%s/buildings/%s/rooms/%s", "localhost:8000", building, room)
+
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
 	if err != nil {
-		log.Printf("Houston, we have a problem.")
+		log.Printf("Error getting devices from database: %s", err.Error())
 	}
 
 	//figure out how often to ping devices and start process in new goroutine
@@ -33,7 +43,7 @@ func main() {
 	if err != nil {
 
 		log.Printf("Error reading check interval. Terminating...")
-		os.Exit(1)
+		//		os.Exit(1)
 
 	} else {
 
@@ -56,7 +66,17 @@ func main() {
 
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
-	secure.GET("/health", Health)
+	secure.GET("/health", handlers.Health)
+	secure.GET("/pulse", Pulse)
+	secure.GET("/eventstatus", handlers.EventStatus, BindEventNode(statemonitoring.EventNode))
+
+	secure.GET("/hostname", handlers.GetHostname)
+	secure.GET("/ip", handlers.GetIP)
+	secure.GET("/network", handlers.GetNetworkConnectedStatus)
+
+	secure.GET("/reboot", handlers.RebootPi)
+
+	router.Static("/dash", "dash")
 
 	server := http.Server{
 		Addr:           port,
@@ -67,6 +87,20 @@ func main() {
 
 }
 
-func Health(context echo.Context) error {
-	return context.JSON(http.StatusOK, "The fleet has moved out of lightspeed and we're preparing to - augh!")
+func Pulse(context echo.Context) error {
+	err := statemonitoring.GetAndReportStatus(addr)
+	if err != nil {
+		return context.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return context.JSON(http.StatusOK, "Pulse sent.")
+}
+
+func BindEventNode(en *eventinfrastructure.EventNode) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set(eventinfrastructure.ContextEventNode, en)
+			return next(c)
+		}
+	}
 }

@@ -25,7 +25,7 @@ const (
 var (
 	// DefaultRedirectConfig is the default Redirect middleware config.
 	DefaultRedirectConfig = RedirectConfig{
-		Skipper: DefaultSkipper,
+		Skipper: defaultSkipper,
 		Code:    http.StatusMovedPermanently,
 	}
 )
