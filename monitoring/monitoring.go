@@ -6,10 +6,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/byuoitav/av-api/base"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/byuoitav/touchpanel-ui-microservice/handlers"
+	"github.com/fatih/color"
 )
 
 var eventnode *eventinfrastructure.EventNode
@@ -34,6 +38,9 @@ func StartMonitoring(interval time.Duration, apiAddr string, building string, ro
 	}()
 
 	return addr
+}
+func StopMonitoring() {
+	ticker.Stop()
 }
 
 func GetAndReportStatus(addr string) error {
@@ -154,4 +161,30 @@ func GetAndReportStatus(addr string) error {
 	}
 	log.Printf("[api-status] Done with audio devices.")
 	return nil
+}
+
+func ShouldIMonitorAPI() bool {
+	resp, err := http.Get("http://localhost:8888/api")
+	for err != nil {
+		color.Set(color.FgRed)
+		log.Printf("Error getting api host: %s", err)
+		color.Unset()
+
+		time.Sleep(time.Second * 7)
+		resp, err = http.Get("http://localhost:8888/api")
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	var config handlers.Apihost
+	json.Unmarshal(body, &config)
+
+	// use config
+	if config.Enabled {
+		if strings.Contains(config.APIHost, os.Getenv("PI_HOSTNAME")) || strings.EqualFold(config.APIHost, "localhost") {
+			return true
+		}
+		return false
+	}
+	return true
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/byuoitav/device-monitoring-microservice/handlers"
 	"github.com/byuoitav/device-monitoring-microservice/monitoring"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -29,8 +30,7 @@ func main() {
 	building := strings.Split(hostname, "-")[0]
 	room := strings.Split(hostname, "-")[1]
 
-	// start monitoring av-api
-	addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
+	monitor(building, room, en)
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
@@ -99,5 +99,31 @@ func BindEventNode(en *eventinfrastructure.EventNode) echo.MiddlewareFunc {
 			c.Set(eventinfrastructure.ContextEventNode, en)
 			return next(c)
 		}
+	}
+}
+
+func monitor(building, room string, en *eventinfrastructure.EventNode) {
+	currentlyMonitoring := false
+
+	for {
+		shouldIMonitor := monitoring.ShouldIMonitorAPI()
+
+		if shouldIMonitor && !currentlyMonitoring {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Starting monitoring of API")
+			color.Unset()
+			addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
+			currentlyMonitoring = true
+		} else if currentlyMonitoring && shouldIMonitor {
+		} else {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Stopping monitoring of API")
+			color.Unset()
+
+			// stop monitoring?
+			monitoring.StopMonitoring()
+			currentlyMonitoring = false
+		}
+		time.Sleep(time.Second * 15)
 	}
 }
