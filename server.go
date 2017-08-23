@@ -30,17 +30,7 @@ func main() {
 	building := strings.Split(hostname, "-")[0]
 	room := strings.Split(hostname, "-")[1]
 
-	// start monitoring av-api
-	if monitoring.ShouldIMonitorAPI() {
-		color.Set(color.FgYellow, color.Bold)
-		log.Printf("Starting monitoring of API")
-		color.Unset()
-		addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
-	} else {
-		color.Set(color.FgYellow, color.Bold)
-		log.Printf("Not monitoring API")
-		color.Unset()
-	}
+	monitor(building, room, en)
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
@@ -109,5 +99,31 @@ func BindEventNode(en *eventinfrastructure.EventNode) echo.MiddlewareFunc {
 			c.Set(eventinfrastructure.ContextEventNode, en)
 			return next(c)
 		}
+	}
+}
+
+func monitor(building, room string, en *eventinfrastructure.EventNode) {
+	currentlyMonitoring := false
+
+	for {
+		shouldIMonitor := monitoring.ShouldIMonitorAPI()
+
+		if shouldIMonitor && !currentlyMonitoring {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Starting monitoring of API")
+			color.Unset()
+			addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
+			currentlyMonitoring = true
+		} else if currentlyMonitoring && shouldIMonitor {
+		} else {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Stopping monitoring of API")
+			color.Unset()
+
+			// stop monitoring?
+			monitoring.StopMonitoring()
+			currentlyMonitoring = false
+		}
+		time.Sleep(time.Second * 15)
 	}
 }

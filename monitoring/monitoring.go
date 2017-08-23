@@ -12,6 +12,7 @@ import (
 
 	"github.com/byuoitav/av-api/base"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/byuoitav/touchpanel-ui-microservice/handlers"
 	"github.com/fatih/color"
 )
 
@@ -37,6 +38,9 @@ func StartMonitoring(interval time.Duration, apiAddr string, building string, ro
 	}()
 
 	return addr
+}
+func StopMonitoring() {
+	ticker.Stop()
 }
 
 func GetAndReportStatus(addr string) error {
@@ -159,43 +163,25 @@ func GetAndReportStatus(addr string) error {
 	return nil
 }
 
-type config struct {
-	Enabled bool   `json:"enabled"`
-	One     string `json:"1"`
-	Two     string `json:"2"`
-	Three   string `json:"3"`
-	Four    string `json:"4"`
-	Five    string `json:"5"`
-	Six     string `json:"6"`
-	Seven   string `json:"7"`
-	Eight   string `json:"8"`
-	Nine    string `json:"9"`
-	Ten     string `json:"10"`
-}
-
 func ShouldIMonitorAPI() bool {
-	resp, err := http.Get("http://localhost:8888/json")
+	resp, err := http.Get("http://localhost:8888/api")
 	for err != nil {
 		color.Set(color.FgRed)
-		log.Printf("Error getting configuration: %s", err)
+		log.Printf("Error getting api host: %s", err)
 		color.Unset()
 
 		time.Sleep(time.Second * 7)
-		resp, err = http.Get("http://localhost:8888/json")
+		resp, err = http.Get("http://localhost:8888/api")
 	}
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	var data map[string]interface{}
-	json.Unmarshal(body, &data)
-
-	var config config
-	tmp, _ := json.Marshal(data["apiconfig"])
-	json.Unmarshal(tmp, &config)
+	var config handlers.Apihost
+	json.Unmarshal(body, &config)
 
 	// use config
 	if config.Enabled {
-		if strings.EqualFold(config.One, os.Getenv("PI_HOSTNAME")) || strings.EqualFold(config.One, "localhost") {
+		if strings.Contains(config.APIHost, os.Getenv("PI_HOSTNAME")) || strings.EqualFold(config.APIHost, "localhost") {
 			return true
 		}
 		return false
