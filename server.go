@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,8 +11,9 @@ import (
 	"github.com/byuoitav/authmiddleware"
 	"github.com/byuoitav/device-monitoring-microservice/device"
 	"github.com/byuoitav/device-monitoring-microservice/handlers"
-	"github.com/byuoitav/device-monitoring-microservice/statemonitoring"
+	"github.com/byuoitav/device-monitoring-microservice/monitoring"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -21,15 +21,16 @@ import (
 var addr string
 
 func main() {
+	// start event node
+	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply}
+	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
+
 	//get building and room info
 	hostname := os.Getenv("PI_HOSTNAME")
 	building := strings.Split(hostname, "-")[0]
 	room := strings.Split(hostname, "-")[1]
 
-	statemonitoring.StartPublisher()
-
-	statemonitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room)
-	addr = fmt.Sprintf("http://%s/buildings/%s/rooms/%s", "localhost:8000", building, room)
+	monitor(building, room, en)
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
@@ -41,21 +42,13 @@ func main() {
 	pingInterval := os.Getenv("DEVICE_PING_INTERVAL")
 	interval, err := strconv.Atoi(pingInterval)
 	if err != nil {
-
 		log.Printf("Error reading check interval. Terminating...")
-		//		os.Exit(1)
-
 	} else {
-
 		go func() {
-
 			for {
-
 				device.PingAddresses(building, room, devices)
 				time.Sleep(time.Duration(interval) * time.Second)
-
 			}
-
 		}()
 	}
 
@@ -68,7 +61,11 @@ func main() {
 
 	secure.GET("/health", handlers.Health)
 	secure.GET("/pulse", Pulse)
-	secure.GET("/eventstatus", handlers.EventStatus, BindEventNode(statemonitoring.EventNode))
+	secure.GET("/eventstatus", handlers.EventStatus, BindEventNode(en))
+	secure.GET("/testevents", func(context echo.Context) error {
+		en.PublishMessageByEventType(eventinfrastructure.TestStart, []byte("test event"))
+		return nil
+	})
 
 	secure.GET("/hostname", handlers.GetHostname)
 	secure.GET("/ip", handlers.GetIP)
@@ -88,7 +85,7 @@ func main() {
 }
 
 func Pulse(context echo.Context) error {
-	err := statemonitoring.GetAndReportStatus(addr)
+	err := monitoring.GetAndReportStatus(addr)
 	if err != nil {
 		return context.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -102,5 +99,31 @@ func BindEventNode(en *eventinfrastructure.EventNode) echo.MiddlewareFunc {
 			c.Set(eventinfrastructure.ContextEventNode, en)
 			return next(c)
 		}
+	}
+}
+
+func monitor(building, room string, en *eventinfrastructure.EventNode) {
+	currentlyMonitoring := false
+
+	for {
+		shouldIMonitor := monitoring.ShouldIMonitorAPI()
+
+		if shouldIMonitor && !currentlyMonitoring {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Starting monitoring of API")
+			color.Unset()
+			addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
+			currentlyMonitoring = true
+		} else if currentlyMonitoring && shouldIMonitor {
+		} else {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Stopping monitoring of API")
+			color.Unset()
+
+			// stop monitoring?
+			monitoring.StopMonitoring()
+			currentlyMonitoring = false
+		}
+		time.Sleep(time.Second * 15)
 	}
 }
