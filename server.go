@@ -30,7 +30,7 @@ func main() {
 	building := strings.Split(hostname, "-")[0]
 	room := strings.Split(hostname, "-")[1]
 
-	monitor(building, room, en)
+	go monitor(building, room, en)
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
