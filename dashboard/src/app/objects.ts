@@ -8,3 +8,7 @@ export class Status {
 	statuscode: number;
 	statusinfo: string;
 }
+
+export class Event {
+   	name: string;
+}

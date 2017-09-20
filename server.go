@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +13,9 @@ import (
 	"github.com/byuoitav/device-monitoring-microservice/device"
 	"github.com/byuoitav/device-monitoring-microservice/handlers"
 	"github.com/byuoitav/device-monitoring-microservice/monitoring"
+	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/byuoitav/touchpanel-ui-microservice/socket"
 	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -24,6 +27,10 @@ func main() {
 	// start event node
 	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply}
 	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
+
+	// websocket
+	hub := socket.NewHub()
+	go WriteEventsToSocket(en, hub, statusinfrastructure.EventNodeStatus{})
 
 	//get building and room info
 	hostname := os.Getenv("PI_HOSTNAME")
@@ -58,6 +65,12 @@ func main() {
 	router.Use(middleware.CORS())
 
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
+
+	// websocket
+	router.GET("/websocket", func(context echo.Context) error {
+		socket.ServeWebsocket(hub, context.Response().Writer, context.Request())
+		return nil
+	})
 
 	secure.GET("/health", handlers.Health)
 	secure.GET("/pulse", Pulse)
@@ -125,5 +138,27 @@ func monitor(building, room string, en *eventinfrastructure.EventNode) {
 			currentlyMonitoring = false
 		}
 		time.Sleep(time.Second * 15)
+	}
+}
+
+func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t interface{}) {
+	for {
+		select {
+		case message, ok := <-en.Read:
+			if !ok {
+				color.Set(color.FgRed)
+				log.Fatalf("eventnode read channel closed.")
+				color.Unset()
+			}
+
+			err := json.Unmarshal(message.MessageBody, &t)
+			if err != nil {
+				color.Set(color.FgRed)
+				log.Printf("failed to unmarshal message into Event type: %s", message.MessageBody)
+				color.Unset()
+			} else {
+				h.WriteToSockets(t)
+			}
+		}
 	}
 }

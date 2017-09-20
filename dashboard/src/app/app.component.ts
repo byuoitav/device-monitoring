@@ -1,12 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 
-import { Microservice } from './objects';
+import { Microservice, Event } from './objects';
 import { APIService } from './api.service';
+import { SocketService, OPEN, CLOSE, MESSAGE } from './socket.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  styleUrls: ['./app.component.scss'],
+  providers: [APIService, SocketService],
 })
 export class AppComponent implements OnInit {
 	micros: Microservice[];	
@@ -14,16 +16,42 @@ export class AppComponent implements OnInit {
 	red: string = "#d9534f";
 	green: string = "#8bd22f";
 	yellow: string = "#e7ba08";
+	blue: string = "#2196F3";
 
 	dhcpstate: string = "";
 	gettingDHCP: boolean;
 
-	constructor(private api: APIService) {
+	// testing events
+	responses: Event[];
+
+	constructor(private api: APIService, private socket: SocketService) {
 		this.micros = ms;
+		this.responses = [];
 	}
 
 	ngOnInit() {
 		this.getDHCPState();
+		this.socketSetup();
+	}
+
+	socketSetup() {
+		this.socket.getEventListener().subscribe(
+			event => {
+				if (event.type == MESSAGE) {
+					let data = JSON.parse(event.data.data);
+
+					let e = new Event();
+					Object.assign(e, data);
+
+					console.log("e", e);
+					this.responses.push(e);
+				} else if (event.type == CLOSE) {
+					console.log("BAD NEWS");
+				} else if (event.type == OPEN) {
+					console.log("YAY! SOCKET OPENED!");
+				}
+			} 
+		);
 	}
 
 	reboot() {
@@ -65,7 +93,19 @@ export class AppComponent implements OnInit {
 			}, () => {
 				this.gettingDHCP = false;
 			}
-		);	
+		);
+	}
+
+	testEvents() {
+		// clear responses
+		this.responses = [];
+
+		console.log("testing events");		
+		this.api.localget(":10000/testevents").subscribe();	
+
+		setTimeout(() => {
+			console.log("responses:" , this.responses);	
+		}, 5000);
 	}
 }
 
