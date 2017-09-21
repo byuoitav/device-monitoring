@@ -161,7 +161,7 @@ func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t int
 				color.Unset()
 
 				var s statusinfrastructure.EventNodeStatus
-				s.Name = "IP ADDRESS GOES HERE"
+				s.Name = os.Getenv("PI_HOSTNAME")
 
 				en.PublishJSONMessageByEventType(eventinfrastructure.TestReply, s)
 			}
