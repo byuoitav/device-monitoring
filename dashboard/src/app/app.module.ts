@@ -8,6 +8,7 @@ import { MicroserviceComponent } from './microservice.component'
 import { ButtonComponent } from './button.component'
 import { SideModalComponent } from './side-modal.component'
 import { APIService } from './api.service'
+import { SocketService } from './socket.service';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,7 @@ import { APIService } from './api.service'
 	HttpModule,
 	BrowserAnimationsModule
   ],
-  providers: [APIService],
+  providers: [APIService, SocketService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

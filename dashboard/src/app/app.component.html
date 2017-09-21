@@ -17,5 +17,10 @@
 		<mybtn (click)="reboot()" name="Reboot" icon="power_settings_new" [color]="red"></mybtn>	
 		<mybtn (click)="refresh()" name="Refresh" icon="refresh" [color]="yellow"></mybtn>	
 		<mybtn (click)="toUI()" name="Back" icon="arrow_back" [color]="green"></mybtn>	
+		<div>
+			<mybtn *ngIf="!gettingDHCP" (click)="toggleDHCP()" [name]="dhcpstate" icon="wifi" [color]="yellow"></mybtn>	
+			<mybtn *ngIf="gettingDHCP" name="Updating..." icon="autorenew" [color]="yellow"></mybtn>	
+		</div>
+		<mybtn (click)="testEvents()" name="Event Test" icon="bug_report" [color]="blue"></mybtn>	
 	</div>
 </div>
