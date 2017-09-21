@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -12,23 +14,31 @@ import (
 	"github.com/byuoitav/device-monitoring-microservice/device"
 	"github.com/byuoitav/device-monitoring-microservice/handlers"
 	"github.com/byuoitav/device-monitoring-microservice/monitoring"
+	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/byuoitav/touchpanel-ui-microservice/socket"
 	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
 
 var addr string
+var building string
+var room string
 
 func main() {
 	// start event node
-	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply}
+	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply, eventinfrastructure.TestExternalReply}
 	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
+
+	// websocket
+	hub := socket.NewHub()
+	go WriteEventsToSocket(en, hub, statusinfrastructure.EventNodeStatus{})
 
 	//get building and room info
 	hostname := os.Getenv("PI_HOSTNAME")
-	building := strings.Split(hostname, "-")[0]
-	room := strings.Split(hostname, "-")[1]
+	building = strings.Split(hostname, "-")[0]
+	room = strings.Split(hostname, "-")[1]
 
 	go monitor(building, room, en)
 
@@ -59,6 +69,12 @@ func main() {
 
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
+	// websocket
+	router.GET("/websocket", func(context echo.Context) error {
+		socket.ServeWebsocket(hub, context.Response().Writer, context.Request())
+		return nil
+	})
+
 	secure.GET("/health", handlers.Health)
 	secure.GET("/pulse", Pulse)
 	secure.GET("/eventstatus", handlers.EventStatus, BindEventNode(en))
@@ -85,7 +101,7 @@ func main() {
 }
 
 func Pulse(context echo.Context) error {
-	err := monitoring.GetAndReportStatus(addr)
+	err := monitoring.GetAndReportStatus(addr, building, room)
 	if err != nil {
 		return context.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -125,5 +141,39 @@ func monitor(building, room string, en *eventinfrastructure.EventNode) {
 			currentlyMonitoring = false
 		}
 		time.Sleep(time.Second * 15)
+	}
+}
+
+func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t interface{}) {
+	for {
+		select {
+		case message, ok := <-en.Read:
+			if !ok {
+				color.Set(color.FgRed)
+				log.Fatalf("eventnode read channel closed.")
+				color.Unset()
+			}
+
+			header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
+			if strings.EqualFold(header, eventinfrastructure.TestExternalReply) {
+				color.Set(color.FgBlue, color.Bold)
+				log.Printf("Responding to external test event")
+				color.Unset()
+
+				var s statusinfrastructure.EventNodeStatus
+				s.Name = "IP ADDRESS GOES HERE"
+
+				en.PublishJSONMessageByEventType(eventinfrastructure.TestReply, s)
+			}
+
+			err := json.Unmarshal(message.MessageBody, &t)
+			if err != nil {
+				color.Set(color.FgRed)
+				log.Printf("failed to unmarshal message into Event type: %s", message.MessageBody)
+				color.Unset()
+			} else {
+				h.WriteToSockets(t)
+			}
+		}
 	}
 }
