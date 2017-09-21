@@ -161,7 +161,13 @@ func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t int
 				color.Unset()
 
 				var s statusinfrastructure.EventNodeStatus
-				s.Name = os.Getenv("PI_HOSTNAME")
+				if len(os.Getenv("DEVELOPMENT_HOSTNAME")) > 0 {
+					s.Name = os.Getenv("DEVELOPMENT_HOSTNAME")
+				} else if len(os.Getenv("PI_HOSTNAME")) > 0 {
+					s.Name = os.Getenv("PI_HOSTNAME")
+				} else {
+					s.Name, _ = os.Hostname()
+				}
 
 				en.PublishJSONMessageByEventType(eventinfrastructure.TestReply, s)
 			}
