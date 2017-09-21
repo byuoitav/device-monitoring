@@ -28,7 +28,7 @@ var room string
 
 func main() {
 	// start event node
-	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply, eventinfrastructure.TestExternalReply}
+	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.External}
 	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
 
 	// websocket
