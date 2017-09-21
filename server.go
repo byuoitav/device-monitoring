@@ -23,6 +23,8 @@ import (
 )
 
 var addr string
+var building string
+var room string
 
 func main() {
 	// start event node
@@ -35,8 +37,8 @@ func main() {
 
 	//get building and room info
 	hostname := os.Getenv("PI_HOSTNAME")
-	building := strings.Split(hostname, "-")[0]
-	room := strings.Split(hostname, "-")[1]
+	building = strings.Split(hostname, "-")[0]
+	room = strings.Split(hostname, "-")[1]
 
 	go monitor(building, room, en)
 
@@ -99,7 +101,7 @@ func main() {
 }
 
 func Pulse(context echo.Context) error {
-	err := monitoring.GetAndReportStatus(addr)
+	err := monitoring.GetAndReportStatus(addr, building, room)
 	if err != nil {
 		return context.JSON(http.StatusInternalServerError, err.Error())
 	}
