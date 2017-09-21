@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -25,7 +26,7 @@ var addr string
 
 func main() {
 	// start event node
-	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply}
+	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply, eventinfrastructure.TestExternal}
 	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
 
 	// websocket
@@ -149,6 +150,17 @@ func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t int
 				color.Set(color.FgRed)
 				log.Fatalf("eventnode read channel closed.")
 				color.Unset()
+			}
+			header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
+			if strings.EqualFold(header, eventinfrastructure.TestExternal) {
+				color.Set(color.FgBlue, color.Bold)
+				log.Printf("Responding to external test event")
+				color.Unset()
+
+				var s statusinfrastructure.EventNodeStatus
+				s.Name = "IP ADDRESS GOES HERE"
+
+				en.PublishJSONMessageByEventType(eventinfrastructure.TestExternalReply, s)
 			}
 
 			err := json.Unmarshal(message.MessageBody, &t)
