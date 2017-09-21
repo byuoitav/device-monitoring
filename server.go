@@ -28,7 +28,7 @@ var room string
 
 func main() {
 	// start event node
-	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply, eventinfrastructure.TestExternal}
+	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply, eventinfrastructure.TestExternalReply}
 	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
 
 	// websocket
@@ -155,16 +155,7 @@ func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t int
 			}
 
 			header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
-			if strings.EqualFold(header, eventinfrastructure.TestReply) {
-				color.Set(color.FgBlue, color.Bold)
-				log.Printf("Sending event test to other PI's")
-				color.Unset()
-
-				var s statusinfrastructure.EventNodeStatus
-				s.Name = "Please Reply External"
-
-				en.PublishJSONMessageByEventType(eventinfrastructure.TestExternal, s)
-			} else if strings.EqualFold(header, eventinfrastructure.TestExternal) {
+			if strings.EqualFold(header, eventinfrastructure.TestExternalReply) {
 				color.Set(color.FgBlue, color.Bold)
 				log.Printf("Responding to external test event")
 				color.Unset()
@@ -172,7 +163,7 @@ func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t int
 				var s statusinfrastructure.EventNodeStatus
 				s.Name = "IP ADDRESS GOES HERE"
 
-				en.PublishJSONMessageByEventType(eventinfrastructure.TestExternalReply, s)
+				en.PublishJSONMessageByEventType(eventinfrastructure.TestReply, s)
 			}
 
 			err := json.Unmarshal(message.MessageBody, &t)
