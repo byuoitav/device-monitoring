@@ -18,6 +18,12 @@ DOCKER_PUSH=$(DOCKER) push
 DOCKER_FILE=Dockerfile-development
 DOCKER_FILE_ARM=Dockerfile-ARM
 
+# angular
+NPM=npm
+NPM_INSTALL=$(NPM) install
+NG_BUILD=ng build
+NG1=dash
+
 # general
 DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 NAME := $(shell basename "$(PWD)")
@@ -26,6 +32,8 @@ all: vendor test build
 
 build:
 	$(GOBUILD) -o $(NAME) -v
+	cd dashboard && $(NPM_INSTALL) && $(NG_BUILD) --base-href="./$(NG1)/"
+	mv dashboard/dist $(NG1)
 
 build-arm: 
 	env GOOS=linux GOARCH=arm GOARM=5 $(GOBUILD) -o $(NAME)-arm -v
@@ -35,6 +43,7 @@ test:
 
 clean: 
 	$(GOCLEAN)
+	rm -r $(NG1)
 
 run: build
 	./$(BINARY_NAME)
@@ -45,15 +54,13 @@ vendor:
 	$(VENDOR) github.com/labstack/echo
 	$(VENDOR) github.com/fatih/color
 
-
-deploy: 
-	echo "$(CURDIR)"
-
 docker-x86: 
 	$(DOCKER_BUILD) -f $(DOCKER_FILE) -t $(GIT_ORG)/$(NAME):$(GIT_BRANCH) .
-#	$(DOCKER_LOGIN) -e $(DOCKER_EMAIL) -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) no email?
 	$(DOCKER_LOGIN) -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD)
 	$(DOCKER_PUSH) $(GIT_ORG)/$(NAME):$(GIT_BRANCH)
 
 docker-arm:
+	$(DOCKER_BUILD) -f $(DOCKER_FILE_ARM) -t $(GIT_ORG)/rpi-$(NAME):$(GIT_BRANCH) .
+	$(DOCKER_LOGIN) -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD)
+	$(DOCKER_PUSH) $(GIT_ORG)/rpi-$(NAME):$(GIT_BRANCH)
 
