@@ -10,6 +10,14 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/fatih/color",
+			"repository": "https://github.com/fatih/color",
+			"vcs": "git",
+			"revision": "1535ebc2637cc042c938f07fa26c6356ab8f8504",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/labstack/echo",
 			"repository": "https://github.com/labstack/echo",
 			"vcs": "git",

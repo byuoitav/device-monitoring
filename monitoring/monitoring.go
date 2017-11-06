@@ -12,7 +12,7 @@ import (
 
 	"github.com/byuoitav/av-api/base"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
-	"github.com/byuoitav/touchpanel-ui-microservice/handlers"
+	"github.com/byuoitav/touchpanel-ui-microservice/uiconfig"
 	"github.com/fatih/color"
 )
 
@@ -176,12 +176,12 @@ func ShouldIMonitorAPI() bool {
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	var config handlers.Apihost
+	var config uiconfig.APIHost
 	json.Unmarshal(body, &config)
 
 	// use config
-	if config.Enabled {
-		if strings.Contains(config.APIHost, os.Getenv("PI_HOSTNAME")) || strings.EqualFold(config.APIHost, "localhost") {
+	if len(config.Hostname) > 0 {
+		if strings.Contains(config.Hostname, os.Getenv("PI_HOSTNAME")) || strings.EqualFold(config.Hostname, "localhost") {
 			return true
 		}
 		return false
