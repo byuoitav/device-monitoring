@@ -12,7 +12,7 @@ import (
 
 	"github.com/byuoitav/av-api/base"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
-	"github.com/byuoitav/touchpanel-ui-microservice/handlers"
+	"github.com/byuoitav/touchpanel-ui-microservice/uiconfig/handlers"
 	"github.com/fatih/color"
 )
 
