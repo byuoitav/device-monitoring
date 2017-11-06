@@ -44,7 +44,9 @@ export class AppComponent implements OnInit {
 					Object.assign(e, data);
 
 					console.log("e", e);
-					this.responses.push(e);
+					setTimeout(() => {
+						this.responses.push(e);
+					}, 500);
 				} else if (event.type == CLOSE) {
 					console.log("BAD NEWS");
 				} else if (event.type == OPEN) {

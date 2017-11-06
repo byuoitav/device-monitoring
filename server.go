@@ -28,7 +28,7 @@ var room string
 
 func main() {
 	// start event node
-	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestReply, eventinfrastructure.TestExternalReply}
+	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestExternal}
 	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
 
 	// websocket
@@ -155,15 +155,21 @@ func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t int
 			}
 
 			header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
-			if strings.EqualFold(header, eventinfrastructure.TestExternalReply) {
+			if strings.EqualFold(header, eventinfrastructure.TestExternal) {
 				color.Set(color.FgBlue, color.Bold)
 				log.Printf("Responding to external test event")
 				color.Unset()
 
 				var s statusinfrastructure.EventNodeStatus
-				s.Name = "IP ADDRESS GOES HERE"
+				if len(os.Getenv("DEVELOPMENT_HOSTNAME")) > 0 {
+					s.Name = os.Getenv("DEVELOPMENT_HOSTNAME")
+				} else if len(os.Getenv("PI_HOSTNAME")) > 0 {
+					s.Name = os.Getenv("PI_HOSTNAME")
+				} else {
+					s.Name, _ = os.Hostname()
+				}
 
-				en.PublishJSONMessageByEventType(eventinfrastructure.TestReply, s)
+				en.PublishJSONMessageByEventType(eventinfrastructure.TestExternalReply, s)
 			}
 
 			err := json.Unmarshal(message.MessageBody, &t)
