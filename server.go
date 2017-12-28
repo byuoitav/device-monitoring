@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -29,7 +28,7 @@ var room string
 func main() {
 	// start event node
 	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestExternal}
-	en := eventinfrastructure.NewEventNode("Device Monitoring", "7004", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
+	en := eventinfrastructure.NewEventNode("Device Monitoring", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
 
 	// websocket
 	hub := socket.NewHub()
@@ -146,40 +145,28 @@ func monitor(building, room string, en *eventinfrastructure.EventNode) {
 
 func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t interface{}) {
 	for {
-		select {
-		case message, ok := <-en.Read:
-			if !ok {
-				color.Set(color.FgRed)
-				log.Fatalf("eventnode read channel closed.")
-				color.Unset()
-			}
+		message := en.Read()
 
-			header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
-			if strings.EqualFold(header, eventinfrastructure.TestExternal) {
-				color.Set(color.FgBlue, color.Bold)
-				log.Printf("Responding to external test event")
-				color.Unset()
+		if strings.EqualFold(message.MessageHeader, eventinfrastructure.TestExternal) {
+			log.Printf(color.BlueString("Responding to external test event"))
 
-				var s statusinfrastructure.EventNodeStatus
-				if len(os.Getenv("DEVELOPMENT_HOSTNAME")) > 0 {
-					s.Name = os.Getenv("DEVELOPMENT_HOSTNAME")
-				} else if len(os.Getenv("PI_HOSTNAME")) > 0 {
-					s.Name = os.Getenv("PI_HOSTNAME")
-				} else {
-					s.Name, _ = os.Hostname()
-				}
-
-				en.PublishJSONMessageByEventType(eventinfrastructure.TestExternalReply, s)
-			}
-
-			err := json.Unmarshal(message.MessageBody, &t)
-			if err != nil {
-				color.Set(color.FgRed)
-				log.Printf("failed to unmarshal message into Event type: %s", message.MessageBody)
-				color.Unset()
+			var s statusinfrastructure.EventNodeStatus
+			if len(os.Getenv("DEVELOPMENT_HOSTNAME")) > 0 {
+				s.Name = os.Getenv("DEVELOPMENT_HOSTNAME")
+			} else if len(os.Getenv("PI_HOSTNAME")) > 0 {
+				s.Name = os.Getenv("PI_HOSTNAME")
 			} else {
-				h.WriteToSockets(t)
+				s.Name, _ = os.Hostname()
 			}
+
+			en.PublishJSONMessageByEventType(eventinfrastructure.TestExternalReply, s)
+		}
+
+		err := json.Unmarshal(message.MessageBody, &t)
+		if err != nil {
+			log.Printf(color.RedString("failed to unmarshal message into Event type: %s", message.MessageBody))
+		} else {
+			h.WriteToSockets(t)
 		}
 	}
 }
