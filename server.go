@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -12,24 +12,34 @@ import (
 	"github.com/byuoitav/authmiddleware"
 	"github.com/byuoitav/device-monitoring-microservice/device"
 	"github.com/byuoitav/device-monitoring-microservice/handlers"
-	"github.com/byuoitav/device-monitoring-microservice/statemonitoring"
+	"github.com/byuoitav/device-monitoring-microservice/monitoring"
+	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/byuoitav/touchpanel-ui-microservice/socket"
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
 
 var addr string
+var building string
+var room string
 
 func main() {
+	// start event node
+	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestExternal}
+	en := eventinfrastructure.NewEventNode("Device Monitoring", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
+
+	// websocket
+	hub := socket.NewHub()
+	go WriteEventsToSocket(en, hub, statusinfrastructure.EventNodeStatus{})
+
 	//get building and room info
 	hostname := os.Getenv("PI_HOSTNAME")
-	building := strings.Split(hostname, "-")[0]
-	room := strings.Split(hostname, "-")[1]
+	building = strings.Split(hostname, "-")[0]
+	room = strings.Split(hostname, "-")[1]
 
-	statemonitoring.StartPublisher()
-
-	statemonitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room)
-	addr = fmt.Sprintf("http://%s/buildings/%s/rooms/%s", "localhost:8000", building, room)
+	go monitor(building, room, en)
 
 	//get addresses from database
 	devices, err := device.GetAddresses(building, room)
@@ -41,21 +51,13 @@ func main() {
 	pingInterval := os.Getenv("DEVICE_PING_INTERVAL")
 	interval, err := strconv.Atoi(pingInterval)
 	if err != nil {
-
 		log.Printf("Error reading check interval. Terminating...")
-		//		os.Exit(1)
-
 	} else {
-
 		go func() {
-
 			for {
-
 				device.PingAddresses(building, room, devices)
 				time.Sleep(time.Duration(interval) * time.Second)
-
 			}
-
 		}()
 	}
 
@@ -66,9 +68,19 @@ func main() {
 
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
+	// websocket
+	router.GET("/websocket", func(context echo.Context) error {
+		socket.ServeWebsocket(hub, context.Response().Writer, context.Request())
+		return nil
+	})
+
 	secure.GET("/health", handlers.Health)
 	secure.GET("/pulse", Pulse)
-	secure.GET("/eventstatus", handlers.EventStatus, BindEventNode(statemonitoring.EventNode))
+	secure.GET("/eventstatus", handlers.EventStatus, BindEventNode(en))
+	secure.GET("/testevents", func(context echo.Context) error {
+		en.PublishMessageByEventType(eventinfrastructure.TestStart, []byte("test event"))
+		return nil
+	})
 
 	secure.GET("/hostname", handlers.GetHostname)
 	secure.GET("/ip", handlers.GetIP)
@@ -88,7 +100,7 @@ func main() {
 }
 
 func Pulse(context echo.Context) error {
-	err := statemonitoring.GetAndReportStatus(addr)
+	err := monitoring.GetAndReportStatus(addr, building, room)
 	if err != nil {
 		return context.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -101,6 +113,60 @@ func BindEventNode(en *eventinfrastructure.EventNode) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			c.Set(eventinfrastructure.ContextEventNode, en)
 			return next(c)
+		}
+	}
+}
+
+func monitor(building, room string, en *eventinfrastructure.EventNode) {
+	currentlyMonitoring := false
+
+	for {
+		shouldIMonitor := monitoring.ShouldIMonitorAPI()
+
+		if shouldIMonitor && !currentlyMonitoring {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Starting monitoring of API")
+			color.Unset()
+			addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
+			currentlyMonitoring = true
+		} else if currentlyMonitoring && shouldIMonitor {
+		} else {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Stopping monitoring of API")
+			color.Unset()
+
+			// stop monitoring?
+			monitoring.StopMonitoring()
+			currentlyMonitoring = false
+		}
+		time.Sleep(time.Second * 15)
+	}
+}
+
+func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t interface{}) {
+	for {
+		message := en.Read()
+
+		if strings.EqualFold(message.MessageHeader, eventinfrastructure.TestExternal) {
+			log.Printf(color.BlueString("Responding to external test event"))
+
+			var s statusinfrastructure.EventNodeStatus
+			if len(os.Getenv("DEVELOPMENT_HOSTNAME")) > 0 {
+				s.Name = os.Getenv("DEVELOPMENT_HOSTNAME")
+			} else if len(os.Getenv("PI_HOSTNAME")) > 0 {
+				s.Name = os.Getenv("PI_HOSTNAME")
+			} else {
+				s.Name, _ = os.Hostname()
+			}
+
+			en.PublishJSONMessageByEventType(eventinfrastructure.TestExternalReply, s)
+		}
+
+		err := json.Unmarshal(message.MessageBody, &t)
+		if err != nil {
+			log.Printf(color.RedString("failed to unmarshal message into Event type: %s", message.MessageBody))
+		} else {
+			h.WriteToSockets(t)
 		}
 	}
 }
