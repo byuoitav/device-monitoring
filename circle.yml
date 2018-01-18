@@ -13,6 +13,7 @@ dependencies:
     pre:
         - rm -rf ~/.go_workspace
         - go get -u github.com/FiloSottile/gvt
+        - npm install -g @angular/cli
     override:
         - mkdir -p ~/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}
         - ln -s ${HOME}/${CIRCLE_PROJECT_REPONAME} ${BUILD_PATH}

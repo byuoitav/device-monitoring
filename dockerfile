@@ -8,5 +8,6 @@ COPY ${name}-bin ${name}-bin
 COPY version.txt version.txt
 
 # add any required files/folders here
+COPY dash-dist dash-dist
 
 ENTRYPOINT ./${name}-bin
