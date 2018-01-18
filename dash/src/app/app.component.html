@@ -22,6 +22,7 @@
 			<mybtn *ngIf="gettingDHCP" name="Updating..." icon="autorenew" [color]="yellow"></mybtn>	
 		</div>
 		<mybtn (click)="testEvents(); eventTest.show();" name="Event Test" icon="bug_report" [color]="blue"></mybtn>	
+		<mybtn (click)="rebootVias(); rebootViaInfo.show();" name="Reboot Vias" icon="power" [color]="red"></mybtn>	
 	</div>
 </div>
 
@@ -29,6 +30,14 @@
 	<div class="event-test"> 
 		<div *ngFor="let e of responses">
 			<span>{{e.name}}</span>
+		</div>
+	</div>
+</side-modal>
+
+<side-modal #rebootViaInfo [vertical]="true" [opposite]="true">
+	<div class="reboot-info"> 
+		<div *ngFor="let m of rebootViaMessages" style="margin-bottom: 1vh;">
+			<pre>{{m}}</pre>
 		</div>
 	</div>
 </side-modal>

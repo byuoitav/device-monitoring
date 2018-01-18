@@ -24,6 +24,8 @@ export class AppComponent implements OnInit {
 	// testing events
 	responses: Event[];
 
+    rebootViaMessages = [];
+
 	constructor(private api: APIService, private socket: SocketService) {
 		this.micros = ms;
 		this.responses = [];
@@ -109,6 +111,38 @@ export class AppComponent implements OnInit {
 			console.log("responses:" , this.responses);	
 		}, 5000);
 	}
+
+    rebootVias() {
+        this.rebootViaMessages = [];    
+
+        this.rebootViaMessages.push("getting ip addresses of vias...");
+
+        let split = this.api.hostname.split("-");
+        let endpoint = ":8000/buildings/" + split[0] + "/rooms/" + split[1] + "/configuration";
+
+        this.api.localget(endpoint).subscribe(
+            data => {
+                console.log("data", data);
+
+                for(let device of data["devices"]) {
+
+                    if (device.type == "via") {
+                        console.log("found a via", device);
+
+                        this.rebootViaMessages.push("rebooting " + device.name + " @ " + device.address);
+
+                        this.api.localget(":8014/via/" + device.address + "/reboot").subscribe(
+                            data => {
+                                this.rebootViaMessages.push("successfully rebooted " + device.name);
+                            }, err => {
+                                this.rebootViaMessages.push("failed rebooting " + device.name);
+                            }
+                        )
+                    }
+                }
+            }
+        );
+    }
 }
 
 const ms: Microservice[] = [

@@ -88,7 +88,7 @@ func main() {
 
 	secure.GET("/reboot", handlers.RebootPi)
 
-	router.Static("/dash", "dash")
+	router.Static("/dash", "dash-dist")
 
 	server := http.Server{
 		Addr:           port,
