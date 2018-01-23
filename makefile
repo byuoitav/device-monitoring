@@ -50,7 +50,7 @@ build-arm:
 	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME)-arm -v
 
 build-web: $(NG1) 
-	cd $(NG1) && $(NPM_INSTALL) && $(NG_BUILD) --base-href="./$(NG1)"
+	cd $(NG1) && $(NPM_INSTALL) && $(NG_BUILD) --base-href="./$(NG1)/"
 	mv $(NG1)/dist $(NG1)-dist
 
 test: 
