@@ -72,7 +72,6 @@ ifneq "$(BRANCH)" "master"
 	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
 	$(VENDOR) github.com/byuoitav/event-router-microservice
 	$(VENDOR) github.com/byuoitav/av-api
-	$(VENDOR) github.com/byuoitav/authmiddleware
 endif
 
 docker: docker-x86 docker-arm
