@@ -2,39 +2,6 @@
 	"version": 0,
 	"dependencies": [
 		{
-			"importpath": "github.com/byuoitav/authmiddleware",
-			"repository": "https://github.com/byuoitav/authmiddleware",
-			"vcs": "git",
-			"revision": "19570c656472369fe8aceb0b0334df49e027b1f5",
-			"branch": "master",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/byuoitav/av-api",
-			"repository": "https://github.com/byuoitav/av-api",
-			"vcs": "git",
-			"revision": "9577d17bf468b38e22f7bbfa1ca911cf9e53611b",
-			"branch": "testing",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/byuoitav/configuration-database-microservice/structs",
-			"repository": "https://github.com/byuoitav/configuration-database-microservice",
-			"vcs": "git",
-			"revision": "6624435a1d38465143c3f6f6f01ecc6625eb47e2",
-			"branch": "master",
-			"path": "/structs",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/byuoitav/event-router-microservice",
-			"repository": "https://github.com/byuoitav/event-router-microservice",
-			"vcs": "git",
-			"revision": "65e7539bfbc9514dc8d412c777a1390d7700de5b",
-			"branch": "testing",
-			"notests": true
-		},
-		{
 			"importpath": "github.com/dgrijalva/jwt-go",
 			"repository": "https://github.com/dgrijalva/jwt-go",
 			"vcs": "git",
@@ -48,15 +15,6 @@
 			"vcs": "git",
 			"revision": "1535ebc2637cc042c938f07fa26c6356ab8f8504",
 			"branch": "master",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/golang/protobuf/proto/testdata",
-			"repository": "https://github.com/golang/protobuf",
-			"vcs": "git",
-			"revision": "bbd03ef6da3a115852eaf24c8a1c46aeb39aa175",
-			"branch": "master",
-			"path": "/proto/testdata",
 			"notests": true
 		},
 		{
@@ -125,15 +83,6 @@
 			"vcs": "git",
 			"revision": "dcecefd839c4193db0d35b88ec65b4c12d360ab0",
 			"branch": "master",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/xuther/go-message-router/common",
-			"repository": "https://github.com/xuther/go-message-router",
-			"vcs": "git",
-			"revision": "cf7acc8d00786b34b50728f9d76d588e37fabfba",
-			"branch": "master",
-			"path": "/common",
 			"notests": true
 		},
 		{
