@@ -61,7 +61,7 @@ func main() {
 		}()
 	}
 
-	port := ":10002"
+	port := ":10000"
 	router := echo.New()
 	router.Pre(middleware.RemoveTrailingSlash())
 	router.Use(middleware.CORS())
