@@ -2,39 +2,6 @@
 	"version": 0,
 	"dependencies": [
 		{
-			"importpath": "github.com/byuoitav/authmiddleware",
-			"repository": "https://github.com/byuoitav/authmiddleware",
-			"vcs": "git",
-			"revision": "6a31d6f79fa87b55f4b4145ab569e2c81a5996ee",
-			"branch": "master",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/byuoitav/av-api",
-			"repository": "https://github.com/byuoitav/av-api",
-			"vcs": "git",
-			"revision": "9577d17bf468b38e22f7bbfa1ca911cf9e53611b",
-			"branch": "testing",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/byuoitav/configuration-database-microservice/structs",
-			"repository": "https://github.com/byuoitav/configuration-database-microservice",
-			"vcs": "git",
-			"revision": "9399b33e377c6b6e578af0ddfd50200934849429",
-			"branch": "master",
-			"path": "/structs",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/byuoitav/event-router-microservice",
-			"repository": "https://github.com/byuoitav/event-router-microservice",
-			"vcs": "git",
-			"revision": "65e7539bfbc9514dc8d412c777a1390d7700de5b",
-			"branch": "testing",
-			"notests": true
-		},
-		{
 			"importpath": "github.com/dgrijalva/jwt-go",
 			"repository": "https://github.com/dgrijalva/jwt-go",
 			"vcs": "git",
