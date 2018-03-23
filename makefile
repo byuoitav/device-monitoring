@@ -46,17 +46,17 @@ build: build-x86 build-arm build-web
 build-x86:
 	env GOOS=linux CGO_ENABLED=0 $(GOBUILD) -o $(NAME)-bin -v
 
-build-arm: 
+build-arm:
 	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME)-arm -v
 
-build-web: $(NG1) 
+build-web: $(NG1)
 	cd $(NG1) && $(NPM_INSTALL) && $(NG_BUILD) --base-href="./$(NG1)/"
 	mv $(NG1)/dist $(NG1)-dist
 
-test: 
-	$(GOTEST) -v -race $(go list ./... | grep -v /vendor/) 
+test:
+	$(GOTEST) -v -race $(go list ./... | grep -v /vendor/)
 
-clean: 
+clean:
 	$(GOCLEAN)
 	rm -f $(NAME)-bin
 	rm -f $(NAME)-arm
@@ -65,10 +65,11 @@ clean:
 run: $(NAME)-bin $(NG1)-dist
 	./$(NAME)-bin
 
-deps: 
+deps:
 ifneq "$(BRANCH)" "master"
 	# put vendored packages in here
 	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
+	$(VENDOR) github.com/byuoitav/authmiddleware
 	$(VENDOR) github.com/byuoitav/event-router-microservice
 	$(VENDOR) github.com/byuoitav/av-api
 endif
