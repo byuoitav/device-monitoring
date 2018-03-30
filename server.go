@@ -67,7 +67,7 @@ func main() {
 	router.Use(middleware.CORS())
 	router.Use(echo.WrapMiddleware(authmiddleware.Authenticate))
 
-	secure := router.Group("", echo.WrapMiddleware(authmiddleware.AuthenticateUser))
+	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
 	// websocket
 	router.GET("/websocket", func(context echo.Context) error {
