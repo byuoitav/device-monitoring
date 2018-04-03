@@ -22,6 +22,4 @@ jobs:
             - run: cd $BUILD_PATH && make deps
             - run: cd $BUILD_PATH && make build
             - run: cd $BUILD_PATH && make test
-            - deploy:
-                command:
-                    - cd $BUILD_PATH && make docke
+            - deploy: cd $BUILD_PATH && make docker
