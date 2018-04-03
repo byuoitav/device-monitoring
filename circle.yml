@@ -23,6 +23,5 @@ jobs:
             - run: cd $BUILD_PATH && make build
             - run: cd $BUILD_PATH && make test
             - deploy:
-                branch: [master, testing, stage, prod]
                 command:
                     - cd $BUILD_PATH && make docke
