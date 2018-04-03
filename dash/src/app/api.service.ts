@@ -14,6 +14,7 @@ export class APIService {
 	constructor(private http: Http) {
 		let headers = new Headers();
 		headers.append('content-type', 'application/json');
+		headers.append('Access-Control-Allow-Origin', '*');
 		this.options = new RequestOptions({ headers: headers });
 
 		// hostname
