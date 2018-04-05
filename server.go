@@ -65,7 +65,7 @@ func main() {
 	router := echo.New()
 	router.Pre(middleware.RemoveTrailingSlash())
 	router.Use(middleware.CORS())
-	router.Use(echo.WrapMiddleware(authmiddleware.AuthenticateUser))
+	router.Use(echo.WrapMiddleware(authmiddleware.Authenticate))
 
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.AuthenticateUser))
 
@@ -89,7 +89,7 @@ func main() {
 
 	secure.GET("/reboot", handlers.RebootPi)
 
-	router.Static("/dash", "dash-dist")
+	secure.Static("/dash", "dash-dist")
 
 	server := http.Server{
 		Addr:           port,
