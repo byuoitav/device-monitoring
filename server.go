@@ -67,7 +67,7 @@ func main() {
 	router.Use(middleware.CORS())
 	router.Use(echo.WrapMiddleware(authmiddleware.Authenticate))
 
-	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
+	secure := router.Group("", echo.WrapMiddleware(authmiddleware.AuthenticateUser))
 
 	// websocket
 	router.GET("/websocket", func(context echo.Context) error {
@@ -83,13 +83,13 @@ func main() {
 		return nil
 	})
 
-	secure.GET("/hostname", handlers.GetHostname)
-	secure.GET("/ip", handlers.GetIP)
-	secure.GET("/network", handlers.GetNetworkConnectedStatus)
+	router.GET("/hostname", handlers.GetHostname)
+	router.GET("/ip", handlers.GetIP)
+	router.GET("/network", handlers.GetNetworkConnectedStatus)
 
 	secure.GET("/reboot", handlers.RebootPi)
 
-	router.Static("/dash", "dash-dist")
+	secure.Static("/dash", "dash-dist")
 
 	server := http.Server{
 		Addr:           port,
