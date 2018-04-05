@@ -83,9 +83,9 @@ func main() {
 		return nil
 	})
 
-	secure.GET("/hostname", handlers.GetHostname)
-	secure.GET("/ip", handlers.GetIP)
-	secure.GET("/network", handlers.GetNetworkConnectedStatus)
+	router.GET("/hostname", handlers.GetHostname)
+	router.GET("/ip", handlers.GetIP)
+	router.GET("/network", handlers.GetNetworkConnectedStatus)
 
 	secure.GET("/reboot", handlers.RebootPi)
 
