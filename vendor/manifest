@@ -18,6 +18,15 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/golang/protobuf/proto/testdata",
+			"repository": "https://github.com/golang/protobuf",
+			"vcs": "git",
+			"revision": "bbd03ef6da3a115852eaf24c8a1c46aeb39aa175",
+			"branch": "master",
+			"path": "/proto/testdata",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/labstack/echo",
 			"repository": "https://github.com/labstack/echo",
 			"vcs": "git",
@@ -83,6 +92,15 @@
 			"vcs": "git",
 			"revision": "dcecefd839c4193db0d35b88ec65b4c12d360ab0",
 			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/xuther/go-message-router/common",
+			"repository": "https://github.com/xuther/go-message-router",
+			"vcs": "git",
+			"revision": "cf7acc8d00786b34b50728f9d76d588e37fabfba",
+			"branch": "master",
+			"path": "/common",
 			"notests": true
 		},
 		{
