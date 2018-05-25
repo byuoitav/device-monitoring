@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/byuoitav/authmiddleware"
+	"github.com/byuoitav/common/events"
 	"github.com/byuoitav/device-monitoring-microservice/device"
 	"github.com/byuoitav/device-monitoring-microservice/handlers"
 	"github.com/byuoitav/device-monitoring-microservice/monitoring"
 	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
-	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/byuoitav/messenger"
 	"github.com/byuoitav/touchpanel-ui-microservice/socket"
 	"github.com/fatih/color"
 	"github.com/labstack/echo"
@@ -27,8 +28,8 @@ var room string
 
 func main() {
 	// start event node
-	filters := []string{eventinfrastructure.TestEnd, eventinfrastructure.TestExternal}
-	en := eventinfrastructure.NewEventNode("Device Monitoring", filters, os.Getenv("EVENT_ROUTER_ADDRESS"))
+	filters := []string{events.TestEnd, events.TestExternal}
+	en := events.NewEventNode("Device Monitoring", os.Getenv("EVENT_ROUTER_ADDRESS"), filters)
 
 	// websocket
 	hub := socket.NewHub()
@@ -67,7 +68,7 @@ func main() {
 	router.Use(middleware.CORS())
 	router.Use(echo.WrapMiddleware(authmiddleware.Authenticate))
 
-	secure := router.Group("", echo.WrapMiddleware(authmiddleware.AuthenticateUser))
+	secure := router.Group("", echo.WrapMiddleware(authmiddleware.AuthenticateUser()))
 
 	// websocket
 	router.GET("/websocket", func(context echo.Context) error {
@@ -79,7 +80,7 @@ func main() {
 	secure.GET("/pulse", Pulse)
 	secure.GET("/eventstatus", handlers.EventStatus, BindEventNode(en))
 	secure.GET("/testevents", func(context echo.Context) error {
-		en.PublishMessageByEventType(eventinfrastructure.TestStart, []byte("test event"))
+		en.Node.Write(messenger.Message{Header: events.TestStart, Body: []byte("test event")})
 		return nil
 	})
 
@@ -109,16 +110,16 @@ func Pulse(context echo.Context) error {
 	return context.JSON(http.StatusOK, "Pulse sent.")
 }
 
-func BindEventNode(en *eventinfrastructure.EventNode) echo.MiddlewareFunc {
+func BindEventNode(en *events.EventNode) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			c.Set(eventinfrastructure.ContextEventNode, en)
+			c.Set(events.ContextEventNode, en)
 			return next(c)
 		}
 	}
 }
 
-func monitor(building, room string, en *eventinfrastructure.EventNode) {
+func monitor(building, room string, en *events.EventNode) {
 	currentlyMonitoring := false
 
 	for {
@@ -144,11 +145,11 @@ func monitor(building, room string, en *eventinfrastructure.EventNode) {
 	}
 }
 
-func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t interface{}) {
+func WriteEventsToSocket(en *events.EventNode, h *socket.Hub, t interface{}) {
 	for {
-		message := en.Read()
+		message := en.Node.Read()
 
-		if strings.EqualFold(message.MessageHeader, eventinfrastructure.TestExternal) {
+		if strings.EqualFold(message.Header, events.TestExternal) {
 			log.Printf(color.BlueString("Responding to external test event"))
 
 			var s statusinfrastructure.EventNodeStatus
@@ -160,12 +161,18 @@ func WriteEventsToSocket(en *eventinfrastructure.EventNode, h *socket.Hub, t int
 				s.Name, _ = os.Hostname()
 			}
 
-			en.PublishJSONMessageByEventType(eventinfrastructure.TestExternalReply, s)
+			b, err := json.Marshal(s)
+			if err != nil {
+				log.Printf("error marshaling json: %v", err.Error())
+				continue
+			}
+
+			en.Node.Write(messenger.Message{Header: events.TestExternalReply, Body: b})
 		}
 
-		err := json.Unmarshal(message.MessageBody, &t)
+		err := json.Unmarshal(message.Body, &t)
 		if err != nil {
-			log.Printf(color.RedString("failed to unmarshal message into Event type: %s", message.MessageBody))
+			log.Printf(color.RedString("failed to unmarshal message into Event type: %s", message.Body))
 		} else {
 			h.WriteToSockets(t)
 		}

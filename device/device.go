@@ -3,12 +3,13 @@ package device
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
 	"os/exec"
 	"strings"
 	"time"
 
-	"github.com/byuoitav/av-api/dbo"
+	"github.com/byuoitav/common/db"
 	"github.com/byuoitav/device-monitoring-microservice/logstash"
 )
 
@@ -18,7 +19,7 @@ func GetAddresses(building string, room string) (map[string]string, error) {
 
 	output := make(map[string]string)
 
-	devices, err := dbo.GetDevicesByRoom(building, room)
+	devices, err := db.GetDB().GetDevicesByRoom(fmt.Sprintf("%v-%v", building, room))
 	if err != nil {
 		log.Printf("Error getting devices from room: %s", err.Error())
 		message := "Error getting devices from room: " + err.Error()
