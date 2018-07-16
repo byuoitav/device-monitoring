@@ -26,7 +26,7 @@ VENDOR=gvt fetch -branch $(BRANCH)
 # docker
 DOCKER=docker
 DOCKER_BUILD=$(DOCKER) build
-DOCKER_LOGIN=$(DOCKER) login -e $(EMAIL) -u $(UNAME) -p $(PASS)
+DOCKER_LOGIN=$(DOCKER) login -u $(UNAME) -p $(PASS)
 DOCKER_PUSH=$(DOCKER) push
 DOCKER_FILE=dockerfile
 DOCKER_FILE_ARM=dockerfile-arm
@@ -35,23 +35,13 @@ UNAME=$(shell echo $(DOCKER_USERNAME))
 EMAIL=$(shell echo $(DOCKER_EMAIL))
 PASS=$(shell echo $(DOCKER_PASSWORD))
 
-# angular
-NPM=npm
-NPM_INSTALL=$(NPM) install
-NG_BUILD=ng build # --prod --aot --build-optimizer # add back in prod in next version
-NG1=dash
-
-build: build-x86 build-arm build-web
+build: build-x86 build-arm
 
 build-x86:
 	env GOOS=linux CGO_ENABLED=0 $(GOBUILD) -o $(NAME)-bin -v
 
 build-arm: 
 	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME)-arm -v
-
-build-web: $(NG1) 
-	cd $(NG1) && $(NPM_INSTALL) && $(NG_BUILD) --base-href="./$(NG1)/"
-	mv $(NG1)/dist $(NG1)-dist
 
 test: 
 	$(GOTEST) -v -race $(go list ./... | grep -v /vendor/) 
@@ -60,23 +50,22 @@ clean:
 	$(GOCLEAN)
 	rm -f $(NAME)-bin
 	rm -f $(NAME)-arm
-	rm -rf $(NG1)-dist
 
-run: $(NAME)-bin $(NG1)-dist
+run: $(NAME)-bin
 	./$(NAME)-bin
 
 deps: 
+	$(GOGET) -d -v
 ifneq "$(BRANCH)" "master"
 	# put vendored packages in here
 	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
-	$(VENDOR) github.com/byuoitav/event-router-microservice
-	$(VENDOR) github.com/byuoitav/av-api
+	$(VENDOR) github.com/byuoitav/authmiddleware
+	$(VENDOR) github.com/byuoitav/common
 endif
-	$(GOGET) -d -v
 
 docker: docker-x86 docker-arm
 
-docker-x86: $(NAME)-bin $(NG1)-dist
+docker-x86: $(NAME)-bin
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
@@ -88,7 +77,7 @@ ifeq "$(BRANCH)" "development"
 	$(eval BRANCH=master)
 endif
 
-docker-arm: $(NAME)-arm $(NG1)-dist
+docker-arm: $(NAME)-arm
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
@@ -106,6 +95,3 @@ $(NAME)-bin:
 
 $(NAME)-arm:
 	$(MAKE) build-arm
-
-$(NG1)-dist:
-	$(MAKE) build-web
