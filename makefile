@@ -61,6 +61,7 @@ clean:
 	$(GOCLEAN)
 	rm -f $(NAME)-bin
 	rm -f $(NAME)-arm
+	rm -rf $(NG1)-dist
 
 run: $(NAME)-bin
 	./$(NAME)-bin
