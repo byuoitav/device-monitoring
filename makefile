@@ -26,7 +26,7 @@ VENDOR=gvt fetch -branch $(BRANCH)
 # docker
 DOCKER=docker
 DOCKER_BUILD=$(DOCKER) build
-DOCKER_LOGIN=$(DOCKER) login -e $(EMAIL) -u $(UNAME) -p $(PASS)
+DOCKER_LOGIN=$(DOCKER) login -u $(UNAME) -p $(PASS)
 DOCKER_PUSH=$(DOCKER) push
 DOCKER_FILE=dockerfile
 DOCKER_FILE_ARM=dockerfile-arm
@@ -38,7 +38,7 @@ PASS=$(shell echo $(DOCKER_PASSWORD))
 # angular
 NPM=npm
 NPM_INSTALL=$(NPM) install
-NG_BUILD=ng build # --prod --aot --build-optimizer # add back in prod in next version
+NG_BUILD=ng build --prod --aot --build-optimizer 
 NG1=dash
 
 build: build-x86 build-arm build-web
@@ -48,6 +48,7 @@ build-x86:
 
 build-arm:
 	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME)-arm -v
+
 
 build-web: $(NG1)
 	cd $(NG1) && $(NPM_INSTALL) && $(NG_BUILD) --base-href="./$(NG1)/"
@@ -62,18 +63,19 @@ clean:
 	rm -f $(NAME)-arm
 	rm -rf $(NG1)-dist
 
-run: $(NAME)-bin $(NG1)-dist
+run: $(NAME)-bin
 	./$(NAME)-bin
 
 deps:
-ifneq "$(BRANCH)" "master"
+ifeq "$(BRANCH)" "master"
 	# put vendored packages in here
 	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
 	$(VENDOR) github.com/byuoitav/authmiddleware
-	$(VENDOR) github.com/byuoitav/event-router-microservice
+	$(VENDOR) github.com/byuoitav/touchpanel-ui-microservice
+	$(VENDOR) github.com/byuoitav/common
 	$(VENDOR) github.com/byuoitav/av-api
+	$(VENDOR) github.com/byuoitav/salt-translator-service
 endif
-	$(GOGET) -d -v
 
 docker: docker-x86 docker-arm
 
