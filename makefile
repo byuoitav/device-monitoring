@@ -75,7 +75,6 @@ ifneq "$(BRANCH)" "master"
 	$(VENDOR) github.com/byuoitav/touchpanel-ui-microservice
 	$(VENDOR) github.com/byuoitav/common
 	$(VENDOR) github.com/byuoitav/av-api
-	$(VENDOR) github.com/byuoitav/salt-translator-service
 endif
 	$(GOGET) -d -v
 
