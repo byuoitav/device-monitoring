@@ -35,6 +35,12 @@ UNAME=$(shell echo $(DOCKER_USERNAME))
 EMAIL=$(shell echo $(DOCKER_EMAIL))
 PASS=$(shell echo $(DOCKER_PASSWORD))
 
+# angular
+NPM=npm
+NPM_INSTALL=$(NPM) install
+NG_BUILD=ng build --prod --aot --build-optimizer 
+NG1=dash
+
 build: build-x86 build-arm build-web
 
 build-x86:
@@ -72,7 +78,7 @@ endif
 
 docker: docker-x86 docker-arm
 
-docker-x86: $(NAME)-bin
+docker-x86: $(NAME)-bin $(NG1)-dist
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
@@ -84,7 +90,7 @@ ifeq "$(BRANCH)" "development"
 	$(eval BRANCH=master)
 endif
 
-docker-arm: $(NAME)-arm
+docker-arm: $(NAME)-arm $(NG1)-dist
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
@@ -102,3 +108,6 @@ $(NAME)-bin:
 
 $(NAME)-arm:
 	$(MAKE) build-arm
+
+$(NG1)-dist:
+	$(MAKE) build-web
