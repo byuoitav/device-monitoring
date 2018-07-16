@@ -68,7 +68,6 @@ run: $(NAME)-bin
 
 deps:
 	$(NPM_INSTALL) -g @angular/cli
-	$(GOGET) -d -v
 ifneq "$(BRANCH)" "master"
 	# put vendored packages in here
 	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
@@ -78,6 +77,7 @@ ifneq "$(BRANCH)" "master"
 	$(VENDOR) github.com/byuoitav/av-api
 	$(VENDOR) github.com/byuoitav/salt-translator-service
 endif
+	$(GOGET) -d -v
 
 docker: docker-x86 docker-arm
 
