@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	ei "github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	ei "github.com/byuoitav/common/events"
 	"github.com/byuoitav/salt-translator-service/elk"
 )
 

@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/byuoitav/common/events"
 )
 
-func SendEvent(Type eventinfrastructure.EventType,
-	Cause eventinfrastructure.EventCause,
+func SendEvent(Type events.EventType,
+	Cause events.EventCause,
 	Device string,
 	Room string,
 	Building string,
@@ -17,7 +17,7 @@ func SendEvent(Type eventinfrastructure.EventType,
 	InfoValue string,
 	Error bool) error {
 
-	e := eventinfrastructure.EventInfo{
+	e := events.EventInfo{
 		Type:           Type,
 		EventCause:     Cause,
 		Device:         Device,
@@ -25,7 +25,7 @@ func SendEvent(Type eventinfrastructure.EventType,
 		EventInfoValue: InfoValue,
 	}
 
-	err := Publish(eventinfrastructure.Event{
+	err := Publish(events.Event{
 		Event:    e,
 		Building: Building,
 		Room:     Room,
@@ -34,9 +34,9 @@ func SendEvent(Type eventinfrastructure.EventType,
 	return err
 }
 
-func PublishError(errorStr string, cause eventinfrastructure.EventCause) {
-	e := eventinfrastructure.EventInfo{
-		Type:           eventinfrastructure.ERROR,
+func PublishError(errorStr string, cause events.EventCause) {
+	e := events.EventInfo{
+		Type:           events.ERROR,
 		EventCause:     cause,
 		EventInfoKey:   "Error String",
 		EventInfoValue: errorStr,
@@ -55,14 +55,14 @@ func PublishError(errorStr string, cause eventinfrastructure.EventCause) {
 		}
 	}
 
-	Publish(eventinfrastructure.Event{
+	Publish(events.Event{
 		Event:    e,
 		Building: building,
 		Room:     room,
 	}, true)
 }
 
-func Publish(e eventinfrastructure.Event, Error bool) error {
+func Publish(e events.Event, Error bool) error {
 	var err error
 
 	// create the event
@@ -85,9 +85,9 @@ func Publish(e eventinfrastructure.Event, Error bool) error {
 	e.LocalEnvironment = len(os.Getenv("LOCAL_ENVIRONMENT")) > 0
 
 	if !Error {
-		eventnode.PublishEvent(e, eventinfrastructure.APISuccess)
+		eventnode.PublishEvent(events.APISuccess, e)
 	} else {
-		eventnode.PublishEvent(e, eventinfrastructure.APIError)
+		eventnode.PublishEvent(events.APIError, e)
 	}
 
 	return err
