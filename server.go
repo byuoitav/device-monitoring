@@ -32,7 +32,7 @@ func main() {
 	en := events.NewEventNode("Device Monitoring", os.Getenv("EVENT_ROUTER_ADDRESS"), filters)
 
 	// websocket
-	hub := socket.NewHub()
+	hub := socket.NewHub(en)
 	go WriteEventsToSocket(en, hub, statusinfrastructure.EventNodeStatus{})
 
 	//get building and room info
@@ -66,9 +66,10 @@ func main() {
 	router := echo.New()
 	router.Pre(middleware.RemoveTrailingSlash())
 	router.Use(middleware.CORS())
-	router.Use(echo.WrapMiddleware(authmiddleware.Authenticate))
+	// router.Use(echo.WrapMiddleware(authmiddleware.Authenticate))
 
-	secure := router.Group("", echo.WrapMiddleware(authmiddleware.AuthenticateUser))
+	//	secure := router.Group("", echo.WrapMiddleware(authmiddleware.AuthenticateUser))
+	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
 	// websocket
 	router.GET("/websocket", func(context echo.Context) error {
