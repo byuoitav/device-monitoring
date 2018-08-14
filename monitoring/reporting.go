@@ -11,6 +11,7 @@ import (
 func SendEvent(Type events.EventType,
 	Cause events.EventCause,
 	Device string,
+	DeviceID string,
 	Room string,
 	Building string,
 	InfoKey string,
@@ -21,6 +22,7 @@ func SendEvent(Type events.EventType,
 		Type:           Type,
 		EventCause:     Cause,
 		Device:         Device,
+		DeviceID:       DeviceID,
 		EventInfoKey:   InfoKey,
 		EventInfoValue: InfoValue,
 	}
@@ -52,6 +54,7 @@ func PublishError(errorStr string, cause events.EventCause) {
 			building = roomInfo[0]
 			room = roomInfo[1]
 			e.Device = roomInfo[2]
+			e.DeviceID = name
 		}
 	}
 

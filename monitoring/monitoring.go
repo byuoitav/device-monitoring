@@ -101,19 +101,32 @@ func GetAndReportStatus(addr string, pbuilding string, proom string) error {
 	//Go through our displays first
 	//there's probably a way to do this with reflection.
 	for _, dev := range room.Displays {
+
+		//adding stuff to support inter-room control
+		name := ""
+		id := ""
+		if strings.Contains(dev.Name, "-") {
+			//we assume the name is the deviceID
+			id = dev.Name
+			name = strings.Split(dev.Name, "-")[2]
+		} else {
+			name = dev.Name
+			id = fmt.Sprintf("%v-%v-%v", bu, ro, name)
+		}
+
 		log.Printf("[api-status] Reporting for %v", dev.Name)
-		err = SendEvent(et, ec, dev.Name, ro, bu, "power", dev.Power, false)
+		err = SendEvent(et, ec, name, id, ro, bu, "power", dev.Power, false)
 		if err != nil {
 			log.Printf("[api-status] error sending error: %v", err)
 			return err
 		}
-		err = SendEvent(et, ec, dev.Name, ro, bu, "input", dev.Input, false)
+		err = SendEvent(et, ec, name, id, ro, bu, "input", dev.Input, false)
 		if err != nil {
 			log.Printf("[api-status] error sending error: %v", err)
 			return err
 		}
 		if dev.Blanked != nil {
-			err = SendEvent(et, ec, dev.Name, ro, bu, "blanked", fmt.Sprintf("%v", *dev.Blanked), false)
+			err = SendEvent(et, ec, name, id, ro, bu, "blanked", fmt.Sprintf("%v", *dev.Blanked), false)
 			if err != nil {
 				log.Printf("[api-status] error sending error: %v", err)
 				return err
@@ -126,16 +139,28 @@ func GetAndReportStatus(addr string, pbuilding string, proom string) error {
 	//check audio devices
 	log.Printf("[api-status] Done with displays, beginning audio devices")
 	for _, dev := range room.AudioDevices {
+
+		name := ""
+		id := ""
+		if strings.Contains(dev.Name, "-") {
+			//we assume the name is the deviceID
+			id = dev.Name
+			name = strings.Split(dev.Name, "-")[2]
+		} else {
+			name = dev.Name
+			id = fmt.Sprintf("%v-%v-%v", bu, ro, name)
+		}
+
 		log.Printf("[api-status] Reporting status for %v", dev.Name)
 		if dev.Muted != nil {
-			err = SendEvent(et, ec, dev.Name, ro, bu, "muted", fmt.Sprintf("%v", *dev.Muted), false)
+			err = SendEvent(et, ec, name, id, ro, bu, "muted", fmt.Sprintf("%v", *dev.Muted), false)
 			if err != nil {
 				log.Printf("[api-status] error sending error: %v", err)
 				return err
 			}
 		}
 		if dev.Volume != nil {
-			err = SendEvent(et, ec, dev.Name, ro, bu, "volume", fmt.Sprintf("%v", *dev.Volume), false)
+			err = SendEvent(et, ec, name, id, ro, bu, "volume", fmt.Sprintf("%v", *dev.Volume), false)
 			if err != nil {
 				log.Printf("[api-status] error sending error: %v", err)
 				return err
@@ -144,12 +169,12 @@ func GetAndReportStatus(addr string, pbuilding string, proom string) error {
 
 		//check to see if we already sent the common information
 		if _, ok := sentDevices[dev.Name]; !ok {
-			err = SendEvent(et, ec, dev.Name, ro, bu, "power", dev.Power, false)
+			err = SendEvent(et, ec, name, id, ro, bu, "power", dev.Power, false)
 			if err != nil {
 				log.Printf("[api-status] error sending error: %v", err)
 				return err
 			}
-			err = SendEvent(et, ec, dev.Name, ro, bu, "input", dev.Input, false)
+			err = SendEvent(et, ec, name, id, ro, bu, "input", dev.Input, false)
 			if err != nil {
 				log.Printf("[api-status] error sending error: %v", err)
 				return err

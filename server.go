@@ -5,13 +5,11 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/byuoitav/authmiddleware"
 	"github.com/byuoitav/common/events"
-	"github.com/byuoitav/device-monitoring-microservice/device"
 	"github.com/byuoitav/device-monitoring-microservice/handlers"
 	"github.com/byuoitav/device-monitoring-microservice/monitoring"
 	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
@@ -41,26 +39,6 @@ func main() {
 	room = strings.Split(hostname, "-")[1]
 
 	go monitor(building, room, en)
-
-	//get addresses from database
-	devices, err := device.GetAddresses(building, room)
-	if err != nil {
-		log.Printf("Error getting devices from database: %s", err.Error())
-	}
-
-	//figure out how often to ping devices and start process in new goroutine
-	pingInterval := os.Getenv("DEVICE_PING_INTERVAL")
-	interval, err := strconv.Atoi(pingInterval)
-	if err != nil {
-		log.Printf("Error reading check interval. Terminating...")
-	} else {
-		go func() {
-			for {
-				device.PingAddresses(building, room, devices)
-				time.Sleep(time.Duration(interval) * time.Second)
-			}
-		}()
-	}
 
 	port := ":10000"
 	router := echo.New()
