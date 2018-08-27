@@ -2,22 +2,16 @@ package main
 
 import (
 	"net/http"
-	"os"
 
+	"github.com/byuoitav/authmiddleware"
 	"github.com/byuoitav/common"
-	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/device-monitoring-microservice/handlers"
 	"github.com/byuoitav/device-monitoring-microservice/jobs"
+	"github.com/labstack/echo"
 )
 
 func main() {
 	// start event node
-	eventRouter := os.Getenv("EVENT_ROUTER_ADDRESS")
-	if len(eventRouter) == 0 {
-		log.L.Fatalf("Event router address is not set.")
-	}
-	//	filters := []string{events.TestEnd, events.TestExternal}
-	//	en := events.NewEventNode("Device Monitoring", eventRouter, filters)
-
 	// start jobs
 	go jobs.StartJobScheduler()
 
@@ -25,7 +19,14 @@ func main() {
 	port := ":10000"
 	router := common.NewRouter()
 
-	// secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
+	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
+
+	secure.GET("/hostname", handlers.GetHostname)
+	secure.GET("/ip", handlers.GetIP)
+	secure.GET("/network", handlers.GetNetworkConnectedStatus)
+	secure.GET("/reboot", handlers.RebootPi)
+
+	secure.Static("/dash", "dash-dist")
 
 	server := http.Server{
 		Addr:           port,
@@ -52,14 +53,6 @@ func main() {
 			en.Node.Write(messenger.Message{Header: events.TestStart, Body: []byte("test event")})
 			return nil
 		})
-
-		router.GET("/hostname", handlers.GetHostname)
-		router.GET("/ip", handlers.GetIP)
-		router.GET("/network", handlers.GetNetworkConnectedStatus)
-
-		secure.GET("/reboot", handlers.RebootPi)
-
-		secure.Static("/dash", "dash-dist")
 	*/
 }
 

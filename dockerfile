@@ -6,6 +6,7 @@ ENV name=${NAME}
 
 COPY ${name}-bin ${name}-bin 
 COPY version.txt version.txt
+COPY config.json config.json
 
 # add any required files/folders here
 COPY dash-dist dash-dist

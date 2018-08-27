@@ -1,0 +1,49 @@
+[
+    {
+        "name": "ping",
+        "triggers": [
+            {
+                "type": "interval",
+                "every": "3m"
+            }
+        ],
+        "enabled": true
+    },
+    {
+        "name": "monitoring",
+        "triggers": [
+            {
+                "type": "interval",
+                "every": "10s"
+            }
+        ],
+        "enabled": true
+    },
+    {
+        "name": "example job",
+        "triggers": [
+            {
+                "type": "daily",
+                "at": "14:45:00-06:00"
+            },
+            {
+                "type": "interval",
+                "every": "5m"
+            },
+            {
+                "type": "match",
+                "match": {
+                    "hostname": "teton",
+                    "event": {
+                        "eventInfoKey": "button.*",
+                        "type": "CORE"
+                    }
+                }
+            },
+            {
+                "type": "match"
+            }
+        ],
+        "enabled": false
+    }
+]
