@@ -208,3 +208,8 @@ func (r *runner) runInterval() {
 		r.run(nil)
 	}
 }
+
+// EventNode returns the event node.
+func EventNode() *events.EventNode {
+	return eventNode
+}

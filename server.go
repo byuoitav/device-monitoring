@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-	// start event node
 	// start jobs
 	go jobs.StartJobScheduler()
 
@@ -33,12 +32,11 @@ func main() {
 		MaxHeaderBytes: 1024 * 10,
 	}
 	router.StartServer(&server)
+
 	/*
 		// websocket
 		hub := socket.NewHub(en)
 		go WriteEventsToSocket(en, hub, statusinfrastructure.EventNodeStatus{})
-
-		go monitor(building, room, en)
 
 		port := ":10000"
 		// websocket
