@@ -154,6 +154,7 @@ func (r *runner) run(context interface{}) {
 	eventChan := make(chan events.Event, 100)
 	go func() {
 		for event := range eventChan {
+			log.L.Debugf("Publishing event: %+v", event)
 			eventNode.PublishEvent(events.APISuccess, event)
 		}
 	}()

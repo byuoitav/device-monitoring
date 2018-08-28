@@ -20,9 +20,9 @@ type PingJob struct {
 
 // Run runs the job.
 func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) {
-	devices, err := db.GetDB().GetDevicesByRoom(room)
+	devices, err := db.GetDB().GetDevicesByRoom(roomID)
 	if err != nil {
-		log.L.Warnf("error getting devices in room %v: %v", room, err)
+		log.L.Warnf("error getting devices in room %v: %v", roomID, err)
 	}
 
 	for _, device := range devices {
@@ -51,8 +51,8 @@ func pingTest(pinger *ping.Pinger, device structs.Device, eventWrite chan events
 		Hostname:         hostname,
 		Timestamp:        time.Now().Format(time.RFC3339),
 		LocalEnvironment: true,
-		Building:         building,
-		Room:             room,
+		Building:         buildingID,
+		Room:             roomID,
 		Event: events.EventInfo{
 			Type:       events.HEARTBEAT,
 			Requestor:  hostname,
