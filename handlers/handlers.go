@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -11,29 +10,30 @@ import (
 	"github.com/labstack/echo"
 )
 
-type HealthResponse struct {
-	Version string `json:"version"`
-	Status  int    `json:"statuscode"`
-}
-
-func Health(context echo.Context) error {
-	return context.JSON(http.StatusOK, "The fleet has moved out of lightspeed and we're preparing to - augh!")
-}
-
-func EventStatus(context echo.Context) error {
-	return nil
-}
-
+// GetHostname returns the hostname of the device we are on
 func GetHostname(context echo.Context) error {
-	pihn := os.Getenv("PI_HOSTNAME")
-	if len(pihn) == 0 {
-		return context.JSON(http.StatusInternalServerError, "PI Hostname not set")
+	hostname, err := os.Hostname()
+	if err != nil {
+		return context.Blob(http.StatusInternalServerError, "text/plain", []byte(err.Error()))
 	}
 
-	return context.JSON(http.StatusOK, pihn)
+	return context.Blob(http.StatusOK, "text/plain", []byte(hostname))
 }
 
-func GetIP(context echo.Context) error {
+// GetPiHostname returns the hostname of the device we are on
+func GetPiHostname(context echo.Context) error {
+	pihn := os.Getenv("PI_HOSTNAME")
+	if len(pihn) == 0 {
+		return context.Blob(http.StatusInternalServerError, "text/plain", []byte("PI_HOSTNAME not set."))
+	}
+
+	// TODO validate PI_HOSTNAME is in correct format
+
+	return context.Blob(http.StatusOK, "text/plain", []byte(pihn))
+}
+
+// GetIPAddress returns the ip address of the device we are on
+func GetIPAddress(context echo.Context) error {
 	var ip net.IP
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -53,8 +53,8 @@ func GetIP(context echo.Context) error {
 		return context.JSON(http.StatusInternalServerError, "IP Address not found")
 	}
 
-	log.Printf("My IP address is %v", ip.String())
-	return context.JSON(http.StatusOK, ip.String())
+	log.L.Infof("My IP address is %v", ip.String())
+	return context.Blob(http.StatusOK, "text/plain", []byte(ip.String()))
 }
 
 func GetNetworkConnectedStatus(context echo.Context) error {

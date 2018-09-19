@@ -20,11 +20,16 @@ func main() {
 
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
-	secure.GET("/hostname", handlers.GetHostname)
-	secure.GET("/ip", handlers.GetIP)
-	secure.GET("/network", handlers.GetNetworkConnectedStatus)
-	secure.GET("/reboot", handlers.RebootPi)
+	// device info endpoints
+	secure.GET("/device/hostname", handlers.GetHostname)
+	secure.GET("/device/ip", handlers.GetIPAddress)
+	secure.GET("/device/pihostname", handlers.GetPiHostname)
+	secure.GET("/device/network", handlers.GetNetworkConnectedStatus)
 
+	// action endpoints
+	secure.PUT("/reboot", handlers.RebootPi)
+
+	// dashboard
 	secure.Static("/dash", "dash-dist")
 
 	server := http.Server{
