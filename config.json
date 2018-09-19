@@ -14,7 +14,7 @@
         "triggers": [
             {
                 "type": "interval",
-                "every": "10s"
+                "every": "5m"
             }
         ],
         "enabled": true
