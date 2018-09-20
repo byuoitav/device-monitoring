@@ -9,13 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/byuoitav/common/events"
+	oldEvents "github.com/byuoitav/common/events"
 	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/common/v2/events"
 )
 
 var (
 	runners   []*runner
-	eventNode *events.EventNode
+	eventNode *oldEvents.EventNode
 )
 
 type runner struct {
@@ -86,8 +87,8 @@ func StartJobScheduler() {
 	if len(eventRouter) == 0 {
 		log.L.Fatalf("Event router address is not set.")
 	}
-	filters := []string{events.TestEnd, events.TestExternal}
-	eventNode = events.NewEventNode("Device Monitoring", eventRouter, filters)
+	filters := []string{oldEvents.TestEnd, oldEvents.TestExternal}
+	eventNode = oldEvents.NewEventNode("Device Monitoring", eventRouter, filters)
 
 	workers := 10
 	queue := 100
@@ -136,15 +137,18 @@ func StartJobScheduler() {
 	wg.Wait()
 }
 
+// TODO this needs to be updated with new event package
 func readEvents(outChan chan events.Event) {
 	for {
-		event, err := eventNode.Read()
+		//		event, err := eventNode.Read()
+		_, err := eventNode.Read()
 		if err != nil {
 			log.L.Warnf("unable to read event from eventNode: %v", err)
 			continue
 		}
 
-		outChan <- event
+		// TODO fix
+		// outChan <- event
 	}
 }
 
@@ -155,7 +159,8 @@ func (r *runner) run(context interface{}) {
 	go func() {
 		for event := range eventChan {
 			log.L.Debugf("Publishing event: %+v", event)
-			eventNode.PublishEvent(events.APISuccess, event)
+			// TODO fix
+			// eventNode.PublishEvent(oldEvents.APISuccess, event)
 		}
 	}()
 
@@ -210,6 +215,6 @@ func (r *runner) runInterval() {
 }
 
 // EventNode returns the event node.
-func EventNode() *events.EventNode {
+func EventNode() *oldEvents.EventNode {
 	return eventNode
 }

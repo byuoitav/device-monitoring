@@ -1,45 +1,49 @@
 package jobs
 
 import (
-	"fmt"
+	"encoding/json"
 	"regexp"
 
-	"github.com/byuoitav/common/events"
+	"github.com/byuoitav/common/v2/events"
 )
 
 // MatchConfig contains the logic for building/matching regex for events that come in
 type MatchConfig struct {
 	Count int
 
-	Hostname         string `json:"hostname,omitempty"`
-	Timestamp        string `json:"timestamp,omitempty"`
-	LocalEnvironment string `json:"localEnvironment,omitempty"`
-	Building         string `json:"building,omitempty"`
-	Room             string `json:"room,omitempty"`
-
-	Event struct {
-		Type           string `json:"type,omitempty"`
-		Requestor      string `json:"requestor,omitempty"`
-		EventCause     string `json:"eventCause,omitempty"`
-		Device         string `json:"device,omitempty"`
-		EventInfoKey   string `json:"eventInfoKey,omitempty"`
-		EventInfoValue string `json:"eventInfoValue,omitempty"`
-	} `json:"event,omitempty"`
+	GeneratingSystem string   `json:"generating-system"`
+	Timestamp        string   `json:"timestamp"`
+	EventTags        []string `json:"event-tags"`
+	Key              string   `json:"key"`
+	Value            string   `json:"value"`
+	User             string   `json:"user"`
+	Data             string   `json:"data,omitempty"`
+	TargetDevice     struct {
+		BuildingID string `json:"buildingID,omitempty"`
+		RoomID     string `json:"roomID,omitempty"`
+		DeviceID   string `json:"deviceID,omitempty"`
+	} `json:"target-device"`
+	TargetRoom struct {
+		BuildingID string `json:"buildingID,omitempty"`
+		RoomID     string `json:"roomID,omitempty"`
+	} `json:"target-room"`
 
 	Regex struct {
-		Hostname         *regexp.Regexp
+		GeneratingSystem *regexp.Regexp
 		Timestamp        *regexp.Regexp
-		LocalEnvironment *regexp.Regexp
-		Building         *regexp.Regexp
-		Room             *regexp.Regexp
-
-		Event struct {
-			Type           *regexp.Regexp
-			Requestor      *regexp.Regexp
-			EventCause     *regexp.Regexp
-			Device         *regexp.Regexp
-			EventInfoKey   *regexp.Regexp
-			EventInfoValue *regexp.Regexp
+		EventTags        []*regexp.Regexp
+		Key              *regexp.Regexp
+		Value            *regexp.Regexp
+		User             *regexp.Regexp
+		Data             *regexp.Regexp
+		TargetDevice     struct {
+			BuildingID *regexp.Regexp
+			RoomID     *regexp.Regexp
+			DeviceID   *regexp.Regexp
+		}
+		TargetRoom struct {
+			BuildingID *regexp.Regexp
+			RoomID     *regexp.Regexp
 		}
 	}
 }
@@ -48,8 +52,8 @@ func (r *runner) buildMatchRegex() {
 	r.Trigger.Match.Count = 0
 
 	// build the regex for each field
-	if len(r.Trigger.Match.Hostname) > 0 {
-		r.Trigger.Match.Regex.Hostname = regexp.MustCompile(r.Trigger.Match.Hostname)
+	if len(r.Trigger.Match.GeneratingSystem) > 0 {
+		r.Trigger.Match.Regex.GeneratingSystem = regexp.MustCompile(r.Trigger.Match.GeneratingSystem)
 		r.Trigger.Match.Count++
 	}
 
@@ -58,48 +62,53 @@ func (r *runner) buildMatchRegex() {
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.LocalEnvironment) > 0 {
-		r.Trigger.Match.Regex.LocalEnvironment = regexp.MustCompile(r.Trigger.Match.LocalEnvironment)
+	if len(r.Trigger.Match.Key) > 0 {
+		r.Trigger.Match.Regex.Key = regexp.MustCompile(r.Trigger.Match.Key)
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.Building) > 0 {
-		r.Trigger.Match.Regex.Building = regexp.MustCompile(r.Trigger.Match.Building)
+	if len(r.Trigger.Match.Value) > 0 {
+		r.Trigger.Match.Regex.Value = regexp.MustCompile(r.Trigger.Match.Value)
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.Room) > 0 {
-		r.Trigger.Match.Regex.Room = regexp.MustCompile(r.Trigger.Match.Room)
+	if len(r.Trigger.Match.User) > 0 {
+		r.Trigger.Match.Regex.User = regexp.MustCompile(r.Trigger.Match.User)
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.Event.Type) > 0 {
-		r.Trigger.Match.Regex.Event.Type = regexp.MustCompile(r.Trigger.Match.Event.Type)
+	if len(r.Trigger.Match.Data) > 0 {
+		r.Trigger.Match.Regex.Data = regexp.MustCompile(r.Trigger.Match.Data)
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.Event.Requestor) > 0 {
-		r.Trigger.Match.Regex.Event.Requestor = regexp.MustCompile(r.Trigger.Match.Event.Requestor)
+	if len(r.Trigger.Match.TargetDevice.BuildingID) > 0 {
+		r.Trigger.Match.Regex.TargetDevice.BuildingID = regexp.MustCompile(r.Trigger.Match.TargetDevice.BuildingID)
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.Event.EventCause) > 0 {
-		r.Trigger.Match.Regex.Event.EventCause = regexp.MustCompile(r.Trigger.Match.Event.EventCause)
+	if len(r.Trigger.Match.TargetDevice.RoomID) > 0 {
+		r.Trigger.Match.Regex.TargetDevice.RoomID = regexp.MustCompile(r.Trigger.Match.TargetDevice.RoomID)
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.Event.Device) > 0 {
-		r.Trigger.Match.Regex.Event.Device = regexp.MustCompile(r.Trigger.Match.Event.Device)
+	if len(r.Trigger.Match.TargetDevice.DeviceID) > 0 {
+		r.Trigger.Match.Regex.TargetDevice.DeviceID = regexp.MustCompile(r.Trigger.Match.TargetDevice.DeviceID)
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.Event.EventInfoKey) > 0 {
-		r.Trigger.Match.Regex.Event.EventInfoKey = regexp.MustCompile(r.Trigger.Match.Event.EventInfoKey)
+	if len(r.Trigger.Match.TargetRoom.BuildingID) > 0 {
+		r.Trigger.Match.Regex.TargetRoom.BuildingID = regexp.MustCompile(r.Trigger.Match.TargetRoom.BuildingID)
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.Event.EventInfoValue) > 0 {
-		r.Trigger.Match.Regex.Event.EventInfoValue = regexp.MustCompile(r.Trigger.Match.Event.EventInfoValue)
+	if len(r.Trigger.Match.TargetRoom.RoomID) > 0 {
+		r.Trigger.Match.Regex.TargetRoom.RoomID = regexp.MustCompile(r.Trigger.Match.TargetRoom.RoomID)
+		r.Trigger.Match.Count++
+	}
+
+	for _, tag := range r.Trigger.Match.EventTags {
+		r.Trigger.Match.Regex.EventTags = append(r.Trigger.Match.Regex.EventTags, regexp.MustCompile(tag))
 		r.Trigger.Match.Count++
 	}
 }
@@ -109,79 +118,105 @@ func (r *runner) doesEventMatch(event *events.Event) bool {
 		return true
 	}
 
-	if r.Trigger.Match.Regex.Hostname != nil {
-		reg := r.Trigger.Match.Regex.Hostname.Copy()
-		if !reg.MatchString(event.Hostname) {
+	if r.Trigger.Match.Regex.GeneratingSystem != nil {
+		reg := r.Trigger.Match.Regex.GeneratingSystem.Copy()
+		if !reg.MatchString(event.GeneratingSystem) {
 			return false
 		}
 	}
 
 	if r.Trigger.Match.Regex.Timestamp != nil {
 		reg := r.Trigger.Match.Regex.Timestamp.Copy()
-		if !reg.MatchString(event.Timestamp) {
+		if !reg.MatchString(event.Timestamp.String()) {
 			return false
 		}
 	}
 
-	if r.Trigger.Match.Regex.LocalEnvironment != nil {
-		reg := r.Trigger.Match.Regex.LocalEnvironment.Copy()
-		if !reg.MatchString(fmt.Sprintf("%v", event.LocalEnvironment)) {
+	if len(r.Trigger.Match.Regex.EventTags) > 0 {
+		matched := 0
+
+		for _, regex := range r.Trigger.Match.Regex.EventTags {
+			reg := regex.Copy()
+
+			for _, tag := range event.EventTags {
+				if reg.MatchString(tag) {
+					matched++
+					break
+				}
+			}
+		}
+
+		if matched != len(r.Trigger.Match.Regex.EventTags) {
 			return false
 		}
 	}
 
-	if r.Trigger.Match.Regex.Building != nil {
-		reg := r.Trigger.Match.Regex.Building.Copy()
-		if !reg.MatchString(event.Building) {
+	if r.Trigger.Match.Regex.Key != nil {
+		reg := r.Trigger.Match.Regex.Key.Copy()
+		if !reg.MatchString(event.Key) {
 			return false
 		}
 	}
 
-	if r.Trigger.Match.Regex.Room != nil {
-		reg := r.Trigger.Match.Regex.Room.Copy()
-		if !reg.MatchString(event.Room) {
+	if r.Trigger.Match.Regex.Value != nil {
+		reg := r.Trigger.Match.Regex.Value.Copy()
+		if !reg.MatchString(event.Value) {
 			return false
 		}
 	}
 
-	if r.Trigger.Match.Regex.Event.Type != nil {
-		reg := r.Trigger.Match.Regex.Event.Type.Copy()
-		if !reg.MatchString(fmt.Sprintf("%v", event.Event.Type)) {
+	if r.Trigger.Match.Regex.User != nil {
+		reg := r.Trigger.Match.Regex.User.Copy()
+		if !reg.MatchString(event.User) {
 			return false
 		}
 	}
 
-	if r.Trigger.Match.Regex.Event.Requestor != nil {
-		reg := r.Trigger.Match.Regex.Event.Requestor.Copy()
-		if !reg.MatchString(event.Event.Requestor) {
+	if r.Trigger.Match.Regex.Data != nil {
+		reg := r.Trigger.Match.Regex.Data.Copy()
+		// convert event.Data to a json string
+		bytes, err := json.Marshal(event.Data)
+		if err != nil {
+			return false
+		}
+
+		// or should i do fmt.Sprintf?
+		if !reg.MatchString(string(bytes[:])) {
 			return false
 		}
 	}
 
-	if r.Trigger.Match.Regex.Event.EventCause != nil {
-		reg := r.Trigger.Match.Regex.Event.EventCause.Copy()
-		if !reg.MatchString(fmt.Sprintf("%v", event.Event.EventCause)) {
+	if r.Trigger.Match.Regex.TargetDevice.BuildingID != nil {
+		reg := r.Trigger.Match.Regex.TargetDevice.BuildingID.Copy()
+		if !reg.MatchString(event.TargetDevice.BuildingID) {
 			return false
 		}
 	}
 
-	if r.Trigger.Match.Regex.Event.Device != nil {
-		reg := r.Trigger.Match.Regex.Event.Device.Copy()
-		if !reg.MatchString(event.Event.Device) {
+	if r.Trigger.Match.Regex.TargetDevice.RoomID != nil {
+		reg := r.Trigger.Match.Regex.TargetDevice.RoomID.Copy()
+		if !reg.MatchString(event.TargetDevice.RoomID) {
 			return false
 		}
 	}
 
-	if r.Trigger.Match.Regex.Event.EventInfoKey != nil {
-		reg := r.Trigger.Match.Regex.Event.EventInfoKey.Copy()
-		if !reg.MatchString(event.Event.EventInfoKey) {
+	if r.Trigger.Match.Regex.TargetDevice.DeviceID != nil {
+		reg := r.Trigger.Match.Regex.TargetDevice.DeviceID.Copy()
+		if !reg.MatchString(event.TargetDevice.DeviceID) {
 			return false
 		}
 	}
 
-	if r.Trigger.Match.Regex.Event.EventInfoValue != nil {
-		reg := r.Trigger.Match.Regex.Event.EventInfoValue.Copy()
-		if !reg.MatchString(event.Event.EventInfoValue) {
+	if r.Trigger.Match.Regex.TargetRoom.BuildingID != nil {
+		reg := r.Trigger.Match.Regex.TargetRoom.BuildingID.Copy()
+		if !reg.MatchString(event.TargetRoom.BuildingID) {
+			return false
+		}
+	}
+
+	if r.Trigger.Match.Regex.TargetRoom.RoomID != nil {
+		reg := r.Trigger.Match.Regex.TargetRoom.RoomID.Copy()
+		if !reg.MatchString(event.TargetRoom.RoomID) {
 			return false
 		}
 	}

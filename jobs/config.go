@@ -3,7 +3,7 @@ package jobs
 import (
 	"time"
 
-	"github.com/byuoitav/common/events"
+	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring-microservice/jobs/ask"
 )
 

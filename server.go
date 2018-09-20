@@ -21,6 +21,7 @@ func main() {
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
 	// device info endpoints
+	secure.GET("/device", handlers.GetDeviceInfo)
 	secure.GET("/device/hostname", handlers.GetHostname)
 	secure.GET("/device/ip", handlers.GetIPAddress)
 	secure.GET("/device/pihostname", handlers.GetPiHostname)
