@@ -23,13 +23,13 @@ func GetHostname(context echo.Context) error {
 	return context.Blob(http.StatusOK, "text/plain", []byte(hostname))
 }
 
-// GetPiHostname returns the hostname of the device we are on
-func GetPiHostname(context echo.Context) error {
-	hostname, err := pi.PiHostname()
+// GetDeviceID returns the hostname of the device we are on
+func GetDeviceID(context echo.Context) error {
+	id, err := pi.DeviceID()
 	if err != nil {
 		return context.Blob(http.StatusInternalServerError, "text/plain", []byte(err.Error()))
 	}
-	return context.Blob(http.StatusOK, "text/plain", []byte(hostname))
+	return context.Blob(http.StatusOK, "text/plain", []byte(id))
 }
 
 // GetIPAddress returns the ip address of the device we are on

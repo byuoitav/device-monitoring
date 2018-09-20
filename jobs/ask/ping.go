@@ -1,7 +1,6 @@
 package ask
 
 import (
-	"os"
 	"strings"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring-microservice/pi"
 	ping "github.com/sparrc/go-ping"
 )
 
@@ -21,9 +21,9 @@ type PingJob struct {
 
 // Run runs the job.
 func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) {
-	devices, err := db.GetDB().GetDevicesByRoom(roomID)
+	devices, err := db.GetDB().GetDevicesByRoom(pi.MustRoomID())
 	if err != nil {
-		log.L.Warnf("error getting devices in room %v: %v", roomID, err)
+		log.L.Warnf("error getting devices in room %v: %v", pi.MustRoomID(), err)
 	}
 
 	for _, device := range devices {
@@ -48,18 +48,14 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) {
 func pingTest(pinger *ping.Pinger, device structs.Device, eventWrite chan events.Event) {
 	pinger.Run()
 
-	hostname, _ := os.Hostname()
 	event := events.Event{
-		GeneratingSystem: hostname,
+		GeneratingSystem: pi.MustHostname(),
 		Timestamp:        time.Now(),
 		EventTags: []string{
 			events.Heartbeat,
 		},
-		TargetRoom: events.BasicRoomInfo{
-			BuildingID: buildingID,
-			RoomID:     roomID,
-		},
-		TargetDevice: events.GenerateBasicDeviceInfo(hostname),
+		TargetRoom:   pi.MustRoomID(),
+		TargetDevice: events.GenerateBasicDeviceInfo(pi.MustDeviceID()),
 	}
 
 	stats := pinger.Statistics()

@@ -20,6 +20,16 @@ func Hostname() (string, *nerr.E) {
 	return hostname, nil
 }
 
+// MustHostname returns the hostname of the device, and panics if it fails
+func MustHostname() string {
+	hostname, err := Hostname()
+	if err != nil {
+		log.L.Fatalf("failed to get hostname: %s", err.Error())
+	}
+
+	return hostname
+}
+
 // IPAddress gets the public ip address of the device
 func IPAddress() (net.IP, *nerr.E) {
 	var ip net.IP

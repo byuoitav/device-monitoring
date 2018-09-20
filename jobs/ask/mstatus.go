@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/status"
 	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring-microservice/pi"
 )
 
 // MStatusJob checks the mstatus of important microservices, and reports their status.
@@ -29,18 +29,20 @@ var microserviceURLs = map[string]int{
 func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) {
 	log.L.Infof("Getting mstatus info...")
 
-	hostname, _ := os.Hostname()
 	event := events.Event{
-		GeneratingSystem: hostname,
+		GeneratingSystem: pi.MustHostname(),
 		Timestamp:        time.Now(),
 		EventTags: []string{
 			events.Heartbeat,
 		},
+		/* TODO
 		TargetRoom: events.BasicRoomInfo{
 			BuildingID: buildingID,
 			RoomID:     roomID,
 		},
-		TargetDevice: events.GenerateBasicDeviceInfo(hostname),
+		*/
+		TargetRoom:   pi.MustRoomID(),
+		TargetDevice: events.GenerateBasicDeviceInfo(pi.MustDeviceID()),
 	}
 
 	for name, port := range microserviceURLs {

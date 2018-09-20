@@ -18,15 +18,12 @@ type MatchConfig struct {
 	Value            string   `json:"value"`
 	User             string   `json:"user"`
 	Data             string   `json:"data,omitempty"`
+	TargetRoom       string   `json:"target-room"`
 	TargetDevice     struct {
 		BuildingID string `json:"buildingID,omitempty"`
 		RoomID     string `json:"roomID,omitempty"`
 		DeviceID   string `json:"deviceID,omitempty"`
 	} `json:"target-device"`
-	TargetRoom struct {
-		BuildingID string `json:"buildingID,omitempty"`
-		RoomID     string `json:"roomID,omitempty"`
-	} `json:"target-room"`
 
 	Regex struct {
 		GeneratingSystem *regexp.Regexp
@@ -36,14 +33,11 @@ type MatchConfig struct {
 		Value            *regexp.Regexp
 		User             *regexp.Regexp
 		Data             *regexp.Regexp
+		TargetRoom       *regexp.Regexp
 		TargetDevice     struct {
 			BuildingID *regexp.Regexp
 			RoomID     *regexp.Regexp
 			DeviceID   *regexp.Regexp
-		}
-		TargetRoom struct {
-			BuildingID *regexp.Regexp
-			RoomID     *regexp.Regexp
 		}
 	}
 }
@@ -97,13 +91,8 @@ func (r *runner) buildMatchRegex() {
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.TargetRoom.BuildingID) > 0 {
-		r.Trigger.Match.Regex.TargetRoom.BuildingID = regexp.MustCompile(r.Trigger.Match.TargetRoom.BuildingID)
-		r.Trigger.Match.Count++
-	}
-
-	if len(r.Trigger.Match.TargetRoom.RoomID) > 0 {
-		r.Trigger.Match.Regex.TargetRoom.RoomID = regexp.MustCompile(r.Trigger.Match.TargetRoom.RoomID)
+	if len(r.Trigger.Match.TargetRoom) > 0 {
+		r.Trigger.Match.Regex.TargetRoom = regexp.MustCompile(r.Trigger.Match.TargetRoom)
 		r.Trigger.Match.Count++
 	}
 
@@ -207,16 +196,9 @@ func (r *runner) doesEventMatch(event *events.Event) bool {
 		}
 	}
 
-	if r.Trigger.Match.Regex.TargetRoom.BuildingID != nil {
-		reg := r.Trigger.Match.Regex.TargetRoom.BuildingID.Copy()
-		if !reg.MatchString(event.TargetRoom.BuildingID) {
-			return false
-		}
-	}
-
-	if r.Trigger.Match.Regex.TargetRoom.RoomID != nil {
-		reg := r.Trigger.Match.Regex.TargetRoom.RoomID.Copy()
-		if !reg.MatchString(event.TargetRoom.RoomID) {
+	if r.Trigger.Match.Regex.TargetRoom != nil {
+		reg := r.Trigger.Match.Regex.TargetRoom.Copy()
+		if !reg.MatchString(event.TargetRoom) {
 			return false
 		}
 	}

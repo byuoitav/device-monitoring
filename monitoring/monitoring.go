@@ -1,20 +1,6 @@
 package monitoring
 
-import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"strings"
-	"time"
-
-	"github.com/byuoitav/av-api/base"
-	"github.com/byuoitav/common/events"
-	"github.com/byuoitav/touchpanel-ui-microservice/uiconfig"
-	"github.com/fatih/color"
-)
+/*
 
 var eventnode *events.EventNode
 var ticker time.Ticker
@@ -213,3 +199,4 @@ func ShouldIMonitorAPI() bool {
 	}
 	return true
 }
+*/

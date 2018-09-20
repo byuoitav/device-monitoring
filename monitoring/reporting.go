@@ -1,12 +1,6 @@
 package monitoring
 
-import (
-	"os"
-	"strings"
-	"time"
-
-	"github.com/byuoitav/common/events"
-)
+/*
 
 func SendEvent(Type events.EventType,
 	Cause events.EventCause,
@@ -95,3 +89,4 @@ func Publish(e events.Event, Error bool) error {
 
 	return err
 }
+*/
