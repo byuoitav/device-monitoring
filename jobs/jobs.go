@@ -31,7 +31,7 @@ func init() {
 	// parse configuration
 	path := os.Getenv("JOB_CONFIG_LOCATION")
 	if len(path) < 1 {
-		path = "./config.json"
+		path = "./config.json" // default config location
 	}
 	log.L.Infof("Parsing job configuration from %v", path)
 
@@ -76,7 +76,6 @@ func init() {
 			log.L.Infof("Adding runner for job '%v', trigger #%v. Execution Type: %v", runner.Config.Name, runner.TriggerIndex, runner.Trigger.Type)
 			runners = append(runners, runner)
 		}
-
 	}
 }
 
@@ -193,7 +192,7 @@ func (r *runner) runDaily() {
 
 	for {
 		<-timer.C
-		r.run(nil)
+		r.run(r.Config.Context)
 
 		timer.Reset(24 * time.Hour)
 	}
@@ -210,7 +209,7 @@ func (r *runner) runInterval() {
 
 	ticker := time.NewTicker(interval)
 	for range ticker.C {
-		r.run(nil)
+		r.run(r.Config.Context)
 	}
 }
 

@@ -18,7 +18,7 @@ type MatchConfig struct {
 	Value            string   `json:"value"`
 	User             string   `json:"user"`
 	Data             string   `json:"data,omitempty"`
-	TargetRoom       string   `json:"target-room"`
+	AffectedRoom     string   `json:"affected-room"`
 	TargetDevice     struct {
 		BuildingID string `json:"buildingID,omitempty"`
 		RoomID     string `json:"roomID,omitempty"`
@@ -33,7 +33,7 @@ type MatchConfig struct {
 		Value            *regexp.Regexp
 		User             *regexp.Regexp
 		Data             *regexp.Regexp
-		TargetRoom       *regexp.Regexp
+		AffectedRoom     *regexp.Regexp
 		TargetDevice     struct {
 			BuildingID *regexp.Regexp
 			RoomID     *regexp.Regexp
@@ -91,8 +91,8 @@ func (r *runner) buildMatchRegex() {
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.TargetRoom) > 0 {
-		r.Trigger.Match.Regex.TargetRoom = regexp.MustCompile(r.Trigger.Match.TargetRoom)
+	if len(r.Trigger.Match.AffectedRoom) > 0 {
+		r.Trigger.Match.Regex.AffectedRoom = regexp.MustCompile(r.Trigger.Match.AffectedRoom)
 		r.Trigger.Match.Count++
 	}
 
@@ -196,9 +196,9 @@ func (r *runner) doesEventMatch(event *events.Event) bool {
 		}
 	}
 
-	if r.Trigger.Match.Regex.TargetRoom != nil {
-		reg := r.Trigger.Match.Regex.TargetRoom.Copy()
-		if !reg.MatchString(event.TargetRoom) {
+	if r.Trigger.Match.Regex.AffectedRoom != nil {
+		reg := r.Trigger.Match.Regex.AffectedRoom.Copy()
+		if !reg.MatchString(event.AffectedRoom) {
 			return false
 		}
 	}

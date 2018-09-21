@@ -54,7 +54,7 @@ func pingTest(pinger *ping.Pinger, device structs.Device, eventWrite chan events
 		EventTags: []string{
 			events.Heartbeat,
 		},
-		TargetRoom:   pi.MustRoomID(),
+		AffectedRoom: pi.MustRoomID(),
 		TargetDevice: events.GenerateBasicDeviceInfo(pi.MustDeviceID()),
 	}
 

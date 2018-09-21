@@ -17,17 +17,20 @@ import (
 type MStatusJob struct {
 }
 
-var microserviceURLs = map[string]int{
-	"av-api":            8000,
-	"event-router":      7000,
-	"touchpanel-ui":     8888,
-	"event-translator":  6998,
-	"device-monitoring": 10000,
+type mStatusConfig struct {
+	Name string `json:"name"`
+	Port int    `json:"port"`
 }
 
 // Run runs the job.
 func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) {
+	log.SetLevel("debug")
 	log.L.Infof("Getting mstatus info...")
+
+	microservices, ok := ctx.([]interface{})
+	if !ok {
+		log.L.Warnf("Bad context passed into mstatus job: %v", ctx)
+	}
 
 	event := events.Event{
 		GeneratingSystem: pi.MustHostname(),
@@ -35,19 +38,24 @@ func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) {
 		EventTags: []string{
 			events.Heartbeat,
 		},
-		/* TODO
-		TargetRoom: events.BasicRoomInfo{
-			BuildingID: buildingID,
-			RoomID:     roomID,
-		},
-		*/
-		TargetRoom:   pi.MustRoomID(),
+		AffectedRoom: pi.MustRoomID(),
 		TargetDevice: events.GenerateBasicDeviceInfo(pi.MustDeviceID()),
 	}
 
-	for name, port := range microserviceURLs {
-		event.Key = fmt.Sprintf("%s-mstatus", name)
+	for _, microservice := range microservices {
+		data, ok := microservice.(map[string]interface{})
+		if !ok {
+			log.L.Warnf("One of the values in the context array is malformed.")
+			continue
+		}
+
+		name := data["name"]
+		port := data["port"]
+
+		event.Key = fmt.Sprintf("%v-mstatus", name)
 		event.Value = status.Dead // default status
+
+		log.L.Debugf("Getting %v, using port %v", event.Key, port)
 
 		// make request
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%v/mstatus", port))
@@ -83,4 +91,6 @@ func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) {
 		event.Data = s
 		eventWrite <- event
 	}
+
+	log.L.Infof("Finished getting mstatus info.")
 }

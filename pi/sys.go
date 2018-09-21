@@ -66,7 +66,13 @@ func IsConnectedToInternet() bool {
 }
 
 // Reboot reboots the device.
-func Reboot() {
-	log.L.Warnf("*!!* REBOOTING DEVICE NOW *!!*")
-	syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
+func Reboot() *nerr.E {
+	log.L.Infof("*!!* REBOOTING DEVICE NOW *!!*")
+
+	err := syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
+	if err != nil {
+		return nerr.Translate(err).Addf("failed to reboot device")
+	}
+
+	return nil
 }

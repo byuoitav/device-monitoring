@@ -19,15 +19,17 @@ var (
 			Interval: 3 * time.Second,
 			Timeout:  20 * time.Second,
 		},
-		"monitoring": &ask.MonitoringJob{},
+		"state-update": &ask.StateUpdateJob{},
+		"mstatus":      &ask.MStatusJob{},
 	}
 )
 
 // JobConfig defines a configuration of a specific job.
 type JobConfig struct {
-	Name     string    `json:"name"`
-	Triggers []Trigger `json:"triggers"`
-	Enabled  bool      `json:"enabled"`
+	Name     string      `json:"name"`
+	Triggers []Trigger   `json:"triggers"`
+	Enabled  bool        `json:"enabled"`
+	Context  interface{} `json:"context"`
 }
 
 // Trigger matches something that causes a job to be ran.

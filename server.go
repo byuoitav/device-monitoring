@@ -28,7 +28,7 @@ func main() {
 	secure.GET("/device/network", handlers.IsConnectedToInternet)
 
 	// action endpoints
-	secure.PUT("/reboot", handlers.RebootPi)
+	secure.PUT("/device/reboot", handlers.RebootPi)
 
 	// dashboard
 	secure.Static("/dash", "dash-dist")
@@ -68,41 +68,6 @@ func Pulse(context echo.Context) error {
 	}
 
 	return context.JSON(http.StatusOK, "Pulse sent.")
-}
-
-func BindEventNode(en *events.EventNode) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set(events.ContextEventNode, en)
-			return next(c)
-		}
-	}
-}
-
-func monitor(building, room string, en *events.EventNode) {
-	currentlyMonitoring := false
-
-	for {
-		shouldIMonitor := monitoring.ShouldIMonitorAPI()
-
-		if shouldIMonitor && !currentlyMonitoring {
-			color.Set(color.FgYellow, color.Bold)
-			log.Printf("Starting monitoring of API")
-			color.Unset()
-			addr = monitoring.StartMonitoring(time.Second*300, "localhost:8000", building, room, en)
-			currentlyMonitoring = true
-		} else if currentlyMonitoring && shouldIMonitor {
-		} else {
-			color.Set(color.FgYellow, color.Bold)
-			log.Printf("Stopping monitoring of API")
-			color.Unset()
-
-			// stop monitoring?
-			monitoring.StopMonitoring()
-			currentlyMonitoring = false
-		}
-		time.Sleep(time.Second * 15)
-	}
 }
 
 func WriteEventsToSocket(en *events.EventNode, h *socket.Hub, t interface{}) {
