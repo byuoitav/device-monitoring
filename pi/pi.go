@@ -1,9 +1,7 @@
 package pi
 
 import (
-	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/byuoitav/common/log"
@@ -12,8 +10,7 @@ import (
 )
 
 var (
-	deviceID    = os.Getenv("PI_HOSTNAME")
-	roomIDregex = regexp.MustCompile(`.*-`)
+	deviceID = os.Getenv("PI_HOSTNAME")
 )
 
 // DeviceID returns the pi hostname of the device
@@ -39,6 +36,27 @@ func MustDeviceID() string {
 	return id
 }
 
+// BuildingID returns the room ID of the pi based on the hostname (everything before the last '-')
+func BuildingID() (string, *nerr.E) {
+	id, err := DeviceID()
+	if err != nil {
+		return "", err.Addf("failed to get buildingID")
+	}
+
+	split := strings.Split(id, "-")
+	return split[0], nil
+}
+
+// MustBuildingID returns the buildingID or panics if it fails
+func MustBuildingID() string {
+	id, err := BuildingID()
+	if err != nil {
+		log.L.Fatalf("failed to get buildingID: %s", err.Error())
+	}
+
+	return id
+}
+
 // RoomID returns the room ID of the pi based on the hostname (everything before the last '-')
 func RoomID() (string, *nerr.E) {
 	id, err := DeviceID()
@@ -46,13 +64,8 @@ func RoomID() (string, *nerr.E) {
 		return "", err.Addf("failed to get roomID")
 	}
 
-	reg := roomIDregex.Copy()
-	matched := reg.FindAllString(id, -1)
-	if len(matched) != 1 {
-		return "", nerr.Create(fmt.Sprintf("something is wrong with the deviceID %s. My roomIDregex matched: %v", id, matched), "string")
-	}
-
-	return strings.TrimSuffix(matched[0], "-"), nil
+	split := strings.Split(id, "-")
+	return split[0] + "-" + split[1], nil
 }
 
 // MustRoomID returns the buildingID or panics if it fails

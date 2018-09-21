@@ -23,8 +23,8 @@ func main() {
 	// device info endpoints
 	secure.GET("/device", handlers.GetDeviceInfo)
 	secure.GET("/device/hostname", handlers.GetHostname)
+	secure.GET("/device/id", handlers.GetDeviceID)
 	secure.GET("/device/ip", handlers.GetIPAddress)
-	secure.GET("/device/pihostname", handlers.GetDeviceID)
 	secure.GET("/device/network", handlers.IsConnectedToInternet)
 
 	// action endpoints

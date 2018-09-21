@@ -12,7 +12,33 @@ import (
 
 // GetDeviceInfo combines lots of device information into a response.
 func GetDeviceInfo(context echo.Context) error {
-	return nil
+	data := make(map[string]interface{})
+
+	internet := pi.IsConnectedToInternet()
+	data["internet-connectivity"] = internet
+
+	hostname, err := pi.Hostname()
+	if err != nil {
+		data["error"] = err
+		return context.JSON(http.StatusInternalServerError, data)
+	}
+	data["hostname"] = hostname
+
+	ip, err := pi.IPAddress()
+	if err != nil {
+		data["error"] = err
+		return context.JSON(http.StatusInternalServerError, data)
+	}
+	data["ip"] = ip
+
+	id, err := pi.DeviceID()
+	if err != nil {
+		data["error"] = err
+		return context.JSON(http.StatusInternalServerError, data)
+	}
+	data["id"] = id
+
+	return context.JSON(http.StatusOK, data)
 }
 
 // GetHostname returns the hostname of the device we are on

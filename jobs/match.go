@@ -18,8 +18,11 @@ type MatchConfig struct {
 	Value            string   `json:"value"`
 	User             string   `json:"user"`
 	Data             string   `json:"data,omitempty"`
-	AffectedRoom     string   `json:"affected-room"`
-	TargetDevice     struct {
+	AffectedRoom     struct {
+		BuildingID string `json:"buildingID,omitempty"`
+		RoomID     string `json:"roomID,omitempty"`
+	} `json:"affected-room"`
+	TargetDevice struct {
 		BuildingID string `json:"buildingID,omitempty"`
 		RoomID     string `json:"roomID,omitempty"`
 		DeviceID   string `json:"deviceID,omitempty"`
@@ -33,8 +36,11 @@ type MatchConfig struct {
 		Value            *regexp.Regexp
 		User             *regexp.Regexp
 		Data             *regexp.Regexp
-		AffectedRoom     *regexp.Regexp
-		TargetDevice     struct {
+		AffectedRoom     struct {
+			BuildingID *regexp.Regexp
+			RoomID     *regexp.Regexp
+		}
+		TargetDevice struct {
 			BuildingID *regexp.Regexp
 			RoomID     *regexp.Regexp
 			DeviceID   *regexp.Regexp
@@ -91,8 +97,13 @@ func (r *runner) buildMatchRegex() {
 		r.Trigger.Match.Count++
 	}
 
-	if len(r.Trigger.Match.AffectedRoom) > 0 {
-		r.Trigger.Match.Regex.AffectedRoom = regexp.MustCompile(r.Trigger.Match.AffectedRoom)
+	if len(r.Trigger.Match.AffectedRoom.BuildingID) > 0 {
+		r.Trigger.Match.Regex.AffectedRoom.BuildingID = regexp.MustCompile(r.Trigger.Match.AffectedRoom.BuildingID)
+		r.Trigger.Match.Count++
+	}
+
+	if len(r.Trigger.Match.AffectedRoom.RoomID) > 0 {
+		r.Trigger.Match.Regex.AffectedRoom.RoomID = regexp.MustCompile(r.Trigger.Match.AffectedRoom.RoomID)
 		r.Trigger.Match.Count++
 	}
 
@@ -196,9 +207,16 @@ func (r *runner) doesEventMatch(event *events.Event) bool {
 		}
 	}
 
-	if r.Trigger.Match.Regex.AffectedRoom != nil {
-		reg := r.Trigger.Match.Regex.AffectedRoom.Copy()
-		if !reg.MatchString(event.AffectedRoom) {
+	if r.Trigger.Match.Regex.AffectedRoom.BuildingID != nil {
+		reg := r.Trigger.Match.Regex.AffectedRoom.BuildingID.Copy()
+		if !reg.MatchString(event.AffectedRoom.BuildingID) {
+			return false
+		}
+	}
+
+	if r.Trigger.Match.Regex.AffectedRoom.RoomID != nil {
+		reg := r.Trigger.Match.Regex.AffectedRoom.RoomID.Copy()
+		if !reg.MatchString(event.AffectedRoom.RoomID) {
 			return false
 		}
 	}
