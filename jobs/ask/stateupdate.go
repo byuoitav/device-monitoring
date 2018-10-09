@@ -11,7 +11,7 @@ import (
 	"github.com/byuoitav/av-api/base"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/v2/events"
-	"github.com/byuoitav/device-monitoring-microservice/pi"
+	"github.com/byuoitav/device-monitoring/pi"
 )
 
 // StateUpdateJob is a job that gets the status of all the devices in the room, and pushes events from the status to "true up" the state of the room

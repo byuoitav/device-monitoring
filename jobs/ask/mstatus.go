@@ -10,7 +10,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/status"
 	"github.com/byuoitav/common/v2/events"
-	"github.com/byuoitav/device-monitoring-microservice/pi"
+	"github.com/byuoitav/device-monitoring/pi"
 )
 
 // MStatusJob checks the mstatus of important microservices, and reports their status.

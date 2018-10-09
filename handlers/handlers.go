@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/device-monitoring-microservice/pi"
+	"github.com/byuoitav/device-monitoring/pi"
 	"github.com/labstack/echo"
 )
 

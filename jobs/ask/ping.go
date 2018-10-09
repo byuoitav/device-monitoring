@@ -8,7 +8,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/common/v2/events"
-	"github.com/byuoitav/device-monitoring-microservice/pi"
+	"github.com/byuoitav/device-monitoring/pi"
 	ping "github.com/sparrc/go-ping"
 )
 

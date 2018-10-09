@@ -5,8 +5,8 @@ import (
 
 	"github.com/byuoitav/authmiddleware"
 	"github.com/byuoitav/common"
-	"github.com/byuoitav/device-monitoring-microservice/handlers"
-	"github.com/byuoitav/device-monitoring-microservice/jobs"
+	"github.com/byuoitav/device-monitoring/handlers"
+	"github.com/byuoitav/device-monitoring/jobs"
 	"github.com/labstack/echo"
 )
 

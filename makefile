@@ -33,6 +33,8 @@ NG1=dash
 AWS_S3_ADD=aws s3 cp
 S3_BUCKET=$(shell echo $(AWS_S3_SERVICES_BUCKET))
 
+all: deploy clean  
+
 build: build-x86 build-arm build-web
 
 build-x86:
@@ -53,6 +55,7 @@ clean:
 	$(GOCLEAN)
 	rm -f $(NAME)-bin
 	rm -f $(NAME)-arm
+	rm -f $(NAME).service
 	rm -rf files/
 
 run: $(NAME)-bin
@@ -70,14 +73,15 @@ ifneq "$(BRANCH)" "master"
 endif
 	$(GOGET) -d -v
 
-deploy: $(NAME)-arm $(NAME).service files/$(NG1)-dist
+deploy: $(NAME)-arm $(NAME).service files/$(NG1)-dist config.json
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
 	@echo adding files to $(S3_BUCKET)
-	$(AWS_S3_ADD) $(NAME)-arm s3://$(S3_BUCKET)/$(BRANCH)/device-monitoring
-	$(AWS_S3_ADD) $(NAME).service s3://$(S3_BUCKET)/$(BRANCH)/device-monitoring.service
-	$(AWS_S3_ADD) files/ s3://$(S3_BUCKET)/$(BRANCH)/files/ --recursive
+	$(AWS_S3_ADD) $(NAME)-arm s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/$(NAME)
+	$(AWS_S3_ADD) $(NAME).service s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/device-monitoring.service
+	$(AWS_S3_ADD) config.json s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/config.json
+	$(AWS_S3_ADD) files/ s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/ --recursive
 ifeq "$(BRANCH)" "development"
 	$(eval BRANCH=master)
 endif
@@ -89,8 +93,8 @@ $(NAME)-bin:
 $(NAME)-arm:
 	$(MAKE) build-arm
 
-$(NAME).service:
-
+$(NAME).service: $(NAME).service.tmpl
+	cat "$(NAME).service.tmpl" | envsubst > $(NAME).service
 
 files/$(NG1)-dist:
 	$(MAKE) build-web
