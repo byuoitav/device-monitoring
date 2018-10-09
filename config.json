@@ -1,0 +1,81 @@
+[
+    {
+        "name": "ping",
+        "triggers": [
+            {
+                "type": "interval",
+                "every": "2m"
+            }
+        ],
+        "enabled": false
+    },
+    {
+        "name": "state-update",
+        "triggers": [
+            {
+                "type": "interval",
+                "every": "10s"
+            }
+        ],
+        "enabled": true
+    },
+    {
+        "name": "mstatus",
+        "triggers": [
+            {
+                "type": "interval",
+                "every": "10m"
+            }
+        ],
+        "context": [
+            {
+                "name": "av-api",
+                "port": 8000
+            },
+            {
+                "name": "event-router",
+                "port": 7000
+            },
+            {
+                "name": "touchpanel-ui",
+                "port": 8888
+            },
+            {
+                "name": "event-translator",
+                "port": 7000
+            },
+            {
+                "name": "device-monitoring",
+                "port": 10000
+            }
+        ],
+        "enabled": false
+    },
+    {
+        "name": "example job",
+        "triggers": [
+            {
+                "type": "daily",
+                "at": "14:45:00-06:00"
+            },
+            {
+                "type": "interval",
+                "every": "5m"
+            },
+            {
+                "type": "match",
+                "match": {
+                    "hostname": "teton",
+                    "event": {
+                        "eventInfoKey": "button.*",
+                        "type": "CORE"
+                    }
+                }
+            },
+            {
+                "type": "match"
+            }
+        ],
+        "enabled": false
+    }
+]

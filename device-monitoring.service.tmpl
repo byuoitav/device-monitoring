@@ -1,0 +1,15 @@
+[Unit]
+Description=Device Monitoring Microservice
+After=docker.service
+Requires=docker.service
+
+[Service]
+WorkingDirectory=/byu/dmm/files/
+Environment=DB_ADDRESS="$DB_ADDRESS"
+Environment=DB_USERNAME="$DB_USERNAME"
+Environment=DB_PASSWORD="$DB_PASSWORD"
+Environment=EVENT_ROUTER_ADDRESS="$EVENT_ROUTER_ADDRESS"
+ExecStart=/byu/dmm/device-monitoring
+
+[Install]
+WantedBy=default.target
