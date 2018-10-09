@@ -70,13 +70,13 @@ ifneq "$(BRANCH)" "master"
 endif
 	$(GOGET) -d -v
 
-deploy: $(NAME)-arm device-monitoring.service files/$(NG1)-dist
+deploy: $(NAME)-arm $(NAME).service files/$(NG1)-dist
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
 	@echo adding files to $(S3_BUCKET)
 	$(AWS_S3_ADD) $(NAME)-arm s3://$(S3_BUCKET)/$(BRANCH)/device-monitoring
-	$(AWS_S3_ADD) device-monitoring.service s3://$(S3_BUCKET)/$(BRANCH)/device-monitoring.service
+	$(AWS_S3_ADD) $(NAME).service s3://$(S3_BUCKET)/$(BRANCH)/device-monitoring.service
 	$(AWS_S3_ADD) files/ s3://$(S3_BUCKET)/$(BRANCH)/files/ --recursive
 ifeq "$(BRANCH)" "development"
 	$(eval BRANCH=master)
@@ -88,6 +88,9 @@ $(NAME)-bin:
 
 $(NAME)-arm:
 	$(MAKE) build-arm
+
+$(NAME).service:
+
 
 files/$(NG1)-dist:
 	$(MAKE) build-web
