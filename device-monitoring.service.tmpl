@@ -4,12 +4,12 @@ After=docker.service
 Requires=docker.service
 
 [Service]
-WorkingDirectory=/byu/dmm/files/
+WorkingDirectory=/byu/device-monitoring/files/
 Environment=DB_ADDRESS="$DB_ADDRESS"
 Environment=DB_USERNAME="$DB_USERNAME"
 Environment=DB_PASSWORD="$DB_PASSWORD"
 Environment=EVENT_ROUTER_ADDRESS="$EVENT_ROUTER_ADDRESS"
-ExecStart=/byu/dmm/device-monitoring
+ExecStart=/byu/device-monitoring/device-monitoring
 
 [Install]
 WantedBy=default.target
