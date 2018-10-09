@@ -37,11 +37,7 @@ all:
 	deploy
 	clean
 
-ci:
-	./setenv.sh
-	deps
-	deploy
-	clean
+ci: setenv deps all
 
 build: build-x86 build-arm build-web
 
@@ -106,3 +102,6 @@ $(NAME).service: $(NAME).service.tmpl
 
 files/$(NG1)-dist:
 	$(MAKE) build-web
+
+setenv: setenv.sh
+	./setenv.sh
