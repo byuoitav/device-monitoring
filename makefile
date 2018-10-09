@@ -66,6 +66,9 @@ run: $(NAME)-bin
 	./$(NAME)-bin
 
 deps:
+	# TODO remove whenever this npm bug is fixed
+	# https://github.com/npm/npm/issues/20861
+	npm config set unsafe-perm true
 	$(NPM_INSTALL) -g @angular/cli
 ifneq "$(BRANCH)" "master"
 	# put vendored packages in here
