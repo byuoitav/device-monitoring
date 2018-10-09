@@ -33,7 +33,15 @@ NG1=dash
 AWS_S3_ADD=aws s3 cp
 S3_BUCKET=$(shell echo $(AWS_S3_SERVICES_BUCKET))
 
-all: deploy clean  
+all:
+	deploy
+	clean
+
+ci:
+	./setenv.sh
+	deps
+	deploy
+	clean
 
 build: build-x86 build-arm build-web
 
