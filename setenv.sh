@@ -24,6 +24,8 @@ elif [ "production" == "$CIRCLE_BRANCH" ]; then
     export DB_PASSWORD=$DB_PASSWORD
 fi
 
-[ -z "$DB_ADDRESS" ] && echo "DB_ADDRESS not set"; exit 1
-[ -z "$DB_USERNAME" ] && echo "DB_USERNAME not set"; exit 1
-[ -z "$DB_PASSWORD" ] && echo "DB_PASSWORD not set"; exit 1
+[ -z "$DB_ADDRESS" ] && echo "DB_ADDRESS not set" && exit 1
+[ -z "$DB_USERNAME" ] && echo "DB_USERNAME not set" && exit 1
+[ -z "$DB_PASSWORD" ] && echo "DB_PASSWORD not set" && exit 1
+
+exit 0
