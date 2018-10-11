@@ -24,7 +24,6 @@ type mStatusConfig struct {
 
 // Run runs the job.
 func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) {
-	log.SetLevel("debug")
 	log.L.Infof("Getting mstatus info...")
 
 	microservices, ok := ctx.([]interface{})

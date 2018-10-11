@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
-	oldEvents "github.com/byuoitav/common/events"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/v2/events"
 )
 
 var (
-	runners   []*runner
-	eventNode *oldEvents.EventNode
+	runners []*runner
+
+	eventNode *events.EventNode
 )
 
 type runner struct {
@@ -86,8 +86,9 @@ func StartJobScheduler() {
 	if len(eventRouter) == 0 {
 		log.L.Fatalf("Event router address is not set.")
 	}
-	filters := []string{oldEvents.TestEnd, oldEvents.TestExternal}
-	eventNode = oldEvents.NewEventNode("Device Monitoring", eventRouter, filters)
+
+	filters := []string{}
+	eventNode = events.NewEventNode("Device Monitoring", eventRouter, filters)
 
 	workers := 10
 	queue := 100
@@ -136,36 +137,37 @@ func StartJobScheduler() {
 	wg.Wait()
 }
 
+// RunJob takes a job and runs it with the given context
+func RunJob(job Job, ctx interface{}) {
+	eventChan := make(chan events.Event, 100)
+	go func() {
+		for event := range eventChan {
+			log.L.Debugf("Publishing event: %+v", event)
+			eventNode.PublishEvent(events.APISuccess, event)
+		}
+	}()
+
+	job.Run(ctx, eventChan)
+	close(eventChan)
+}
+
 // TODO this needs to be updated with new event package
 func readEvents(outChan chan events.Event) {
 	for {
-		//		event, err := eventNode.Read()
-		_, err := eventNode.Read()
+		event, err := eventNode.Read()
+		_, err = eventNode.Read()
 		if err != nil {
 			log.L.Warnf("unable to read event from eventNode: %v", err)
 			continue
 		}
 
-		// TODO fix
-		// outChan <- event
+		outChan <- event
 	}
 }
 
 func (r *runner) run(context interface{}) {
 	log.L.Debugf("[%s|%v] Running job...", r.Config.Name, r.TriggerIndex)
-
-	eventChan := make(chan events.Event, 100)
-	go func() {
-		for event := range eventChan {
-			log.L.Debugf("Publishing event: %+v", event)
-			// TODO fix
-			// eventNode.PublishEvent(oldEvents.APISuccess, event)
-		}
-	}()
-
-	r.Job.Run(context, eventChan)
-	close(eventChan)
-
+	RunJob(r.Job, context)
 	log.L.Debugf("[%s|%v] Finished.", r.Config.Name, r.TriggerIndex)
 }
 
@@ -214,6 +216,6 @@ func (r *runner) runInterval() {
 }
 
 // EventNode returns the event node.
-func EventNode() *oldEvents.EventNode {
+func EventNode() *events.EventNode {
 	return eventNode
 }

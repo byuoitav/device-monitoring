@@ -3,9 +3,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"time"
+	"sync"
 
-	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/device-monitoring/jobs/ask"
 	"github.com/byuoitav/device-monitoring/pi"
 	"github.com/labstack/echo"
 )
@@ -74,19 +74,13 @@ func IsConnectedToInternet(context echo.Context) error {
 	return context.Blob(http.StatusOK, "text/plain", []byte(fmt.Sprintf("%v", status)))
 }
 
-// RebootPi reboots the pi
-func RebootPi(context echo.Context) error {
-	go func() {
-		for i := 5; i > 0; i-- {
-			log.L.Infof("REBOOTING PI IN %v SECONDS", i)
-			time.Sleep(1 * time.Second)
-		}
+// RoomState returns the room state, but also pulses it around the room
+func RoomState(context echo.Context) error {
+	wg := sync.WaitGroup{}
 
-		err := pi.Reboot()
-		if err != nil {
-			log.L.Errorf("failed to reboot pi: %v", err.Error())
-		}
-	}()
+	// pulse the room state
+	job := ask.StateUpdateJob{}
+	job.Run(nil, nil)
 
-	return context.Blob(http.StatusOK, "text/plain", []byte("Rebooting in 5 seconds..."))
+	return context.JSON(http.StatusOK, "")
 }
