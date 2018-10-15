@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 )
 
@@ -138,8 +139,10 @@ func StartJobScheduler() {
 }
 
 // RunJob takes a job and runs it with the given context
-func RunJob(job Job, ctx interface{}) {
+func RunJob(job Job, ctx interface{}) interface{} {
 	eventChan := make(chan events.Event, 100)
+	defer close(eventChan)
+
 	go func() {
 		for event := range eventChan {
 			log.L.Debugf("Publishing event: %+v", event)
@@ -147,8 +150,7 @@ func RunJob(job Job, ctx interface{}) {
 		}
 	}()
 
-	job.Run(ctx, eventChan)
-	close(eventChan)
+	return job.Run(ctx, eventChan)
 }
 
 // TODO this needs to be updated with new event package
@@ -167,7 +169,17 @@ func readEvents(outChan chan events.Event) {
 
 func (r *runner) run(context interface{}) {
 	log.L.Debugf("[%s|%v] Running job...", r.Config.Name, r.TriggerIndex)
-	RunJob(r.Job, context)
+
+	resp := RunJob(r.Job, context)
+	switch v := resp.(type) {
+	case error:
+		log.L.Warnf("failed to run job: %s", v)
+	case *nerr.E:
+		log.L.Warnf("failed to run job: %s", v.String())
+	case nerr.E:
+		log.L.Warnf("failed to run job: %s", v.String())
+	}
+
 	log.L.Debugf("[%s|%v] Finished.", r.Config.Name, r.TriggerIndex)
 }
 

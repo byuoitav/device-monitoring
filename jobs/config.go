@@ -9,7 +9,7 @@ import (
 
 // Job . :)
 type Job interface {
-	Run(ctx interface{}, eventWrite chan events.Event)
+	Run(ctx interface{}, eventWrite chan events.Event) interface{}
 }
 
 var (

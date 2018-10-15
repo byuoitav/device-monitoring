@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/status"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/pi"
@@ -23,12 +24,12 @@ type mStatusConfig struct {
 }
 
 // Run runs the job.
-func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) {
+func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
 	log.L.Infof("Getting mstatus info...")
 
 	microservices, ok := ctx.([]interface{})
 	if !ok {
-		log.L.Warnf("Bad context passed into mstatus job: %v", ctx)
+		return nerr.Create(fmt.Sprintf("bad context passed into mstatus job: %v", ctx), "")
 	}
 
 	event := events.Event{
@@ -92,4 +93,6 @@ func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) {
 	}
 
 	log.L.Infof("Finished getting mstatus info.")
+
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/byuoitav/common/db"
 	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/pi"
@@ -20,10 +21,10 @@ type PingJob struct {
 }
 
 // Run runs the job.
-func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) {
+func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
 	devices, err := db.GetDB().GetDevicesByRoom(pi.MustRoomID())
 	if err != nil {
-		log.L.Warnf("error getting devices in room %v: %v", pi.MustRoomID(), err)
+		return nerr.Translate(err).Addf("unable to get devices in room %v: %v", pi.MustRoomID(), err)
 	}
 
 	for _, device := range devices {
@@ -43,6 +44,8 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) {
 
 		go pingTest(pinger, device, eventWrite)
 	}
+
+	return nil
 }
 
 func pingTest(pinger *ping.Pinger, device structs.Device, eventWrite chan events.Event) {

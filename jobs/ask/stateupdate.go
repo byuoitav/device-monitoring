@@ -10,6 +10,7 @@ import (
 
 	"github.com/byuoitav/av-api/base"
 	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/pi"
 )
@@ -19,34 +20,30 @@ type StateUpdateJob struct {
 }
 
 // Run runs the job.
-func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) {
+func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
 	log.L.Infof("Getting room status")
 
 	split := strings.Split(pi.MustRoomID(), "-")
 	resp, err := http.Get(fmt.Sprintf("http://localhost:8000/buildings/%v/rooms/%v", split[0], split[1]))
 	if err != nil {
-		log.L.Warnf("failed to get rooms status: %v", err)
-		return
+		return nerr.Translate(err).Addf("failed to get room status: %v", err)
 	}
 	defer resp.Body.Close()
 
 	// read the body
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.L.Warnf("failed to read API status response: %v", err)
-		return
+		return nerr.Translate(err).Addf("failed to read API status response: %v", err)
 	}
 
 	if resp.StatusCode/100 != 2 {
-		log.L.Warnf("non 200 response recieved after querying API status: %s", b)
-		return
+		return nerr.Create(fmt.Sprintf("non 200 response received after querying API status: %s", b), "")
 	}
 
 	var status base.PublicRoom
 	err = json.Unmarshal(b, &status)
 	if err != nil {
-		log.L.Warnf("failed to unmarshal API status response: %v", err)
-		return
+		return nerr.Translate(err).Addf("failed to unmarshal API status response: %v", err)
 	}
 
 	log.L.Infof("Successfully got room status.")
@@ -134,4 +131,6 @@ func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) {
 			}
 		}
 	}
+
+	return status
 }
