@@ -42,6 +42,7 @@ func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) interfac
 		TargetDevice: events.GenerateBasicDeviceInfo(pi.MustDeviceID()),
 	}
 
+	var ret []status.MStatus
 	for _, microservice := range microservices {
 		data, ok := microservice.(map[string]interface{})
 		if !ok {
@@ -90,9 +91,12 @@ func (m *MStatusJob) Run(ctx interface{}, eventWrite chan events.Event) interfac
 		event.Value = s.StatusCode
 		event.Data = s
 		eventWrite <- event
+
+		s.Name = fmt.Sprintf("%v", data["name"])
+		ret = append(ret, s)
 	}
 
 	log.L.Infof("Finished getting mstatus info.")
 
-	return nil
+	return ret
 }

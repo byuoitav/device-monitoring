@@ -16,6 +16,7 @@ import (
 
 var (
 	runners []*runner
+	configs []JobConfig
 
 	eventNode *events.EventNode
 )
@@ -43,7 +44,6 @@ func init() {
 	}
 
 	// unmarshal job config
-	var configs []JobConfig
 	err = json.Unmarshal(b, &configs)
 	if err != nil {
 		log.L.Fatalf("unable to parse job configuration: %v", err)
@@ -230,4 +230,15 @@ func (r *runner) runInterval() {
 // EventNode returns the event node.
 func EventNode() *events.EventNode {
 	return eventNode
+}
+
+// GetJobContext returns the context parsed for a specific job, even if it isn't enabled
+func GetJobContext(job string) interface{} {
+	for i := range configs {
+		if strings.EqualFold(configs[i].Name, job) {
+			return configs[i].Context
+		}
+	}
+
+	return nil
 }

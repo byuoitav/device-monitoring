@@ -26,6 +26,7 @@ func main() {
 	secure.GET("/device/id", handlers.GetDeviceID)
 	secure.GET("/device/ip", handlers.GetIPAddress)
 	secure.GET("/device/network", handlers.IsConnectedToInternet)
+	secure.GET("/device/mstatus", handlers.GetMStatusInfo)
 	secure.GET("/room/state", handlers.RoomState)
 
 	// action endpoints

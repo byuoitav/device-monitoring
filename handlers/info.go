@@ -6,6 +6,7 @@ import (
 
 	"github.com/byuoitav/av-api/base"
 	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/common/status"
 	"github.com/byuoitav/device-monitoring/jobs"
 	"github.com/byuoitav/device-monitoring/jobs/ask"
 	"github.com/byuoitav/device-monitoring/pi"
@@ -87,13 +88,30 @@ func RoomState(context echo.Context) error {
 		return context.String(http.StatusInternalServerError, v.Error())
 	case *nerr.E:
 		return context.String(http.StatusInternalServerError, v.Error())
-	case nerr.E:
-		return context.String(http.StatusInternalServerError, v.Error())
 	case base.PublicRoom:
 		return context.JSON(http.StatusOK, v)
 	case *base.PublicRoom:
 		return context.JSON(http.StatusOK, v)
 	default:
-		return context.String(http.StatusInternalServerError, fmt.Sprintf("something went wrong: %v", v))
+		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	}
+}
+
+// GetMStatusInfo returns the default mstatus info
+func GetMStatusInfo(context echo.Context) error {
+	job := &ask.MStatusJob{}
+	jobContext := jobs.GetJobContext("mstatus")
+
+	mstatus := jobs.RunJob(job, jobContext)
+
+	switch v := mstatus.(type) {
+	case error:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case *nerr.E:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case []status.MStatus:
+		return context.JSON(http.StatusOK, v)
+	default:
+		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
 	}
 }
