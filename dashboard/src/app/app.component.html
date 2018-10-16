@@ -1,0 +1,37 @@
+<div class="base">
+
+<mat-toolbar>
+    System Health Dashboard
+</mat-toolbar>
+
+<mat-sidenav-container class="sidenav-container">
+    <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.wide]="wideSidenav">
+        <button mat-button>
+            <i class="material-icons">home</i>
+            <ng-container *ngIf="wideSidenav">
+                Overview
+            </ng-container>
+        </button> 
+        <button mat-button>
+            <i class="material-icons">network_check</i>
+            <ng-container *ngIf="wideSidenav">
+                Network Connectivity
+            </ng-container>
+        </button> 
+
+        <button mat-button class="bottom" (click)="wideSidenav = !wideSidenav">
+            <i *ngIf="wideSidenav" class="material-icons">keyboard_arrow_left</i>
+            <i *ngIf="!wideSidenav" class="material-icons">keyboard_arrow_right</i>
+
+            <ng-container *ngIf="wideSidenav">
+                Collapse sidebar
+            </ng-container>
+        </button>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="content-container" [class.wide-nav]="wideSidenav">
+        Hi
+    </mat-sidenav-content>
+</mat-sidenav-container>
+
+</div>

@@ -1,0 +1,60 @@
+$matToolbarHeight: 64px;
+$wideSideNavWidth: 25vw;
+$thinSideNavWidth: 7vw;
+
+.base {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    max-height: 100%;
+    max-width: 100%;
+
+    overflow: hidden;
+}
+
+.sidenav-container {
+    height: calc(100% - #{$matToolbarHeight});
+}
+
+.sidenav {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: start;
+    width: $thinSideNavWidth;
+    overflow: hidden;
+    transition: width .3s;
+
+    &.wide {
+        width: $wideSideNavWidth;
+    }
+
+    button {
+        width: 100%;
+        text-align: left;
+        height: 9vh;
+
+        .material-icons {
+            margin-right: 1vw;
+        }
+    }
+
+    .bottom {
+        margin-top: auto;
+    }
+}
+
+.content-container {
+    width: calc(100% - #{$thinSideNavWidth});
+    margin-left: $thinSideNavWidth !important;
+
+    transition: margin-left .3s;
+
+    &.wide-nav {
+        width: calc(100% - #{$wideSideNavWidth});
+        margin-left: $wideSideNavWidth !important;
+    }
+}
