@@ -1,0 +1,8 @@
+{
+    "/device": {
+        "target": "http://localhost:10000",
+        "secure": false,
+        "logLevel": "debug",
+        "changeOrigin": true
+    }
+}
