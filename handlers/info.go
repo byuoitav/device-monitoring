@@ -17,9 +17,11 @@ import (
 func GetDeviceInfo(context echo.Context) error {
 	data := make(map[string]interface{})
 
+	// internet status
 	internet := pi.IsConnectedToInternet()
 	data["internet-connectivity"] = internet
 
+	// device hostname
 	hostname, err := pi.Hostname()
 	if err != nil {
 		data["error"] = err
@@ -27,6 +29,15 @@ func GetDeviceInfo(context echo.Context) error {
 	}
 	data["hostname"] = hostname
 
+	// device id
+	id, err := pi.DeviceID()
+	if err != nil {
+		data["error"] = err
+		return context.JSON(http.StatusInternalServerError, data)
+	}
+	data["id"] = id
+
+	// device ip address
 	ip, err := pi.IPAddress()
 	if err != nil {
 		data["error"] = err
@@ -34,12 +45,25 @@ func GetDeviceInfo(context echo.Context) error {
 	}
 	data["ip"] = ip
 
-	id, err := pi.DeviceID()
-	if err != nil {
-		data["error"] = err
+	// mstatus
+	job := &ask.MStatusJob{}
+	jobContext := jobs.GetJobContext("mstatus")
+
+	mstatus := jobs.RunJob(job, jobContext)
+
+	switch v := mstatus.(type) {
+	case error:
+		data["error"] = v
+		return context.JSON(http.StatusInternalServerError, data)
+	case *nerr.E:
+		data["error"] = v.String()
+		return context.JSON(http.StatusInternalServerError, data)
+	case []status.MStatus:
+		data["mstatus"] = mstatus
+	default:
+		data["error"] = fmt.Sprintf("unable to get mstatus: unexpected type from job: %v", v)
 		return context.JSON(http.StatusInternalServerError, data)
 	}
-	data["id"] = id
 
 	return context.JSON(http.StatusOK, data)
 }

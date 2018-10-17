@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { JsonConvert } from "json2typescript";
+import { JsonConvert, OperationMode, ValueCheckingMode } from "json2typescript";
 
 import { DeviceInfo } from "../objects";
 

@@ -33,7 +33,8 @@ func main() {
 	secure.PUT("/device/reboot", handlers.RebootPi)
 
 	// dashboard
-	secure.Static("/dash", "dash-dist")
+	// TODO redirect from /dash
+	secure.Static("/dashboard", "ui/dashboard")
 
 	server := http.Server{
 		Addr:           port,

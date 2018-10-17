@@ -10,9 +10,9 @@ import {
 } from "@angular/material";
 import "hammerjs";
 
+import { IconsModule } from "./icons.module";
 import { AppComponent } from "./components/app/app.component";
 import { OverviewComponent } from "./components/overview/overview.component";
-
 import { APIService } from "./services/api.service";
 
 const routes: Routes = [
@@ -33,6 +33,7 @@ const routes: Routes = [
     BrowserModule,
     BrowserAnimationsModule,
     HttpClientModule,
+    IconsModule,
     MatSidenavModule,
     MatButtonModule,
     MatToolbarModule,

@@ -1,7 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 
 import { APIService } from "../../services/api.service";
-import { DeviceInfo } from "../objects";
+import { DeviceInfo } from "../../objects";
 
 @Component({
   selector: "overview",
@@ -15,5 +15,6 @@ export class OverviewComponent implements OnInit {
 
   async ngOnInit() {
     this.deviceInfo = await this.api.getDeviceInfo();
+    console.log("deviceInfo", this.deviceInfo);
   }
 }

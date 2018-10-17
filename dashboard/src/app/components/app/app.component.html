@@ -1,7 +1,10 @@
 <div class="base">
 
 <mat-toolbar>
-    <span>System Health Dashboard</span>
+    <button mat-button style="padding: 0">
+        <i-chevrons-left style="margin-right: .35em"></i-chevrons-left>
+        <span style="font: 500 20px/32px Robot, 'Helvetica Neue', sans-serif">System Health Dashboard</span>
+    </button>
 
     <span class="fill-remaining-space"></span>
     <span>{{id}}</span>
@@ -11,12 +14,14 @@
     <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.wide]="wideSidenav">
         <button mat-button>
             <i class="material-icons">home</i>
+
             <ng-container *ngIf="wideSidenav">
                 Overview
             </ng-container>
         </button> 
         <button mat-button>
             <i class="material-icons">network_check</i>
+
             <ng-container *ngIf="wideSidenav">
                 Network Connectivity
             </ng-container>
