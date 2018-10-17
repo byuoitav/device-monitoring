@@ -8,19 +8,33 @@ import { DeviceInfo } from "../objects";
   providedIn: "root"
 })
 export class APIService {
-  //  private options: RequestOptions;
-  private jsonConvert: JsonConvert = new JsonConvert();
+  private jsonConvert: JsonConvert;
 
   constructor(private http: HttpClient) {
     this.jsonConvert = new JsonConvert();
     this.jsonConvert.ignorePrimitiveChecks = false;
-
-    //  const headers = new Headers();
-    //  headers.append("content-type", "application/json");
-    //  this.options = new RequestOptions({ headers: headers });
   }
 
-  public getDeviceInfo() {
-    return this.http.get("device").map(resp => resp.json());
+  public async getDeviceInfo() {
+    try {
+      const data = await this.http.get("device").toPromise();
+      const deviceInfo = this.jsonConvert.deserialize(data, DeviceInfo);
+
+      return deviceInfo;
+    } catch (e) {
+      throw new Error("error getting device info: " + e);
+    }
+  }
+
+  public async getDeviceID() {
+    try {
+      const data = await this.http
+        .get("device/id", { responseType: "text" })
+        .toPromise();
+
+      return data;
+    } catch (e) {
+      throw new Error("error getting device id: " + e);
+    }
   }
 }

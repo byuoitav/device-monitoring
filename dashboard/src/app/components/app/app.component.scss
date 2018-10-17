@@ -1,6 +1,6 @@
 $matToolbarHeight: 64px;
-$wideSideNavWidth: 25vw;
-$thinSideNavWidth: 7vw;
+$wideSideNavWidth: 15em;
+$thinSideNavWidth: 3.5em;
 
 .base {
     position: absolute;
@@ -13,6 +13,10 @@ $thinSideNavWidth: 7vw;
     max-width: 100%;
 
     overflow: hidden;
+}
+
+.fill-remaining-space {
+    flex: 1 1 auto;
 }
 
 .sidenav-container {
