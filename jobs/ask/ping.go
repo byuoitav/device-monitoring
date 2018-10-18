@@ -25,8 +25,8 @@ type PingJob struct {
 
 // PingResult is returned after running the ping job for a room
 type PingResult struct {
-	Successful   []devicePingResult `json:"successful"`
-	Unsuccessful []devicePingResult `json:"unsuccessful"`
+	Successful   []devicePingResult `json:"successful,omitempty"`
+	Unsuccessful []devicePingResult `json:"unsuccessful,omitempty"`
 }
 
 type devicePingResult struct {

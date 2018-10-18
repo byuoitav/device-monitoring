@@ -37,7 +37,6 @@
                     <i-wifi-off style="color: red" *ngIf="!deviceInfo?.internetConnectivity"></i-wifi-off>
                 </div>
             </mat-list-item>
-            <mat-divider></mat-divider>
         </mat-list>
     </mat-card-content>
 </mat-card>
@@ -49,16 +48,20 @@
 
     <mat-card-content>
         <mat-list>
-            <ng-container *ngFor="let status of deviceInfo?.mstatus">
-                <mat-list-item>
-                    <div class="list-item">
-                        <p>{{status?.name}}</p>
-                        <i-check-circle style="color: green" *ngIf="status?.statuscode === 'healthy'"></i-check-circle>
-                        <i-alert-circle style="color: red" *ngIf="status?.statuscode !== 'healthy'"></i-alert-circle>
-                    </div>
-                </mat-list-item>
-                <mat-divider></mat-divider>
-            </ng-container>
+            <mat-list-item>
+                <div class="list-item">
+                    <p>Devices Reachable</p>
+                    <p>{{pingResult?.successful?.length}}</p>
+                </div>
+            </mat-list-item>
+
+            <mat-divider></mat-divider>
+            <mat-list-item>
+                <div class="list-item">
+                    <p>Devices Unreachable</p>
+                    <p>{{pingResult?.unsuccessful?.length}}</p>
+                </div>
+            </mat-list-item>
         </mat-list>
     </mat-card-content>
 </mat-card>
@@ -78,9 +81,11 @@
                         <i-alert-circle style="color: red" *ngIf="status?.statuscode !== 'healthy'"></i-alert-circle>
                     </div>
                 </mat-list-item>
+
+                <!-- TODO don't show last one somehow -->
                 <mat-divider></mat-divider>
             </ng-container>
         </mat-list>
     </mat-card-content>
 </mat-card>
-<div>
+</div>

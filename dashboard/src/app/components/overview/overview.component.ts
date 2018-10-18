@@ -1,7 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 
 import { APIService } from "../../services/api.service";
-import { DeviceInfo } from "../../objects";
+import { DeviceInfo, PingResult } from "../../objects";
 
 @Component({
   selector: "overview",
@@ -9,12 +9,16 @@ import { DeviceInfo } from "../../objects";
   styleUrls: ["./overview.component.scss"]
 })
 export class OverviewComponent implements OnInit {
-  private deviceInfo: DeviceInfo;
+  public deviceInfo: DeviceInfo;
+  public pingResult: PingResult;
 
   constructor(private api: APIService) {}
 
   async ngOnInit() {
     this.deviceInfo = await this.api.getDeviceInfo();
     console.log("deviceInfo", this.deviceInfo);
+
+    this.pingResult = await this.api.getRoomPing();
+    console.log("pingResult", this.pingResult);
   }
 }

@@ -35,3 +35,39 @@ export class DeviceInfo {
   @JsonProperty("mstatus", [MStatus], true)
   mstatus: MStatus[] = Array<MStatus>();
 }
+
+@JsonObject("DevicePingResult")
+class DevicePingResult {
+  @JsonProperty("deviceID", String)
+  deviceID: string = undefined;
+
+  @JsonProperty("error", String)
+  error: string = undefined;
+
+  @JsonProperty("packets-received", Number)
+  packetsReceived: number = undefined;
+
+  @JsonProperty("packets-sent", Number)
+  packetsSent: number = undefined;
+
+  @JsonProperty("packet-loss", Number)
+  packetsLoss: number = undefined;
+
+  @JsonProperty("ip", String)
+  ip: string = undefined;
+
+  @JsonProperty("address", String)
+  address: string = undefined;
+
+  @JsonProperty("average-round-trip", String)
+  averageRoundTrip: string = undefined;
+}
+
+@JsonObject("PingResult")
+export class PingResult {
+  @JsonProperty("successful", [DevicePingResult], true)
+  successful: DevicePingResult[] = Array<DevicePingResult>();
+
+  @JsonProperty("unsuccessful", [DevicePingResult], true)
+  unsuccessful: DevicePingResult[] = Array<DevicePingResult>();
+}
