@@ -61,4 +61,18 @@ $thinSideNavWidth: 3.5em;
         width: calc(100% - #{$wideSideNavWidth});
         margin-left: $wideSideNavWidth !important;
     }
+
+    &::-webkit-scrollbar {
+        width: .4em;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #666;
+        border-radius: 3em;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: #ddd;
+        border-radius: 3em;
+    }
 }

@@ -6,7 +6,10 @@ import { HttpClientModule } from "@angular/common/http";
 import {
   MatSidenavModule,
   MatButtonModule,
-  MatToolbarModule
+  MatToolbarModule,
+  MatCardModule,
+  MatDividerModule,
+  MatListModule
 } from "@angular/material";
 import "hammerjs";
 
@@ -37,6 +40,9 @@ const routes: Routes = [
     MatSidenavModule,
     MatButtonModule,
     MatToolbarModule,
+    MatCardModule,
+    MatDividerModule,
+    MatListModule,
     RouterModule.forRoot(routes)
   ],
   providers: [APIService],

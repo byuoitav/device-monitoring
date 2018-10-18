@@ -1,7 +1,19 @@
 import { NgModule } from "@angular/core";
-import { IconChevronsLeft } from "angular-feather";
+import {
+  IconChevronsLeft,
+  IconWifi,
+  IconWifiOff,
+  IconAlertCircle,
+  IconCheckCircle
+} from "angular-feather";
 
-const icons = [IconChevronsLeft];
+const icons = [
+  IconChevronsLeft,
+  IconWifi,
+  IconWifiOff,
+  IconAlertCircle,
+  IconCheckCircle
+];
 
 @NgModule({
   exports: icons

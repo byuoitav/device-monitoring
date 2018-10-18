@@ -1,3 +1,86 @@
-<p>
-  overview works!
-</p>
+<div class="card-container">
+<mat-card class="card">
+    <mat-card-header>
+        <mat-card-title>System Info</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <mat-list>
+            <mat-list-item>
+                <div class="list-item">
+                    <p>Hostname</p>
+                    <p>{{deviceInfo?.hostname}}</p>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+
+            <mat-list-item>
+                <div class="list-item">
+                    <p>ID</p>
+                    <p>{{deviceInfo?.id}}</p>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+
+            <mat-list-item>
+                <div class="list-item">
+                    <p>IP</p>
+                    <p>{{deviceInfo?.ip}}</p>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+
+            <mat-list-item>
+                <div class="list-item">
+                    <p>Internet</p>
+                    <i-wifi style="color: green" *ngIf="deviceInfo?.internetConnectivity"></i-wifi>
+                    <i-wifi-off style="color: red" *ngIf="!deviceInfo?.internetConnectivity"></i-wifi-off>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+        </mat-list>
+    </mat-card-content>
+</mat-card>
+
+<mat-card class="card">
+    <mat-card-header>
+        <mat-card-title>Room Status</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <mat-list>
+            <ng-container *ngFor="let status of deviceInfo?.mstatus">
+                <mat-list-item>
+                    <div class="list-item">
+                        <p>{{status?.name}}</p>
+                        <i-check-circle style="color: green" *ngIf="status?.statuscode === 'healthy'"></i-check-circle>
+                        <i-alert-circle style="color: red" *ngIf="status?.statuscode !== 'healthy'"></i-alert-circle>
+                    </div>
+                </mat-list-item>
+                <mat-divider></mat-divider>
+            </ng-container>
+        </mat-list>
+    </mat-card-content>
+</mat-card>
+
+<mat-card class="card">
+    <mat-card-header>
+        <mat-card-title>Software Status</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <mat-list>
+            <ng-container *ngFor="let status of deviceInfo?.mstatus">
+                <mat-list-item>
+                    <div class="list-item">
+                        <p>{{status?.name}}</p>
+                        <i-check-circle style="color: green" *ngIf="status?.statuscode === 'healthy'"></i-check-circle>
+                        <i-alert-circle style="color: red" *ngIf="status?.statuscode !== 'healthy'"></i-alert-circle>
+                    </div>
+                </mat-list-item>
+                <mat-divider></mat-divider>
+            </ng-container>
+        </mat-list>
+    </mat-card-content>
+</mat-card>
+<div>
