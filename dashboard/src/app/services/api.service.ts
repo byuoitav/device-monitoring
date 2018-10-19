@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { JsonConvert, OperationMode, ValueCheckingMode } from "json2typescript";
 
-import { DeviceInfo, Status, PingResult } from "../objects";
+import { DeviceInfo, Status, PingResult, Status } from "../objects";
 
 @Injectable({
   providedIn: "root"
@@ -26,12 +26,12 @@ export class APIService {
     }
   }
 
-  public async getSoftwareStatus() {
+  public async getSoftwareStati() {
     try {
       const data = await this.http.get("device/status").toPromise();
-      const deviceInfo = this.jsonConvert.deserialize(data, DeviceInfo);
+      const stati = this.jsonConvert.deserialize(data, Status);
 
-      return deviceInfo;
+      return stati;
     } catch (e) {
       throw new Error("error getting device info: " + e);
     }

@@ -1,0 +1,19 @@
+<div class="container">
+<mat-accordion [multi]="false">
+    <mat-expansion-panel *ngFor="let status of stati"
+                        [hideToggle]="true">
+        <mat-expansion-panel-header>
+            <mat-panel-title>
+                {{status?.name}}
+            </mat-panel-title>
+
+            <mat-panel-description>
+                Version: {{status?.version}}
+                <mat-icon *ngIf="status?.statuscode === 'healthy'">error_outline</mat-icon>
+                <mat-icon *ngIf="status?.statuscode === 'sick'">error_outline</mat-icon>
+                <mat-icon *ngIf="status?.statuscode === 'dead'">error_outline</mat-icon>
+            </mat-panel-description>
+        </mat-expansion-panel-header>
+    </mat-expansion-panel>
+</mat-accordion>
+</div>

@@ -9,7 +9,9 @@ import {
   MatToolbarModule,
   MatCardModule,
   MatDividerModule,
-  MatListModule
+  MatListModule,
+  MatExpansionModule,
+  MatIconModule
 } from "@angular/material";
 import "hammerjs";
 
@@ -48,6 +50,8 @@ const routes: Routes = [
     MatCardModule,
     MatDividerModule,
     MatListModule,
+    MatExpansionModule,
+    MatIconModule,
     RouterModule.forRoot(routes)
   ],
   providers: [APIService],

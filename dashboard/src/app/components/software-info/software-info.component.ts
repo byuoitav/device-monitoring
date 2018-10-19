@@ -1,15 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from "@angular/core";
+
+import { APIService } from "../../services/api.service";
+import { Status } from "../../objects";
 
 @Component({
-  selector: 'app-software-info',
-  templateUrl: './software-info.component.html',
-  styleUrls: ['./software-info.component.scss']
+  selector: "software-info",
+  templateUrl: "./software-info.component.html",
+  styleUrls: ["./software-info.component.scss"]
 })
 export class SoftwareInfoComponent implements OnInit {
+  public stati: Status;
 
-  constructor() { }
+  constructor(private api: APIService) {}
 
-  ngOnInit() {
+  async ngOnInit() {
+    this.stati = await this.api.getSoftwareStati();
+    console.log("stati", this.stati);
   }
-
 }
