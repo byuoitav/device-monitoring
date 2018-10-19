@@ -1,7 +1,7 @@
 import { JsonObject, JsonProperty, Any } from "json2typescript";
 
-@JsonObject("MStatus")
-class MStatus {
+@JsonObject("Status")
+export class Status {
   @JsonProperty("name", String)
   name: string = undefined;
 
@@ -32,8 +32,8 @@ export class DeviceInfo {
   @JsonProperty("ip", String)
   ip: string = undefined;
 
-  @JsonProperty("mstatus", [MStatus], true)
-  mstatus: MStatus[] = Array<MStatus>();
+  @JsonProperty("status", [Status], true)
+  status: Status[] = Array<Status>();
 }
 
 @JsonObject("DevicePingResult")

@@ -26,6 +26,13 @@
                 Network Connectivity
             </ng-container>
         </button> 
+        <button mat-button>
+            <i class="material-icons">code</i>
+
+            <ng-container *ngIf="wideSidenav">
+                Software Status
+            </ng-container>
+        </button> 
 
         <button mat-button class="bottom" (click)="wideSidenav = !wideSidenav">
             <i *ngIf="wideSidenav" class="material-icons">keyboard_arrow_left</i>

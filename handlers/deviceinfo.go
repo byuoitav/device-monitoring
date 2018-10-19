@@ -44,23 +44,23 @@ func GetDeviceInfo(context echo.Context) error {
 	}
 	data["ip"] = ip
 
-	// mstatus
-	job := &ask.MStatusJob{}
-	jobContext := jobs.GetJobContext("mstatus")
+	// status
+	job := &ask.StatusJob{}
+	jobContext := jobs.GetJobContext("status")
 
-	mstatus := jobs.RunJob(job, jobContext)
+	s := jobs.RunJob(job, jobContext)
 
-	switch v := mstatus.(type) {
+	switch v := s.(type) {
 	case error:
 		data["error"] = v
 		return context.JSON(http.StatusInternalServerError, data)
 	case *nerr.E:
 		data["error"] = v.String()
 		return context.JSON(http.StatusInternalServerError, data)
-	case []status.MStatus:
-		data["mstatus"] = mstatus
+	case []status.Status:
+		data["status"] = v
 	default:
-		data["error"] = fmt.Sprintf("unable to get mstatus: unexpected type from job: %v", v)
+		data["error"] = fmt.Sprintf("unable to get status: unexpected type from job: %v", v)
 		return context.JSON(http.StatusInternalServerError, data)
 	}
 
@@ -100,19 +100,19 @@ func IsConnectedToInternet(context echo.Context) error {
 	return context.String(http.StatusOK, fmt.Sprintf("%v", status))
 }
 
-// GetMStatusInfo returns the default mstatus info
-func GetMStatusInfo(context echo.Context) error {
-	job := &ask.MStatusJob{}
-	jobContext := jobs.GetJobContext("mstatus")
+// GetStatusInfo returns the default status info
+func GetStatusInfo(context echo.Context) error {
+	job := &ask.StatusJob{}
+	jobContext := jobs.GetJobContext("status")
 
-	mstatus := jobs.RunJob(job, jobContext)
+	s := jobs.RunJob(job, jobContext)
 
-	switch v := mstatus.(type) {
+	switch v := s.(type) {
 	case error:
 		return context.String(http.StatusInternalServerError, v.Error())
 	case *nerr.E:
 		return context.String(http.StatusInternalServerError, v.Error())
-	case []status.MStatus:
+	case []status.Status:
 		return context.JSON(http.StatusOK, v)
 	default:
 		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))

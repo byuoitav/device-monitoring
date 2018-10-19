@@ -20,7 +20,7 @@ var (
 			Timeout:  20 * time.Second,
 		},
 		"state-update": &ask.StateUpdateJob{},
-		"mstatus":      &ask.MStatusJob{},
+		"status":       &ask.StatusJob{},
 	}
 )
 
