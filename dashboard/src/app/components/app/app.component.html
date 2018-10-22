@@ -12,28 +12,29 @@
 
 <mat-sidenav-container class="sidenav-container">
     <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.wide]="wideSidenav">
-        <button mat-button>
+        <button mat-button routerLink="/overview" routerLinkActive="active">
             <i class="material-icons">home</i>
 
             <ng-container *ngIf="wideSidenav">
                 Overview
             </ng-container>
         </button> 
-        <button mat-button>
+        <button mat-button routerLink="/" routerLinkActive="active">
             <i class="material-icons">network_check</i>
 
             <ng-container *ngIf="wideSidenav">
                 Network Connectivity
             </ng-container>
         </button> 
-        <a mat-button routerLink="/software" routerLinkActive="active">
+        <button mat-button routerLink="/software" routerLinkActive="active">
             <i class="material-icons">code</i>
 
             <ng-container *ngIf="wideSidenav">
                 Software Status
             </ng-container>
-        </a> 
+        </button> 
 
+        <!-- at the bottom -->
         <button mat-button class="bottom" (click)="wideSidenav = !wideSidenav">
             <i *ngIf="wideSidenav" class="material-icons">keyboard_arrow_left</i>
             <i *ngIf="!wideSidenav" class="material-icons">keyboard_arrow_right</i>

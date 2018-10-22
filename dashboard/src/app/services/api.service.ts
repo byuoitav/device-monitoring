@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { JsonConvert, OperationMode, ValueCheckingMode } from "json2typescript";
 
-import { DeviceInfo, Status, PingResult, Status } from "../objects";
+import { DeviceInfo, Status, PingResult } from "../objects";
 
 @Injectable({
   providedIn: "root"

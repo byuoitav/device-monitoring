@@ -62,6 +62,7 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 				Name:       name,
 				StatusCode: status.Dead,
 				Version:    `¯\_(ツ)_/¯`,
+				Info:       make(map[string]interface{}),
 			}
 			log.L.Debugf("Getting %v status from port %v", name, port)
 
@@ -73,30 +74,31 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 			// make request
 			resp, err := http.Get(fmt.Sprintf("http://localhost:%v/status", port))
 			if err != nil {
-				s.Info = err
+				s.Info["error"] = err
 				return
 			}
 
 			// because we got a response, change to status sick
 			s.StatusCode = status.Sick
-			s.Info = "received a response, but unable to read it"
 
 			// read response
 			bytes, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				s.Info = err
+				s.Info["error"] = err
 				return
 			}
 			resp.Body.Close()
 
-			s.Info = fmt.Sprintf("%s", bytes)
+			s.Info["_raw-response"] = fmt.Sprintf("%s", bytes)
 
 			// unmarshal into status struct
 			err = json.Unmarshal(bytes, &s)
 			if err != nil {
-				s.Info = err
+				s.Info["error"] = err
 				return
 			}
+
+			// delete(s.Info, "_raw-response")
 
 			// add back on the name
 			s.Name = name

@@ -33,8 +33,10 @@
             <mat-list-item>
                 <div class="list-item">
                     <p>Internet</p>
-                    <i-wifi style="color: green" *ngIf="deviceInfo?.internetConnectivity"></i-wifi>
-                    <i-wifi-off style="color: red" *ngIf="!deviceInfo?.internetConnectivity"></i-wifi-off>
+
+                    <!-- TODO make a color palatte for status colors success/warn/error -->
+                    <mat-icon style="color: green" *ngIf="deviceInfo?.internetConnectivity">wifi_off</mat-icon>
+                    <mat-icon style="color: red" *ngIf="!deviceInfo?.internetConnectivity">wifi</mat-icon>
                 </div>
             </mat-list-item>
         </mat-list>
@@ -73,12 +75,15 @@
 
     <mat-card-content>
         <mat-list>
-            <ng-container *ngFor="let status of deviceInfo?.mstatus">
+            <ng-container *ngFor="let status of deviceInfo?.status">
                 <mat-list-item>
                     <div class="list-item">
                         <p>{{status?.name}}</p>
-                        <i-check-circle style="color: green" *ngIf="status?.statuscode === 'healthy'"></i-check-circle>
-                        <i-alert-circle style="color: red" *ngIf="status?.statuscode !== 'healthy'"></i-alert-circle>
+
+                        <!-- TODO make a color palatte for status colors success/warn/error -->
+                        <!-- TODO alphabetize status' list -->
+                        <mat-icon style="color: green" *ngIf="status?.statuscode === 'healthy'">check_circle_outline</mat-icon>
+                        <mat-icon style="color: red" *ngIf="status?.statuscode !== 'healthy'">error_outline</mat-icon>
                     </div>
                 </mat-list-item>
 
