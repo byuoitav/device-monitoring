@@ -1,3 +1,5 @@
+<mat-progress-bar *ngIf="pingResult == null" mode="query"></mat-progress-bar>
+
 <div class="container">
 <mat-accordion [multi]="false">
     <ng-container *ngFor="let result of pingResult?.unsuccessful">

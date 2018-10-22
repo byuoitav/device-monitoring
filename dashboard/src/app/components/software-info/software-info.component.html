@@ -1,3 +1,5 @@
+<mat-progress-bar *ngIf="stati == null" mode="query"></mat-progress-bar>
+
 <div class="container">
 <mat-accordion [multi]="false">
     <mat-expansion-panel *ngFor="let status of stati"

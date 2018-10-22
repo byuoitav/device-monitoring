@@ -19,6 +19,10 @@ html {
     .card {
         margin: 0 0 1.5em;
         break-inside: avoid;
+
+        mat-progress-bar {
+            top: -24px;
+        }
     }
 }
 
@@ -30,22 +34,3 @@ html {
     align-items: center;
     width: 100%;
 }
-
-/*
-@media only screen and (min-width: 1024px) {
-  .card-container {
-    column-count: 2;
-  }
-}
-
-@media only screen and (max-width: 1023px) and (min-width: 768px) {
-  .card-container {
-    column-count: 1;
-  }
-}
-
-@media only screen and (max-width: 767px) and (min-width: 540px) {
-  .card-container {
-  }
-}
-*/

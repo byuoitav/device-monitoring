@@ -1,5 +1,6 @@
 <div class="card-container">
 <mat-card class="card">
+    <mat-progress-bar *ngIf="deviceInfo == null" mode="query"></mat-progress-bar>
     <mat-card-header>
         <mat-card-title>System Info</mat-card-title>
     </mat-card-header>
@@ -41,9 +42,20 @@
             </mat-list-item>
         </mat-list>
     </mat-card-content>
+    <mat-card-actions>
+        <button mat-raised-button color="warn">
+            <mat-icon>power_settings_new</mat-icon>
+            Reboot
+        </button>
+        <button mat-raised-button color="accent">
+            <mat-icon>refresh</mat-icon>
+            Refresh
+        </button>
+    </mat-card-actions>
 </mat-card>
 
 <mat-card class="card">
+    <mat-progress-bar *ngIf="pingResult == null" mode="query"></mat-progress-bar>
     <mat-card-header>
         <mat-card-title>Room Status</mat-card-title>
     </mat-card-header>
@@ -69,13 +81,14 @@
 </mat-card>
 
 <mat-card class="card">
+    <mat-progress-bar *ngIf="deviceInfo?.status == null" mode="query"></mat-progress-bar>
     <mat-card-header>
         <mat-card-title>Software Status</mat-card-title>
     </mat-card-header>
 
     <mat-card-content>
         <mat-list>
-            <ng-container *ngFor="let status of deviceInfo?.status">
+            <ng-container *ngFor="let status of deviceInfo?.status; let i = index">
                 <mat-list-item>
                     <div class="list-item">
                         <p>{{status?.name}}</p>
@@ -87,8 +100,7 @@
                     </div>
                 </mat-list-item>
 
-                <!-- TODO don't show last one somehow -->
-                <mat-divider></mat-divider>
+                <mat-divider *ngIf="i !== deviceInfo?.status?.length-1"></mat-divider>
             </ng-container>
         </mat-list>
     </mat-card-content>
