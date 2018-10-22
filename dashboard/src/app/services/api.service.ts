@@ -9,6 +9,7 @@ import { DeviceInfo, Status, PingResult } from "../objects";
 })
 export class APIService {
   private jsonConvert: JsonConvert;
+  public theme = "default";
 
   constructor(private http: HttpClient) {
     this.jsonConvert = new JsonConvert();

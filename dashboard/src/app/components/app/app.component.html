@@ -1,13 +1,15 @@
-<div class="base">
+<div class="base" [ngClass]="api?.theme + '-theme'">
 
 <mat-toolbar>
     <button mat-button style="padding: 0">
         <i-chevrons-left style="margin-right: .35em"></i-chevrons-left>
-        <span style="font: 500 20px/32px Robot, 'Helvetica Neue', sans-serif">System Health Dashboard</span>
+        <span style="font: 500 20px/32px Roboto, 'Helvetica Neue', sans-serif">System Health Dashboard</span>
     </button>
 
     <span class="fill-remaining-space"></span>
-    <span>{{id}}</span>
+    <button mat-button style="padding: 0" (click)="api?.theme === 'default' ? api.theme = 'dark' : api.theme ='default'">
+        <span style="font: 500 20px/32px Roboto, 'Helvetica Neue', sans-serif">{{id}}</span>
+    </button>
 </mat-toolbar>
 
 <mat-sidenav-container class="sidenav-container">
