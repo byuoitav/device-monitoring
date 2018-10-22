@@ -51,7 +51,7 @@ class DevicePingResult {
   packetsSent: number = undefined;
 
   @JsonProperty("packet-loss", Number)
-  packetsLoss: number = undefined;
+  packetLoss: number = undefined;
 
   @JsonProperty("ip", String)
   ip: string = undefined;

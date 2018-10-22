@@ -19,6 +19,7 @@ import { IconsModule } from "./icons.module";
 import { AppComponent } from "./components/app/app.component";
 import { OverviewComponent } from "./components/overview/overview.component";
 import { SoftwareInfoComponent } from "./components/software-info/software-info.component";
+import { ReachableDevicesComponent } from "./components/reachable-devices/reachable-devices.component";
 import { APIService } from "./services/api.service";
 
 const routes: Routes = [
@@ -34,11 +35,20 @@ const routes: Routes = [
   {
     path: "software",
     component: SoftwareInfoComponent
+  },
+  {
+    path: "reachable-devices",
+    component: ReachableDevicesComponent
   }
 ];
 
 @NgModule({
-  declarations: [AppComponent, OverviewComponent, SoftwareInfoComponent],
+  declarations: [
+    AppComponent,
+    OverviewComponent,
+    SoftwareInfoComponent,
+    ReachableDevicesComponent
+  ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
