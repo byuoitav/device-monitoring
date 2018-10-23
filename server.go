@@ -53,7 +53,7 @@ func main() {
 
 	// dashboard
 	// TODO redirect from /dash
-	secure.Static("/dashboard", "ui/dashboard")
+	secure.Static("/dashboard", "files/dashboard")
 
 	server := http.Server{
 		Addr:           port,

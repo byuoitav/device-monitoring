@@ -27,7 +27,7 @@ VENDOR=gvt fetch -branch $(BRANCH)
 NPM=npm
 NPM_INSTALL=$(NPM) install
 NG_BUILD=ng build --prod --aot --build-optimizer 
-NG1=dash
+NG1=dashboard
 
 # aws
 AWS_S3_ADD=aws s3 cp
@@ -48,7 +48,7 @@ build-arm:
 build-web: $(NG1)
 	cd $(NG1) && $(NPM_INSTALL) && $(NG_BUILD) --base-href="./$(NG1)/"
 	mkdir files
-	mv $(NG1)/dist files/$(NG1)-dist
+	mv $(NG1)/dist files/$(NG1)
 
 test:
 	$(GOTEST) -v -race $(go list ./... | grep -v /vendor/)
@@ -71,10 +71,7 @@ deps:
 ifneq "$(BRANCH)" "master"
 	# put vendored packages in here
 	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
-	$(VENDOR) github.com/byuoitav/authmiddleware
-	$(VENDOR) github.com/byuoitav/touchpanel-ui-microservice
 	$(VENDOR) github.com/byuoitav/common
-	$(VENDOR) github.com/byuoitav/av-api
 endif
 	$(GOGET) -d -v
 
