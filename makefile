@@ -57,7 +57,6 @@ clean:
 	$(GOCLEAN)
 	rm -f $(NAME)-bin
 	rm -f $(NAME)-arm
-	rm -f $(NAME).service
 	rm -rf files/
 
 run: $(NAME)-bin
@@ -75,13 +74,13 @@ ifneq "$(BRANCH)" "master"
 endif
 	$(GOGET) -d -v
 
-deploy: $(NAME)-arm $(NAME).service files/$(NG1)-dist config.json
+deploy: $(NAME)-arm $(NAME).service.tmpl files/$(NG1)-dist config.json
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
 	@echo adding files to $(S3_BUCKET)
 	$(AWS_S3_ADD) $(NAME)-arm s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/$(NAME)
-	$(AWS_S3_ADD) $(NAME).service s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/device-monitoring.service
+	$(AWS_S3_ADD) $(NAME).service.tmpl s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/device-monitoring.service.tmpl
 	$(AWS_S3_ADD) config.json s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/config.json
 	$(AWS_S3_ADD) files/ s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/ --recursive
 ifeq "$(BRANCH)" "development"
@@ -95,8 +94,8 @@ $(NAME)-bin:
 $(NAME)-arm:
 	$(MAKE) build-arm
 
-$(NAME).service: $(NAME).service.tmpl
-	cat "$(NAME).service.tmpl" | envsubst > $(NAME).service
+# $(NAME).service: $(NAME).service.tmpl
+# 	cat "$(NAME).service.tmpl" | envsubst > $(NAME).service
 
 files/$(NG1)-dist:
 	$(MAKE) build-web
