@@ -25,3 +25,8 @@ func RebootPi(context echo.Context) error {
 
 	return context.Blob(http.StatusOK, "text/plain", []byte("Rebooting in 5 seconds..."))
 }
+
+// SetDHCPState toggles dhcp to be on/off
+func SetDHCPState(ctx echo.Context) error {
+	return nil
+}

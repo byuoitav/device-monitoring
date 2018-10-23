@@ -10,6 +10,10 @@ import (
 	"github.com/byuoitav/common/nerr"
 )
 
+const (
+	dhcpFile = "/etc/dhcpcd.conf"
+)
+
 // Hostname returns the hostname of the device
 func Hostname() (string, *nerr.E) {
 	hostname, err := os.Hostname()

@@ -16,7 +16,6 @@ import {
 } from "@angular/material";
 import "hammerjs";
 
-import { IconsModule } from "./icons.module";
 import { AppComponent } from "./components/app/app.component";
 import { OverviewComponent } from "./components/overview/overview.component";
 import { SoftwareInfoComponent } from "./components/software-info/software-info.component";
@@ -54,7 +53,6 @@ const routes: Routes = [
     BrowserModule,
     BrowserAnimationsModule,
     HttpClientModule,
-    IconsModule,
     MatSidenavModule,
     MatButtonModule,
     MatToolbarModule,

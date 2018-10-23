@@ -85,9 +85,9 @@ func RoomState(context echo.Context) error {
 // PingStatus .
 func PingStatus(context echo.Context) error {
 	job := &ask.PingJob{
-		Count:    4,
-		Interval: 1 * time.Second,
-		Timeout:  2 * time.Second,
+		Count:    3,
+		Interval: 500 * time.Millisecond,
+		Timeout:  1500 * time.Millisecond,
 	}
 	result := jobs.RunJob(job, nil)
 

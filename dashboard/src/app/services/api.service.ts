@@ -16,6 +16,32 @@ export class APIService {
     this.jsonConvert.ignorePrimitiveChecks = false;
   }
 
+  public switchToUI() {
+    window.location.assign("http://" + window.location.hostname + ":8888/");
+  }
+
+  public refresh() {
+    window.location.pathname = "/";
+  }
+
+  public async reboot() {
+    try {
+      const data = await this.http
+        .put("device/reboot", {
+          responseType: "text"
+        })
+        .toPromise();
+    } catch (e) {
+      // bug where responseType doesn't actually work
+      if (e.status === 200) {
+        console.log(e.error.text);
+        return e.error.text;
+      }
+
+      throw new Error("error getting rebooting device: " + e);
+    }
+  }
+
   public async getDeviceInfo() {
     try {
       const data = await this.http.get("device").toPromise();
@@ -23,7 +49,10 @@ export class APIService {
 
       return deviceInfo;
     } catch (e) {
-      throw new Error("error getting device info: " + e);
+      const deviceInfo = this.jsonConvert.deserialize(e.error, DeviceInfo);
+
+      console.error("error getting device info:", e);
+      return deviceInfo;
     }
   }
 
@@ -34,7 +63,7 @@ export class APIService {
 
       return stati;
     } catch (e) {
-      throw new Error("error getting device info: " + e);
+      throw new Error("error getting software status': " + e);
     }
   }
 

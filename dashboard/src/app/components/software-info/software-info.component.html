@@ -1,4 +1,4 @@
-<mat-progress-bar *ngIf="stati == null" mode="query"></mat-progress-bar>
+<mat-progress-bar color="accent" *ngIf="stati == null" mode="query"></mat-progress-bar>
 
 <div class="container">
 <mat-accordion [multi]="false">
@@ -12,9 +12,11 @@
             <!-- TODO make a color palatte for status colors success/warn/error -->
             <mat-panel-description>
                 Version: {{status?.version}}
-                <mat-icon *ngIf="status?.statuscode === 'healthy'">check_circle</mat-icon>
-                <mat-icon *ngIf="status?.statuscode === 'sick'">warning</mat-icon>
-                <mat-icon *ngIf="status?.statuscode === 'dead'">error_outline</mat-icon>
+                <div id="status-theme">
+                    <mat-icon color="primary" *ngIf="status?.statuscode === 'healthy'">check_circle</mat-icon>
+                    <mat-icon color="accent" *ngIf="status?.statuscode === 'sick'">warning</mat-icon>
+                    <mat-icon color="warn" *ngIf="status?.statuscode === 'dead'">error_outline</mat-icon>
+                </div>
             </mat-panel-description>
         </mat-expansion-panel-header>
 

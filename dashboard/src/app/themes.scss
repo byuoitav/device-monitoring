@@ -2,10 +2,10 @@
 
 @include mat-core();
 
-// default theme
-$default-primary: mat-palette($mat-light-blue);
-$default-accent: mat-palette($mat-light-blue);
-$default-warn: mat-palette($mat-red);
+// default (light) theme
+$default-primary: mat-palette($mat-blue, 800, 600, 900);
+$default-accent: mat-palette($mat-blue-grey);
+$default-warn: mat-palette($mat-pink);
 
 $default: mat-light-theme($default-primary, $default-accent, $default-warn);
 @include angular-material-theme($default);
@@ -16,15 +16,11 @@ $status-accent: mat-palette($mat-yellow);
 $status-warn: mat-palette($mat-red);
 
 $status: mat-light-theme($status-primary, $status-accent, $status-warn);
-.status-theme {
+#status-theme {
     @include angular-material-theme($status);
 }
 
 // dark theme :)
-// $dark-primary: mat-palette($mat-grey);
-// $dark-accent: mat-palette($mat-light-blue);
-// $dark-warn: mat-palette($mat-red);
-
 $dark: mat-dark-theme($default-primary, $default-accent, $default-warn);
 .dark-theme {
     @include angular-material-theme($dark);

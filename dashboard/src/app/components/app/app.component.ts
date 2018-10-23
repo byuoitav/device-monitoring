@@ -11,7 +11,7 @@ export class AppComponent implements OnInit {
   public wideSidenav = true;
   public id: string;
 
-  constructor(private api: APIService) {}
+  constructor(public api: APIService) {}
 
   public async ngOnInit() {
     this.id = await this.api.getDeviceID();

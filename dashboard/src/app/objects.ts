@@ -18,6 +18,18 @@ export class Status {
   info: any = undefined;
 }
 
+@JsonObject("DHCPInfo")
+export class DHCPInfo {
+  @JsonProperty("error", Any, true)
+  error: any = undefined;
+
+  @JsonProperty("enabled", Boolean, true)
+  enabled: boolean = undefined;
+
+  @JsonProperty("toggleable", Boolean, true)
+  toggleable = false;
+}
+
 @JsonObject("DeviceInfo")
 export class DeviceInfo {
   @JsonProperty("hostname", String)
@@ -26,14 +38,20 @@ export class DeviceInfo {
   @JsonProperty("id", String)
   id: string = undefined;
 
-  @JsonProperty("internet-connectivity", Boolean)
+  @JsonProperty("internet-connectivity", Boolean, true)
   internetConnectivity: boolean = undefined;
 
-  @JsonProperty("ip", String)
+  @JsonProperty("ip", String, true)
   ip: string = undefined;
 
   @JsonProperty("status", [Status], true)
   status: Status[] = Array<Status>();
+
+  @JsonProperty("dhcp", DHCPInfo, true)
+  dhcp: DHCPInfo = undefined;
+
+  @JsonProperty("error", Any, true)
+  error: any = undefined;
 }
 
 @JsonObject("DevicePingResult")

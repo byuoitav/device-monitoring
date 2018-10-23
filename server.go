@@ -41,6 +41,7 @@ func main() {
 	secure.GET("/device/ip", handlers.GetIPAddress)
 	secure.GET("/device/network", handlers.IsConnectedToInternet)
 	secure.GET("/device/status", handlers.GetStatusInfo)
+	secure.GET("/device/dhcp", handlers.GetDHCPState)
 
 	secure.GET("/room", handlers.GetRoom)
 	secure.GET("/room/state", handlers.RoomState)
@@ -48,6 +49,7 @@ func main() {
 
 	// action endpoints
 	secure.PUT("/device/reboot", handlers.RebootPi)
+	secure.PUT("/device/dhcp/:state", handlers.SetDHCPState)
 
 	// dashboard
 	// TODO redirect from /dash

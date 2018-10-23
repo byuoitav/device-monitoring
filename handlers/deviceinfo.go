@@ -64,6 +64,23 @@ func GetDeviceInfo(context echo.Context) error {
 		return context.JSON(http.StatusInternalServerError, data)
 	}
 
+	dhcpMap := make(map[string]interface{})
+	data["dhcp"] = dhcpMap
+
+	// dhcp status
+	usingDHCP, err := pi.UsingDHCP()
+	if err != nil {
+		dhcpMap["error"] = err.String()
+		return context.JSON(http.StatusInternalServerError, data)
+	}
+	dhcpMap["enabled"] = usingDHCP
+
+	if err = pi.CanToggleDHCP(); err != nil {
+		dhcpMap["error"] = err.String()
+		return context.JSON(http.StatusInternalServerError, data)
+	}
+	dhcpMap["toggleable"] = true
+
 	return context.JSON(http.StatusOK, data)
 }
 
@@ -73,6 +90,7 @@ func GetHostname(context echo.Context) error {
 	if err != nil {
 		return context.String(http.StatusInternalServerError, err.Error())
 	}
+
 	return context.String(http.StatusOK, hostname)
 }
 
@@ -82,6 +100,7 @@ func GetDeviceID(context echo.Context) error {
 	if err != nil {
 		return context.String(http.StatusInternalServerError, err.Error())
 	}
+
 	return context.String(http.StatusOK, id)
 }
 
@@ -91,6 +110,7 @@ func GetIPAddress(context echo.Context) error {
 	if err != nil {
 		return context.String(http.StatusInternalServerError, err.Error())
 	}
+
 	return context.String(http.StatusOK, ip.String())
 }
 
@@ -117,4 +137,24 @@ func GetStatusInfo(context echo.Context) error {
 	default:
 		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
 	}
+}
+
+// GetDHCPState returns whether or not dhcp is enabled and if it can be toggled or not
+func GetDHCPState(context echo.Context) error {
+	ret := make(map[string]interface{})
+
+	usingDHCP, err := pi.UsingDHCP()
+	if err != nil {
+		ret["error"] = err.String()
+		return context.JSON(http.StatusInternalServerError, ret)
+	}
+	ret["enabled"] = usingDHCP
+
+	if err = pi.CanToggleDHCP(); err != nil {
+		ret["error"] = err.String()
+		return context.JSON(http.StatusInternalServerError, ret)
+	}
+	ret["toggleable"] = true
+
+	return context.JSON(http.StatusOK, ret)
 }

@@ -1,8 +1,8 @@
 <div class="base" [ngClass]="api?.theme + '-theme'">
 
-<mat-toolbar>
-    <button mat-button style="padding: 0">
-        <i-chevrons-left style="margin-right: .35em"></i-chevrons-left>
+<mat-toolbar color="primary">
+    <button mat-button style="padding: 0" (click)="api.refresh()">
+        <mat-icon style="margin-right: .35em">refresh</mat-icon>
         <span style="font: 500 20px/32px Roboto, 'Helvetica Neue', sans-serif">System Health Dashboard</span>
     </button>
 
@@ -15,21 +15,21 @@
 <mat-sidenav-container class="sidenav-container">
     <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.wide]="wideSidenav">
         <button mat-button routerLink="/overview" routerLinkActive="active">
-            <i class="material-icons">home</i>
+            <mat-icon>home</mat-icon>
 
             <ng-container *ngIf="wideSidenav">
                 Overview
             </ng-container>
         </button> 
         <button mat-button routerLink="/reachable-devices" routerLinkActive="active">
-            <i class="material-icons">network_check</i>
+            <mat-icon>network_check</mat-icon>
 
             <ng-container *ngIf="wideSidenav">
                 Reachable Devices
             </ng-container>
         </button> 
         <button mat-button routerLink="/software" routerLinkActive="active">
-            <i class="material-icons">code</i>
+            <mat-icon>code</mat-icon>
 
             <ng-container *ngIf="wideSidenav">
                 Software Status
@@ -38,8 +38,8 @@
 
         <!-- at the bottom -->
         <button mat-button class="bottom" (click)="wideSidenav = !wideSidenav">
-            <i *ngIf="wideSidenav" class="material-icons">keyboard_arrow_left</i>
-            <i *ngIf="!wideSidenav" class="material-icons">keyboard_arrow_right</i>
+            <mat-icon *ngIf="wideSidenav">chevron_left</mat-icon>
+            <mat-icon *ngIf="!wideSidenav">chevron_right</mat-icon>
 
             <ng-container *ngIf="wideSidenav">
                 Collapse sidebar

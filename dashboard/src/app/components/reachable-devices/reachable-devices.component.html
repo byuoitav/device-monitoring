@@ -1,4 +1,4 @@
-<mat-progress-bar *ngIf="pingResult == null" mode="query"></mat-progress-bar>
+<mat-progress-bar color="accent" *ngIf="pingResult == null" mode="query"></mat-progress-bar>
 
 <div class="container">
 <mat-accordion [multi]="false">
@@ -20,9 +20,12 @@
             <!-- TODO make a color palatte for status colors success/warn/error -->
             <mat-panel-description>
                 {{info?.ip}}
-                <mat-icon *ngIf="info?.packetLoss === 100">error</mat-icon>
-                <mat-icon *ngIf="info?.packetLoss > 25 && info?.packetLoss !== 100">warning</mat-icon>
-                <mat-icon *ngIf="info?.packetLoss === 0 && info?.packetLoss !== 100">check_circle</mat-icon>
+
+                <div id="status-theme">
+                    <mat-icon color="primary" *ngIf="info?.packetLoss < 33 && info?.packetLoss !== 100">check_circle</mat-icon>
+                    <mat-icon color="accent" *ngIf="info?.packetLoss >= 33 && info?.packetLoss !== 100">warning</mat-icon>
+                    <mat-icon color="warn" *ngIf="info?.packetLoss === 100">error</mat-icon>
+                </div>
             </mat-panel-description>
         </mat-expansion-panel-header>
     
