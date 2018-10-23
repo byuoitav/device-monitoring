@@ -26,7 +26,7 @@ VENDOR=gvt fetch -branch $(BRANCH)
 # angular
 NPM=npm
 NPM_INSTALL=$(NPM) install
-NG_BUILD=ng build --prod --aot --build-optimizer 
+NPM_BUILD=npm run-script build
 NG1=dashboard
 
 # aws
@@ -46,9 +46,9 @@ build-arm:
 	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME)-arm -v
 
 build-web: $(NG1)
-	cd $(NG1) && $(NPM_INSTALL) && $(NG_BUILD) --base-href="./$(NG1)/"
+	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
 	mkdir files
-	mv $(NG1)/dist files/$(NG1)
+	mv $(NG1)/dist/$(NG1) files/$(NG1)
 
 test:
 	$(GOTEST) -v -race $(go list ./... | grep -v /vendor/)
