@@ -6,12 +6,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/byuoitav/authmiddleware"
 	"github.com/byuoitav/common"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/labstack/echo"
 )
 
 func main() {
@@ -32,28 +30,28 @@ func main() {
 	port := ":10000"
 	router := common.NewRouter()
 
-	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
+	// secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
 	// device info endpoints
-	secure.GET("/device", handlers.GetDeviceInfo)
-	secure.GET("/device/hostname", handlers.GetHostname)
-	secure.GET("/device/id", handlers.GetDeviceID)
-	secure.GET("/device/ip", handlers.GetIPAddress)
-	secure.GET("/device/network", handlers.IsConnectedToInternet)
-	secure.GET("/device/status", handlers.GetStatusInfo)
-	secure.GET("/device/dhcp", handlers.GetDHCPState)
+	router.GET("/device", handlers.GetDeviceInfo)
+	router.GET("/device/hostname", handlers.GetHostname)
+	router.GET("/device/id", handlers.GetDeviceID)
+	router.GET("/device/ip", handlers.GetIPAddress)
+	router.GET("/device/network", handlers.IsConnectedToInternet)
+	router.GET("/device/status", handlers.GetStatusInfo)
+	router.GET("/device/dhcp", handlers.GetDHCPState)
 
-	secure.GET("/room", handlers.GetRoom)
-	secure.GET("/room/state", handlers.RoomState)
-	secure.GET("/room/ping", handlers.PingStatus)
+	router.GET("/room", handlers.GetRoom)
+	router.GET("/room/state", handlers.RoomState)
+	router.GET("/room/ping", handlers.PingStatus)
 
 	// action endpoints
-	secure.PUT("/device/reboot", handlers.RebootPi)
-	secure.PUT("/device/dhcp/:state", handlers.SetDHCPState)
+	router.PUT("/device/reboot", handlers.RebootPi)
+	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
 
 	// dashboard
 	// TODO redirect from /dash
-	secure.Static("/dashboard", "files/dashboard")
+	router.Static("/dashboard", "dashboard")
 
 	server := http.Server{
 		Addr:           port,
