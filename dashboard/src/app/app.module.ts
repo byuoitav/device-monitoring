@@ -1,4 +1,5 @@
 import { NgModule } from "@angular/core";
+import { APP_BASE_HREF } from "@angular/common";
 import { BrowserModule } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { RouterModule, Routes } from "@angular/router";
@@ -64,7 +65,14 @@ const routes: Routes = [
     MatProgressBarModule,
     RouterModule.forRoot(routes)
   ],
-  providers: [APIService],
+  providers: [
+    APIService,
+    {
+      // set the base route for the router
+      provide: APP_BASE_HREF,
+      useValue: "/dashboard"
+    }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

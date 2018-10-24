@@ -74,7 +74,7 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 			// make request
 			resp, err := http.Get(fmt.Sprintf("http://localhost:%v/status", port))
 			if err != nil {
-				s.Info["error"] = err
+				s.Info["error"] = err.Error()
 				return
 			}
 
@@ -84,7 +84,7 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 			// read response
 			bytes, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				s.Info["error"] = err
+				s.Info["error"] = err.Error()
 				return
 			}
 			resp.Body.Close()
@@ -94,7 +94,7 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 			// unmarshal into status struct
 			err = json.Unmarshal(bytes, &s)
 			if err != nil {
-				s.Info["error"] = err
+				s.Info["error"] = err.Error()
 				return
 			}
 
