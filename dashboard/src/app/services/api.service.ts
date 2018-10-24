@@ -21,7 +21,7 @@ export class APIService {
   }
 
   public refresh() {
-    window.location.pathname = "/";
+    window.location.reload(true);
   }
 
   public async reboot() {
