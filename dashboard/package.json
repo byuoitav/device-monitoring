@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json --host 0.0.0.0 --disable-host-check",
-    "build": "ng build --prod --aot --build-optimizer --base-href=\"./dasboard/\"",
+    "build": "ng build --prod --aot --build-optimizer --deploy-url /dashboard/",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
