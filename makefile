@@ -82,6 +82,7 @@ endif
 	$(AWS_S3_ADD) $(NAME)-arm s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/$(NAME)
 	$(AWS_S3_ADD) $(NAME).service.tmpl s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/device-monitoring.service.tmpl
 	$(AWS_S3_ADD) config.json s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/config.json
+	$(AWS_S3_ADD) version.txt s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/version.txt
 	$(AWS_S3_ADD) files/ s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/ --recursive
 ifeq "$(BRANCH)" "development"
 	$(eval BRANCH=master)
@@ -93,9 +94,6 @@ $(NAME)-bin:
 
 $(NAME)-arm:
 	$(MAKE) build-arm
-
-# $(NAME).service: $(NAME).service.tmpl
-# 	cat "$(NAME).service.tmpl" | envsubst > $(NAME).service
 
 files/$(NG1)-dist:
 	$(MAKE) build-web

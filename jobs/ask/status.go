@@ -98,7 +98,7 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 				return
 			}
 
-			// delete(s.Info, "_raw-response")
+			delete(s.Info, "_raw-response")
 
 			// add back on the name
 			s.Name = name
