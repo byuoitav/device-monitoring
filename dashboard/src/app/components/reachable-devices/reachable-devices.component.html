@@ -84,7 +84,7 @@
                     <pre>{{info?.packetLoss / 100 | percent}}</pre>
                 </div>
             </mat-list-item>
-            <mat-divider></mat-divider>
+            <mat-divider *ngIf="info?.averageRoundTrip !== '0ms'"></mat-divider>
     
             <mat-list-item *ngIf="info?.averageRoundTrip !== '0ms'">
                 <div class="list-item">

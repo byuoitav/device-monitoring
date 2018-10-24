@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -98,7 +99,9 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 				return
 			}
 
-			delete(s.Info, "_raw-response")
+			if strings.EqualFold(status.Healthy, s.StatusCode) {
+				delete(s.Info, "_raw-response")
+			}
 
 			// add back on the name
 			s.Name = name

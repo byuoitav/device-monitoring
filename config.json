@@ -4,7 +4,7 @@
         "triggers": [
             {
                 "type": "interval",
-                "every": "2m"
+                "every": "1m"
             }
         ],
         "enabled": false
@@ -14,7 +14,7 @@
         "triggers": [
             {
                 "type": "interval",
-                "every": "10m"
+                "every": "5m"
             }
         ],
         "enabled": true
@@ -24,7 +24,7 @@
         "triggers": [
             {
                 "type": "interval",
-                "every": "10m"
+                "every": "1m"
             }
         ],
         "context": [
