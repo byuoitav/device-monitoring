@@ -10,6 +10,8 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/jobs"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
 func main() {
@@ -30,7 +32,18 @@ func main() {
 	port := ":10000"
 	router := common.NewRouter()
 
-	// secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
+	router.GET("/dash", func(context echo.Context) error {
+		return context.Redirect(http.StatusMovedPermanently, "/dashboard")
+	})
+
+	// redirect from /dash to /dashboard
+	// server static webpage
+	router.Group("/dashboard", middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:   "dashboard",
+		Index:  "index.html",
+		HTML5:  true,
+		Browse: true,
+	}))
 
 	// device info endpoints
 	router.GET("/device", handlers.GetDeviceInfo)
@@ -48,10 +61,6 @@ func main() {
 	// action endpoints
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
-
-	// dashboard
-	// TODO redirect from /dash
-	router.Static("/dashboard", "dashboard")
 
 	server := http.Server{
 		Addr:           port,
