@@ -35,7 +35,7 @@ S3_BUCKET=$(shell echo $(AWS_S3_SERVICES_BUCKET))
 
 all: deploy clean
 
-ci: setenv deps all
+ci: deps all
 
 build: build-x86 build-arm build-web
 
@@ -97,6 +97,3 @@ $(NAME)-arm:
 
 files/$(NG1)-dist:
 	$(MAKE) build-web
-
-setenv: setenv.sh
-	./setenv.sh
