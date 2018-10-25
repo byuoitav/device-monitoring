@@ -14,6 +14,9 @@ export class Status {
   @JsonProperty("version", String)
   version: string = undefined;
 
+  @JsonProperty("uptime", String)
+  uptime: string = undefined;
+
   @JsonProperty("info", Any, true)
   info: any = undefined;
 }
