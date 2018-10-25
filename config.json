@@ -7,7 +7,7 @@
                 "every": "1m"
             }
         ],
-        "enabled": false
+        "enabled": true
     },
     {
         "name": "state-update",
@@ -49,7 +49,7 @@
                 "port": 10000
             }
         ],
-        "enabled": false
+        "enabled": true
     },
     {
         "name": "example job",
