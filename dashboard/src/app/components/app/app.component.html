@@ -1,0 +1,55 @@
+<div class="base" [ngClass]="api?.theme + '-theme'">
+
+<mat-toolbar color="primary">
+    <button mat-button style="padding: 0" (click)="api.refresh()">
+        <mat-icon style="margin-right: .35em">refresh</mat-icon>
+        <span style="font: 500 20px/32px Roboto, 'Helvetica Neue', sans-serif">System Health Dashboard</span>
+    </button>
+
+    <span class="fill-remaining-space"></span>
+    <button mat-button style="padding: 0" (click)="api?.theme === 'default' ? api.theme = 'dark' : api.theme ='default'">
+        <span style="font: 500 20px/32px Roboto, 'Helvetica Neue', sans-serif">{{id}}</span>
+    </button>
+</mat-toolbar>
+
+<mat-sidenav-container class="sidenav-container">
+    <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.wide]="wideSidenav">
+        <button mat-button routerLink="/overview" routerLinkActive="active">
+            <mat-icon>home</mat-icon>
+
+            <ng-container *ngIf="wideSidenav">
+                Overview
+            </ng-container>
+        </button> 
+        <button mat-button routerLink="/reachable-devices" routerLinkActive="active">
+            <mat-icon>network_check</mat-icon>
+
+            <ng-container *ngIf="wideSidenav">
+                Reachable Devices
+            </ng-container>
+        </button> 
+        <button mat-button routerLink="/software" routerLinkActive="active">
+            <mat-icon>code</mat-icon>
+
+            <ng-container *ngIf="wideSidenav">
+                Software Status
+            </ng-container>
+        </button> 
+
+        <!-- at the bottom -->
+        <button mat-button class="bottom" (click)="wideSidenav = !wideSidenav">
+            <mat-icon *ngIf="wideSidenav">chevron_left</mat-icon>
+            <mat-icon *ngIf="!wideSidenav">chevron_right</mat-icon>
+
+            <ng-container *ngIf="wideSidenav">
+                Collapse sidebar
+            </ng-container>
+        </button>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="content-container" [class.wide-nav]="wideSidenav">
+        <router-outlet></router-outlet>
+    </mat-sidenav-content>
+</mat-sidenav-container>
+
+</div>
