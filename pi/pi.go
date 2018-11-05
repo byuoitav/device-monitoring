@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	deviceID = os.Getenv("PI_HOSTNAME")
+	deviceID = os.Getenv("SYSTEM_ID")
 )
 
 // DeviceID returns the pi hostname of the device
