@@ -6,7 +6,7 @@ import { environment } from "./environments/environment";
 
 (<any>window).log = {
   enable: () => {
-    // create iframe, steal it's console
+    // create iframe, steal its console
     const i = document.createElement("iframe");
     i.style.display = "none";
     document.body.appendChild(i);
@@ -20,6 +20,7 @@ import { environment } from "./environments/environment";
     );
 
     window.console.log = function() {};
+    window.console.info = function() {};
   }
 };
 
