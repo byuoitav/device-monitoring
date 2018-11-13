@@ -85,9 +85,9 @@ func init() {
 // StartJobScheduler starts the jobs in the job map
 func StartJobScheduler() {
 	// start event router
-	hubAddr := os.Getenv("EVENT_ROUTER_ADDRESS")
+	hubAddr := os.Getenv("HUB_ADDRESS")
 	if len(hubAddr) == 0 {
-		log.L.Fatalf("Event router address is not set.")
+		log.L.Fatalf("HUB_ADDRESS is not set.")
 	}
 
 	var err *nerr.E
