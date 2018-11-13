@@ -5,7 +5,7 @@ Requires=docker.service
 
 [Service]
 WorkingDirectory=/byu/device-monitoring/files/
-Environment=PI_HOSTNAME=$PI_HOSTNAME
+Environment=SYSTEM_ID=$SYSTEM_ID
 Environment=DB_ADDRESS=$DB_ADDRESS
 Environment=DB_USERNAME=$DB_USERNAME
 Environment=DB_PASSWORD=$DB_PASSWORD
