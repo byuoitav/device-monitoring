@@ -48,9 +48,11 @@
                 <div class="list-item">
                     <p>DHCP Enabled</p>
 
-                    <mat-icon *ngIf="!isDefined(deviceInfo?.dhcp?.enabled)">help_outline</mat-icon>
-                    <mat-icon *ngIf="isDefined(deviceInfo?.dhcp?.enabled) && !deviceInfo?.dhcp?.enabled">highlight_off</mat-icon>
-                    <mat-icon *ngIf="isDefined(deviceInfo?.dhcp?.enabled) && deviceInfo?.dhcp?.enabled">check_circle_outline</mat-icon>
+                    <div id="status-theme">
+                        <mat-icon color="warn" *ngIf="!isDefined(deviceInfo?.dhcp?.enabled)">help_outline</mat-icon>
+                        <mat-icon *ngIf="isDefined(deviceInfo?.dhcp?.enabled) && !deviceInfo?.dhcp?.enabled">highlight_off</mat-icon>
+                        <mat-icon *ngIf="isDefined(deviceInfo?.dhcp?.enabled) && deviceInfo?.dhcp?.enabled">check_circle_outline</mat-icon>
+                    </div>
                 </div>
             </mat-list-item>
         </mat-list>
