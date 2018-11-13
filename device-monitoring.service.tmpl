@@ -11,6 +11,7 @@ Environment=DB_USERNAME=$DB_USERNAME
 Environment=DB_PASSWORD=$DB_PASSWORD
 Environment=EVENT_ROUTER_ADDRESS=$EVENT_ROUTER_ADDRESS
 ExecStart=/byu/device-monitoring/device-monitoring
+Restart=on-failure
 
 [Install]
 WantedBy=default.target
