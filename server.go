@@ -62,6 +62,9 @@ func main() {
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
 
+	// provisioning endpoints
+	router.GET("/provisioning/id", handlers.GetProvisioningID) 
+
 	server := http.Server{
 		Addr:           port,
 		MaxHeaderBytes: 1024 * 10,
