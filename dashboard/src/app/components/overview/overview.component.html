@@ -1,0 +1,127 @@
+<div class="card-container">
+<mat-card class="card">
+    <mat-progress-bar color="accent" *ngIf="deviceInfo == null" mode="query"></mat-progress-bar>
+    <mat-card-header>
+        <mat-card-title>System Info</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <mat-list>
+            <mat-list-item>
+                <div class="list-item">
+                    <p>Hostname</p>
+                    <p>{{deviceInfo?.hostname}}</p>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+
+            <mat-list-item>
+                <div class="list-item">
+                    <p>ID</p>
+                    <p>{{deviceInfo?.id}}</p>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+
+            <mat-list-item>
+                <div class="list-item">
+                    <p>IP</p>
+                    <p>{{deviceInfo?.ip}}</p>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+
+            <mat-list-item>
+                <div class="list-item">
+                    <p>Internet Connectivity</p>
+
+                    <!-- TODO make a color palatte for status colors success/warn/error -->
+                    <div id="status-theme">
+                        <mat-icon color="primary" *ngIf="deviceInfo?.internetConnectivity">wifi_off</mat-icon>
+                        <mat-icon color="warn" *ngIf="!deviceInfo?.internetConnectivity">wifi</mat-icon>
+                    </div>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+
+            <mat-list-item>
+                <div class="list-item">
+                    <p>DHCP Enabled</p>
+
+                    <mat-icon *ngIf="!isDefined(deviceInfo?.dhcp?.enabled)">help_outline</mat-icon>
+                    <mat-icon *ngIf="isDefined(deviceInfo?.dhcp?.enabled) && !deviceInfo?.dhcp?.enabled">highlight_off</mat-icon>
+                    <mat-icon *ngIf="isDefined(deviceInfo?.dhcp?.enabled) && deviceInfo?.dhcp?.enabled">check_circle_outline</mat-icon>
+                </div>
+            </mat-list-item>
+        </mat-list>
+    </mat-card-content>
+    <mat-card-actions>
+        <button mat-raised-button color="accent" (click)="api.switchToUI()">
+            <mat-icon>arrow_back</mat-icon>
+            Back To UI
+        </button>
+        <button mat-raised-button color="warn" (click)="api.reboot()">
+            <mat-icon>power_settings_new</mat-icon>
+            Reboot
+        </button>
+        <button mat-raised-button color="accent" *ngIf="deviceInfo?.dhcp?.toggleable">
+            <mat-icon *ngIf="!deviceInfo?.dhcp?.enabled">lock_open</mat-icon>
+            <mat-icon *ngIf="deviceInfo?.dhcp?.enabled">lock</mat-icon>
+            Turn DHCP {{deviceInfo?.dhcp?.enabled ? 'Off' : 'On'}}
+        </button>
+    </mat-card-actions>
+</mat-card>
+
+<mat-card class="card">
+    <mat-progress-bar color="accent" *ngIf="pingResult == null" mode="query"></mat-progress-bar>
+    <mat-card-header>
+        <mat-card-title>Room Status</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <mat-list>
+            <mat-list-item>
+                <div class="list-item">
+                    <p>Devices Reachable</p>
+                    <p>{{pingResult?.successful?.length}}</p>
+                </div>
+            </mat-list-item>
+
+            <mat-divider></mat-divider>
+            <mat-list-item>
+                <div class="list-item">
+                    <p>Devices Unreachable</p>
+                    <p>{{pingResult?.unsuccessful?.length}}</p>
+                </div>
+            </mat-list-item>
+        </mat-list>
+    </mat-card-content>
+</mat-card>
+
+<mat-card class="card">
+    <mat-progress-bar color="accent" *ngIf="deviceInfo?.status == null" mode="query"></mat-progress-bar>
+    <mat-card-header>
+        <mat-card-title>Software Status</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <mat-list>
+            <ng-container *ngFor="let status of deviceInfo?.status; let i = index">
+                <mat-list-item>
+                    <div class="list-item">
+                        <p>{{status?.name}}</p>
+
+                        <!-- TODO alphabetize status' list -->
+                        <div id="status-theme">
+                            <mat-icon color="primary" *ngIf="status?.statuscode === 'healthy'">check_circle_outline</mat-icon>
+                            <mat-icon color="warn" *ngIf="status?.statuscode !== 'healthy'">error_outline</mat-icon>
+                        </div>
+                    </div>
+                </mat-list-item>
+
+                <mat-divider *ngIf="i !== deviceInfo?.status?.length-1"></mat-divider>
+            </ng-container>
+        </mat-list>
+    </mat-card-content>
+</mat-card>
+</div>

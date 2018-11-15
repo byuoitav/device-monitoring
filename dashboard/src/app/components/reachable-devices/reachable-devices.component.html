@@ -1,0 +1,99 @@
+<mat-progress-bar color="accent" *ngIf="pingResult == null" mode="query"></mat-progress-bar>
+
+<div class="container">
+<mat-accordion [multi]="false">
+    <ng-container *ngFor="let result of pingResult?.unsuccessful">
+        <ng-container *ngTemplateOutlet="pingInfoList; context: { result: result }"></ng-container>
+    </ng-container>
+
+    <ng-container *ngFor="let result of pingResult?.successful">
+        <ng-container *ngTemplateOutlet="pingInfoList; context: { result: result }"></ng-container>
+    </ng-container>
+
+    <ng-template #pingInfoList let-info="result">
+    <mat-expansion-panel [hideToggle]="true">
+        <mat-expansion-panel-header>
+            <mat-panel-title>
+                {{info.deviceID}}
+            </mat-panel-title>
+        
+            <!-- TODO make a color palatte for status colors success/warn/error -->
+            <mat-panel-description>
+                {{info?.ip}}
+
+                <div id="status-theme">
+                    <mat-icon color="primary" *ngIf="info?.packetLoss < 33 && info?.packetLoss !== 100">check_circle</mat-icon>
+                    <mat-icon color="accent" *ngIf="info?.packetLoss >= 33 && info?.packetLoss !== 100">warning</mat-icon>
+                    <mat-icon color="warn" *ngIf="info?.packetLoss === 100">error</mat-icon>
+                </div>
+            </mat-panel-description>
+        </mat-expansion-panel-header>
+    
+        <mat-list>
+            <mat-list-item>
+                <div class="list-item">
+                    <span>Device ID</span>
+                    <pre>{{info?.deviceID}}</pre>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+    
+            <mat-list-item>
+                <div class="list-item">
+                    <span>Device Address (in DB)</span>
+                    <pre>{{info?.address}}</pre>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+    
+            <mat-list-item>
+                <div class="list-item">
+                    <span>Resolved IP</span>
+                    <pre>{{info?.ip}}</pre>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+    
+            <mat-list-item *ngIf="info?.error?.length > 0">
+                <div class="list-item">
+                    <span>Error</span>
+                    <pre>{{info?.error}}</pre>
+                </div>
+            </mat-list-item>
+            <mat-divider *ngIf="info?.error?.length > 0"></mat-divider>
+    
+            <mat-list-item>
+                <div class="list-item">
+                    <span>Packets Sent</span>
+                    <pre>{{info?.packetsSent}}</pre>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+    
+            <mat-list-item>
+                <div class="list-item">
+                    <span>Packets Received</span>
+                    <pre>{{info?.packetsReceived}}</pre>
+                </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+    
+            <mat-list-item>
+                <div class="list-item">
+                    <span>Packet Loss</span>
+                    <pre>{{info?.packetLoss / 100 | percent}}</pre>
+                </div>
+            </mat-list-item>
+            <mat-divider *ngIf="info?.averageRoundTrip !== '0ms'"></mat-divider>
+    
+            <mat-list-item *ngIf="info?.averageRoundTrip !== '0ms'">
+                <div class="list-item">
+                    <span>Average Round Trip Time</span>
+                    <pre>{{info?.averageRoundTrip}}</pre>
+                </div>
+            </mat-list-item>
+        </mat-list>
+    </mat-expansion-panel>
+    </ng-template>
+</mat-accordion>
+</div>
