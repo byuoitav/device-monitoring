@@ -10,6 +10,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/jobs"
+	"github.com/byuoitav/device-monitoring/provisioning"
 	"github.com/byuoitav/device-monitoring/socket"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -65,8 +66,7 @@ func main() {
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
 
 	// provisioning endpoints
-	provisioningManager := socket.NewManager()
-	router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioningManager))
+	router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioning.SocketManager()))
 	router.GET("/provisioning/id", handlers.GetProvisioningID)
 
 	server := http.Server{

@@ -6,19 +6,32 @@ import (
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/v2/events"
-	"github.com/byuoitav/device-monitoring/localsystem"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo"
 )
 
-// A Manager manages a group of websocket connections
-type Manager struct {
-	clients    map[*Client]bool
-	register   chan *Client
-	unregister chan *Client
+type (
+	// An EventHandler is a struct that handles websocket events
+	EventHandler interface {
+		// OnClientConnect is called once each time a new client is connected.
+		// use sendToClient to send events to the new client.
+		OnClientConnect(sendToClient chan events.Event)
 
-	broadcast chan events.Event
-}
+		// OnEventReceived will be called each time _any_ client sends an event.
+		// event is the event recieved, and events can be sent back to _all_ clients using sendToAll.
+		OnEventReceived(event events.Event, sendToAll chan events.Event)
+	}
+
+	// A Manager manages a group of websocket connections
+	Manager struct {
+		clients    map[*Client]bool
+		register   chan *Client
+		unregister chan *Client
+
+		broadcast    chan events.Event
+		eventHandler EventHandler
+	}
+)
 
 // NewManager returns new manager.
 func NewManager() *Manager {
@@ -34,12 +47,21 @@ func NewManager() *Manager {
 	return m
 }
 
+// SetEventHandler sets the event handler for the websocket manager
+func (m *Manager) SetEventHandler(handler EventHandler) {
+	m.eventHandler = handler
+}
+
 func (m *Manager) run() {
 	for {
 		select {
 		case client := <-m.register:
 			log.L.Infof("Registering %s to websocket manager", client.conn.RemoteAddr())
 			m.clients[client] = true
+
+			if m.eventHandler != nil {
+				m.eventHandler.OnClientConnect(client.sendChan)
+			}
 		case client := <-m.unregister:
 			if _, ok := m.clients[client]; ok {
 				log.L.Infof("Removing %s from websocket manager", client.conn.RemoteAddr())
@@ -86,13 +108,6 @@ func UpgradeToWebsocket(manager *Manager) func(ctx echo.Context) error {
 
 		go client.writePump()
 		go client.readPump()
-
-		// check if we are provisioned already and notify the client
-		client.sendChan <- events.Event{
-			GeneratingSystem: localsystem.MustSystemID(),
-			Key:              "provisioned",
-			Value:            "true",
-		}
 
 		return nil
 	}

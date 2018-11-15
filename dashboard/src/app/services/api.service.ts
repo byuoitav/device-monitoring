@@ -38,7 +38,7 @@ export class APIService {
     this.urlParams.set("theme", name);
     window.history.replaceState(
       null,
-      "Dashboard",
+      "System Health Dashboard",
       window.location.pathname + "?" + this.urlParams.toString()
     );
   }

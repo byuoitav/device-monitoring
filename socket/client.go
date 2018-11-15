@@ -1,7 +1,6 @@
 package socket
 
 import (
-	"bytes"
 	"encoding/json"
 	"time"
 
@@ -43,6 +42,7 @@ func (c *Client) readPump() {
 	})
 
 	// read messages from client forever
+	var event events.Event
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -50,9 +50,16 @@ func (c *Client) readPump() {
 			break
 		}
 
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		err = json.Unmarshal(message, &event)
+		if err != nil {
+			log.L.Warnf("unable to unmarshal event from client %s: %v", c.conn.RemoteAddr(), err)
+			break
+		}
 
-		// do something with the messages
+		if c.manager.eventHandler != nil {
+			c.manager.eventHandler.OnEventReceived(event, c.manager.broadcast)
+		}
+		// message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 	}
 }
 
