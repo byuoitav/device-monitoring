@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/byuoitav/central-event-system/hub/base"
+	"github.com/byuoitav/central-event-system/messenger"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
@@ -18,7 +20,7 @@ var (
 	runners []*runner
 	configs []JobConfig
 
-	eventNode *events.EventNode
+	m *messenger.Messenger
 )
 
 type runner struct {
@@ -83,13 +85,16 @@ func init() {
 // StartJobScheduler starts the jobs in the job map
 func StartJobScheduler() {
 	// start event router
-	eventRouter := os.Getenv("EVENT_ROUTER_ADDRESS")
-	if len(eventRouter) == 0 {
-		log.L.Fatalf("Event router address is not set.")
+	hubAddr := os.Getenv("HUB_ADDRESS")
+	if len(hubAddr) == 0 {
+		log.L.Fatalf("HUB_ADDRESS is not set.")
 	}
 
-	filters := []string{}
-	eventNode = events.NewEventNode("Device Monitoring", eventRouter, filters)
+	var err *nerr.E
+	m, err = messenger.BuildMessenger(hubAddr, base.Messenger, 1000)
+	if err != nil {
+		fmt.Printf("Could not build the messenger: %s", err)
+	}
 
 	workers := 10
 	queue := 100
@@ -146,7 +151,7 @@ func RunJob(job Job, ctx interface{}) interface{} {
 	go func() {
 		for event := range eventChan {
 			log.L.Debugf("Publishing event: %+v", event)
-			eventNode.PublishEvent(events.APISuccess, event)
+			m.SendEvent(event)
 		}
 	}()
 
@@ -156,13 +161,7 @@ func RunJob(job Job, ctx interface{}) interface{} {
 // TODO this needs to be updated with new event package
 func readEvents(outChan chan events.Event) {
 	for {
-		event, err := eventNode.Read()
-		_, err = eventNode.Read()
-		if err != nil {
-			log.L.Warnf("unable to read event from eventNode: %v", err)
-			continue
-		}
-
+		event := m.ReceiveEvent()
 		outChan <- event
 	}
 }
@@ -228,8 +227,8 @@ func (r *runner) runInterval() {
 }
 
 // EventNode returns the event node.
-func EventNode() *events.EventNode {
-	return eventNode
+func Messenger() *messenger.Messenger {
+	return m
 }
 
 // GetJobContext returns the context parsed for a specific job, even if it isn't enabled

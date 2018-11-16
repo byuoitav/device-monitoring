@@ -5,12 +5,13 @@ Requires=docker.service
 
 [Service]
 WorkingDirectory=/byu/device-monitoring/files/
-Environment=PI_HOSTNAME=$PI_HOSTNAME
+Environment=SYSTEM_ID=$SYSTEM_ID
 Environment=DB_ADDRESS=$DB_ADDRESS
 Environment=DB_USERNAME=$DB_USERNAME
 Environment=DB_PASSWORD=$DB_PASSWORD
-Environment=EVENT_ROUTER_ADDRESS=$EVENT_ROUTER_ADDRESS
+Environment=HUB_ADDRESS=$HUB_ADDRESS
 ExecStart=/byu/device-monitoring/device-monitoring
+Restart=on-failure
 
 [Install]
 WantedBy=default.target

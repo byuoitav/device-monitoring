@@ -29,23 +29,19 @@
         ],
         "context": [
             {
-                "name": "av-api",
+                "name": "AV API",
                 "port": 8000
             },
             {
-                "name": "event-router",
-                "port": 7000
+                "name": "Central Event Hub",
+                "port": 7100
             },
             {
-                "name": "touchpanel-ui",
+                "name": "UI",
                 "port": 8888
             },
             {
-                "name": "event-translator",
-                "port": 7000
-            },
-            {
-                "name": "device-monitoring",
+                "name": "Device Monitoring Service",
                 "port": 10000
             }
         ],

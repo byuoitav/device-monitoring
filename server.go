@@ -32,11 +32,11 @@ func main() {
 	port := ":10000"
 	router := common.NewRouter()
 
+	// redirect from /dash to /dashboard
 	router.GET("/dash", func(context echo.Context) error {
 		return context.Redirect(http.StatusMovedPermanently, "/dashboard")
 	})
 
-	// redirect from /dash to /dashboard
 	// server static webpage
 	router.Group("/dashboard", middleware.StaticWithConfig(middleware.StaticConfig{
 		Root:   "dashboard",
