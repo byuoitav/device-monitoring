@@ -71,6 +71,7 @@ ifneq "$(BRANCH)" "master"
 	# put vendored packages in here
 	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
 	$(VENDOR) github.com/byuoitav/common
+	$(VENDOR) github.com/byuoitav/central-event-system
 endif
 	$(GOGET) -d -v
 
