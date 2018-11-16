@@ -14,17 +14,17 @@ import (
 )
 
 var (
-	deviceID = os.Getenv("PI_HOSTNAME")
+	deviceID = os.Getenv("SYSTEM_ID")
 )
 
 // DeviceID returns the pi hostname of the device
 func DeviceID() (string, *nerr.E) {
 	if len(deviceID) == 0 {
-		return "", nerr.Create("PI_HOSTNAME not set.", "string")
+		return "", nerr.Create("SYSTEM_ID not set.", "string")
 	}
 
 	if !structs.IsDeviceIDValid(deviceID) {
-		return "", nerr.Create("PI_HOSTNAME is set as %s, which is an invalid hostname.", deviceID)
+		return "", nerr.Create("SYSTEM_ID is set as %s, which is an invalid hostname.", deviceID)
 	}
 
 	return deviceID, nil
