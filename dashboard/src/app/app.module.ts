@@ -19,6 +19,7 @@ import "hammerjs";
 
 import { AppComponent } from "./components/app/app.component";
 import { OverviewComponent } from "./components/overview/overview.component";
+import { ProvisioningComponent } from "./components/provisioning/provisioning.component";
 import { SoftwareInfoComponent } from "./components/software-info/software-info.component";
 import { ReachableDevicesComponent } from "./components/reachable-devices/reachable-devices.component";
 import { APIService } from "./services/api.service";
@@ -34,6 +35,10 @@ const routes: Routes = [
     component: OverviewComponent
   },
   {
+    path: "provisioning",
+    component: ProvisioningComponent
+  },
+  {
     path: "software",
     component: SoftwareInfoComponent
   },
@@ -47,6 +52,7 @@ const routes: Routes = [
   declarations: [
     AppComponent,
     OverviewComponent,
+    ProvisioningComponent,
     SoftwareInfoComponent,
     ReachableDevicesComponent
   ],

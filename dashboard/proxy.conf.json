@@ -10,5 +10,12 @@
         "secure": false,
         "logLevel": "debug",
         "changeOrigin": true
+    },
+    "/provisioning/ws": {
+        "target": "http://localhost:10000",
+        "secure": false,
+        "logLevel": "debug",
+        "changeOrigin": true,
+        "ws": true
     }
 }

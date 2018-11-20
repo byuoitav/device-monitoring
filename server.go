@@ -2,29 +2,17 @@ package main
 
 import (
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/byuoitav/common"
-	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/jobs"
+	"github.com/byuoitav/device-monitoring/provisioning"
+	"github.com/byuoitav/device-monitoring/socket"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
 
 func main() {
-	// for some reason, after sending icmp packets, you can't kill the service without this
-	// catch sigterm and exit
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		log.L.Infof("Captured sigterm")
-		os.Exit(1)
-	}()
-
 	// start jobs
 	go jobs.StartJobScheduler()
 
@@ -32,12 +20,13 @@ func main() {
 	port := ":10000"
 	router := common.NewRouter()
 
+	// remove this eventually
 	// redirect from /dash to /dashboard
 	router.GET("/dash", func(context echo.Context) error {
 		return context.Redirect(http.StatusMovedPermanently, "/dashboard")
 	})
 
-	// server static webpage
+	// static webpages
 	router.Group("/dashboard", middleware.StaticWithConfig(middleware.StaticConfig{
 		Root:   "dashboard",
 		Index:  "index.html",
@@ -61,6 +50,10 @@ func main() {
 	// action endpoints
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
+
+	// provisioning endpoints
+	router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioning.SocketManager()))
+	router.GET("/provisioning/id", handlers.GetProvisioningID)
 
 	server := http.Server{
 		Addr:           port,

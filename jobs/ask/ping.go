@@ -12,7 +12,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
-	"github.com/byuoitav/device-monitoring/pi"
+	"github.com/byuoitav/device-monitoring/localsystem"
 	ping "github.com/sparrc/go-ping"
 )
 
@@ -43,11 +43,11 @@ type devicePingResult struct {
 
 // Run runs the job.
 func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
-	log.L.Infof("Getting pinggable status of devices in room %s", pi.MustRoomID())
+	log.L.Infof("Getting pinggable status of devices in room %s", localsystem.MustRoomID())
 
-	devices, err := db.GetDB().GetDevicesByRoom(pi.MustRoomID())
+	devices, err := db.GetDB().GetDevicesByRoom(localsystem.MustRoomID())
 	if err != nil {
-		return nerr.Translate(err).Addf("unable to get devices in room %v: %v", pi.MustRoomID(), err)
+		return nerr.Translate(err).Addf("unable to get devices in room %v: %v", localsystem.MustRoomID(), err)
 	}
 
 	ret := PingResult{}
@@ -108,22 +108,22 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 
 	// build a generic event to send for every device
 	event := events.Event{
-		GeneratingSystem: pi.MustHostname(),
+		GeneratingSystem: localsystem.MustSystemID(),
 		Timestamp:        time.Now(),
 		EventTags: []string{
 			events.Heartbeat,
 		},
-		AffectedRoom: events.GenerateBasicRoomInfo(pi.MustRoomID()),
-		TargetDevice: events.GenerateBasicDeviceInfo(pi.MustDeviceID()),
+		AffectedRoom: events.GenerateBasicRoomInfo(localsystem.MustRoomID()),
 	}
 
 	for result := range resultChan {
 		if len(result.Error) > 0 {
 			ret.Unsuccessful = append(ret.Unsuccessful, result)
-			log.L.Infof("error pinging %v: %v", result.DeviceID, result.Error)
+			log.L.Warnf("error pinging %v: %v", result.DeviceID, result.Error)
 		} else {
 			ret.Successful = append(ret.Successful, result)
 
+			event.TargetDevice = events.GenerateBasicDeviceInfo(result.DeviceID)
 			event.Key = "last-heartbeat"
 			event.Value = time.Now().Format(time.RFC3339)
 			eventWrite <- event

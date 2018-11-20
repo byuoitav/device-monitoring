@@ -17,13 +17,12 @@
                 {{info.deviceID}}
             </mat-panel-title>
         
-            <!-- TODO make a color palatte for status colors success/warn/error -->
             <mat-panel-description>
-                {{info?.ip}}
+                {{info?.ip || "Unable to resolve"}}
 
                 <div id="status-theme">
-                    <mat-icon color="primary" *ngIf="info?.packetLoss < 33 && info?.packetLoss !== 100">check_circle</mat-icon>
-                    <mat-icon color="accent" *ngIf="info?.packetLoss >= 33 && info?.packetLoss !== 100">warning</mat-icon>
+                    <mat-icon color="primary" *ngIf="info?.packetLoss < 33 && info?.packetLoss !== 100 && info?.error?.length === 0">check_circle</mat-icon>
+                    <mat-icon color="accent" *ngIf="info?.error?.length > 0 || (info?.packetLoss >= 33 && info?.packetLoss !== 100)">warning</mat-icon>
                     <mat-icon color="warn" *ngIf="info?.packetLoss === 100">error</mat-icon>
                 </div>
             </mat-panel-description>
