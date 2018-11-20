@@ -108,22 +108,22 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 
 	// build a generic event to send for every device
 	event := events.Event{
-		GeneratingSystem: localsystem.MustHostname(),
+		GeneratingSystem: localsystem.MustSystemID(),
 		Timestamp:        time.Now(),
 		EventTags: []string{
 			events.Heartbeat,
 		},
 		AffectedRoom: events.GenerateBasicRoomInfo(localsystem.MustRoomID()),
-		TargetDevice: events.GenerateBasicDeviceInfo(localsystem.MustSystemID()),
 	}
 
 	for result := range resultChan {
 		if len(result.Error) > 0 {
 			ret.Unsuccessful = append(ret.Unsuccessful, result)
-			log.L.Infof("error pinging %v: %v", result.DeviceID, result.Error)
+			log.L.Warnf("error pinging %v: %v", result.DeviceID, result.Error)
 		} else {
 			ret.Successful = append(ret.Successful, result)
 
+			event.TargetDevice = events.GenerateBasicDeviceInfo(result.DeviceID)
 			event.Key = "last-heartbeat"
 			event.Value = time.Now().Format(time.RFC3339)
 			eventWrite <- event
