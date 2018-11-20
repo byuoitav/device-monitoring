@@ -8,7 +8,7 @@ import (
 	"github.com/byuoitav/common/status"
 	"github.com/byuoitav/device-monitoring/jobs"
 	"github.com/byuoitav/device-monitoring/jobs/ask"
-	"github.com/byuoitav/device-monitoring/pi"
+	"github.com/byuoitav/device-monitoring/localsystem"
 	"github.com/labstack/echo"
 )
 
@@ -17,11 +17,11 @@ func GetDeviceInfo(context echo.Context) error {
 	data := make(map[string]interface{})
 
 	// internet status
-	internet := pi.IsConnectedToInternet()
+	internet := localsystem.IsConnectedToInternet()
 	data["internet-connectivity"] = internet
 
 	// device hostname
-	hostname, err := pi.Hostname()
+	hostname, err := localsystem.Hostname()
 	if err != nil {
 		data["error"] = err
 		return context.JSON(http.StatusInternalServerError, data)
@@ -29,7 +29,7 @@ func GetDeviceInfo(context echo.Context) error {
 	data["hostname"] = hostname
 
 	// device id
-	id, err := pi.DeviceID()
+	id, err := localsystem.SystemID()
 	if err != nil {
 		data["error"] = err
 		return context.JSON(http.StatusInternalServerError, data)
@@ -37,7 +37,7 @@ func GetDeviceInfo(context echo.Context) error {
 	data["id"] = id
 
 	// device ip address
-	ip, err := pi.IPAddress()
+	ip, err := localsystem.IPAddress()
 	if err != nil {
 		data["error"] = err
 		return context.JSON(http.StatusInternalServerError, data)
@@ -68,14 +68,14 @@ func GetDeviceInfo(context echo.Context) error {
 	data["dhcp"] = dhcpMap
 
 	// dhcp status
-	usingDHCP, err := pi.UsingDHCP()
+	usingDHCP, err := localsystem.UsingDHCP()
 	if err != nil {
 		dhcpMap["error"] = err.String()
 		return context.JSON(http.StatusInternalServerError, data)
 	}
 	dhcpMap["enabled"] = usingDHCP
 
-	if err = pi.CanToggleDHCP(); err != nil {
+	if err = localsystem.CanToggleDHCP(); err != nil {
 		dhcpMap["error"] = err.String()
 		return context.JSON(http.StatusInternalServerError, data)
 	}
@@ -86,7 +86,7 @@ func GetDeviceInfo(context echo.Context) error {
 
 // GetHostname returns the hostname of the device we are on
 func GetHostname(context echo.Context) error {
-	hostname, err := pi.Hostname()
+	hostname, err := localsystem.Hostname()
 	if err != nil {
 		return context.String(http.StatusInternalServerError, err.Error())
 	}
@@ -96,7 +96,7 @@ func GetHostname(context echo.Context) error {
 
 // GetDeviceID returns the hostname of the device we are on
 func GetDeviceID(context echo.Context) error {
-	id, err := pi.DeviceID()
+	id, err := localsystem.SystemID()
 	if err != nil {
 		return context.String(http.StatusInternalServerError, err.Error())
 	}
@@ -106,7 +106,7 @@ func GetDeviceID(context echo.Context) error {
 
 // GetIPAddress returns the ip address of the device we are on
 func GetIPAddress(context echo.Context) error {
-	ip, err := pi.IPAddress()
+	ip, err := localsystem.IPAddress()
 	if err != nil {
 		return context.String(http.StatusInternalServerError, err.Error())
 	}
@@ -116,7 +116,7 @@ func GetIPAddress(context echo.Context) error {
 
 // IsConnectedToInternet returns a bool of true/false
 func IsConnectedToInternet(context echo.Context) error {
-	status := pi.IsConnectedToInternet()
+	status := localsystem.IsConnectedToInternet()
 	return context.String(http.StatusOK, fmt.Sprintf("%v", status))
 }
 
@@ -143,14 +143,14 @@ func GetStatusInfo(context echo.Context) error {
 func GetDHCPState(context echo.Context) error {
 	ret := make(map[string]interface{})
 
-	usingDHCP, err := pi.UsingDHCP()
+	usingDHCP, err := localsystem.UsingDHCP()
 	if err != nil {
 		ret["error"] = err.String()
 		return context.JSON(http.StatusInternalServerError, ret)
 	}
 	ret["enabled"] = usingDHCP
 
-	if err = pi.CanToggleDHCP(); err != nil {
+	if err = localsystem.CanToggleDHCP(); err != nil {
 		ret["error"] = err.String()
 		return context.JSON(http.StatusInternalServerError, ret)
 	}

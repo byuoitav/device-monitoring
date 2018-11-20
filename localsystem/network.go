@@ -1,8 +1,9 @@
-package pi
+package localsystem
 
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"regexp"
@@ -10,76 +11,65 @@ import (
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/structs"
 )
 
-var (
-	deviceID = os.Getenv("SYSTEM_ID")
+const (
+	dhcpFile = "/etc/dhcpcd.conf"
 )
 
-// DeviceID returns the pi hostname of the device
-func DeviceID() (string, *nerr.E) {
-	if len(deviceID) == 0 {
-		return "", nerr.Create("SYSTEM_ID not set.", "string")
+// Hostname returns the hostname of the device
+func Hostname() (string, *nerr.E) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", nerr.Translate(err).Addf("failed to get hostname.")
 	}
 
-	if !structs.IsDeviceIDValid(deviceID) {
-		return "", nerr.Create("SYSTEM_ID is set as %s, which is an invalid hostname.", deviceID)
-	}
-
-	return deviceID, nil
+	return hostname, nil
 }
 
-// MustDeviceID returns the pi hostname of the device, and panics if it isn't set or is invalid
-func MustDeviceID() string {
-	id, err := DeviceID()
+// MustHostname returns the hostname of the device, and panics if it fails
+func MustHostname() string {
+	hostname, err := Hostname()
 	if err != nil {
-		log.L.Fatalf("%s", err.Error())
+		log.L.Fatalf("failed to get hostname: %s", err.Error())
 	}
 
-	return id
+	return hostname
 }
 
-// BuildingID returns the room ID of the pi based on the hostname (everything before the last '-')
-func BuildingID() (string, *nerr.E) {
-	id, err := DeviceID()
+// IPAddress gets the public ip address of the device
+func IPAddress() (net.IP, *nerr.E) {
+	var ip net.IP
+	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return "", err.Addf("failed to get buildingID")
+		return nil, nerr.Translate(err).Addf("failed to get ip address of device")
 	}
 
-	split := strings.Split(id, "-")
-	return split[0], nil
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && strings.Contains(address.String(), "/24") {
+			ip, _, err = net.ParseCIDR(address.String())
+			if err != nil {
+				return nil, nerr.Translate(err).Addf("failed to get ip address of device")
+			}
+		}
+	}
+
+	if ip == nil {
+		return nil, nerr.Create("failed to get ip address of device", "string")
+	}
+
+	log.L.Infof("My IP address is %v", ip.String())
+	return ip, nil
 }
 
-// MustBuildingID returns the buildingID or panics if it fails
-func MustBuildingID() string {
-	id, err := BuildingID()
+// IsConnectedToInternet returns true if the device can reach google's servers.
+func IsConnectedToInternet() bool {
+	_, err := net.Dial("tcp", "google.com:80")
 	if err != nil {
-		log.L.Fatalf("failed to get buildingID: %s", err.Error())
+		return false
 	}
 
-	return id
-}
-
-// RoomID returns the room ID of the pi based on the hostname (everything before the last '-')
-func RoomID() (string, *nerr.E) {
-	id, err := DeviceID()
-	if err != nil {
-		return "", err.Addf("failed to get roomID")
-	}
-
-	split := strings.Split(id, "-")
-	return split[0] + "-" + split[1], nil
-}
-
-// MustRoomID returns the buildingID or panics if it fails
-func MustRoomID() string {
-	id, err := RoomID()
-	if err != nil {
-		log.L.Fatalf("failed to get roomID: %s", err.Error())
-	}
-
-	return id
+	return true
 }
 
 // UsingDHCP returns true if the device is using DHCP, and false if it has a static ip set.

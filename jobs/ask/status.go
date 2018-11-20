@@ -13,7 +13,7 @@ import (
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/status"
 	"github.com/byuoitav/common/v2/events"
-	"github.com/byuoitav/device-monitoring/pi"
+	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
 // StatusJob checks the status of important microservices, and reports their status.
@@ -112,13 +112,13 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 	close(resultChan)
 
 	event := events.Event{
-		GeneratingSystem: pi.MustHostname(),
+		GeneratingSystem: localsystem.MustHostname(),
 		Timestamp:        time.Now(),
 		EventTags: []string{
 			events.Heartbeat,
 		},
-		AffectedRoom: events.GenerateBasicRoomInfo(pi.MustRoomID()),
-		TargetDevice: events.GenerateBasicDeviceInfo(pi.MustDeviceID()),
+		AffectedRoom: events.GenerateBasicRoomInfo(localsystem.MustRoomID()),
+		TargetDevice: events.GenerateBasicDeviceInfo(localsystem.MustSystemID()),
 	}
 
 	var ret []status.Status

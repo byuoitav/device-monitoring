@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/device-monitoring/pi"
+	"github.com/byuoitav/device-monitoring/localsystem"
 	"github.com/labstack/echo"
 )
 
@@ -17,7 +17,7 @@ func RebootPi(context echo.Context) error {
 			time.Sleep(1 * time.Second)
 		}
 
-		err := pi.Reboot()
+		err := localsystem.Reboot()
 		if err != nil {
 			log.L.Errorf("failed to reboot pi: %v", err.Error())
 		}
