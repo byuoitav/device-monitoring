@@ -4,17 +4,14 @@ After=docker.service
 Requires=docker.service
 
 [Service]
-WorkingDirectory=/avcapi/device-monitoring/files/
-EnvironmentFile=/avcapi/environment
-ExecStart=/avcapi/device-monitoring/device-monitoring
+WorkingDirectory=/byu/device-monitoring/files/
+Environment=SYSTEM_ID=$SYSTEM_ID
+Environment=DB_ADDRESS=$DB_ADDRESS
+Environment=DB_USERNAME=$DB_USERNAME
+Environment=DB_PASSWORD=$DB_PASSWORD
+Environment=HUB_ADDRESS=$HUB_ADDRESS
+ExecStart=/byu/device-monitoring/device-monitoring
 Restart=on-failure
 
 [Install]
 WantedBy=default.target
-
-# TODO remove
-#Environment=SYSTEM_ID=$SYSTEM_ID
-#Environment=DB_ADDRESS=$DB_ADDRESS
-#Environment=DB_USERNAME=$DB_USERNAME
-#Environment=DB_PASSWORD=$DB_PASSWORD
-#Environment=HUB_ADDRESS=$HUB_ADDRESS
