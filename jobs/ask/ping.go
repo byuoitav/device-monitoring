@@ -130,5 +130,11 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 		}
 	}
 
+	// send an event for my own heartbeat
+	event.TargetDevice = events.GenerateBasicDeviceInfo(localsystem.MustSystemID())
+	event.Key = "last-heartbeat"
+	event.Value = time.Now().Format(time.RFC3339)
+	eventWrite <- event
+
 	return ret
 }
