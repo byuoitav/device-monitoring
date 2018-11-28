@@ -17,8 +17,7 @@ import (
 )
 
 // StatusJob checks the status of important microservices, and reports their status.
-type StatusJob struct {
-}
+type StatusJob struct{}
 
 type statusConfig struct {
 	Name string `json:"name"`
