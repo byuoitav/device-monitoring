@@ -2,6 +2,11 @@ package ask
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
@@ -138,20 +143,44 @@ func getHostInfo() (map[string]interface{}, *nerr.E) {
 
 	info["os"] = stat
 
-	// get temperature info
-	temps, err := host.SensorsTemperatures()
-	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get host info")
-	}
-
-	info["temperature"] = temps
-
 	users, err := host.Users()
 	if err != nil {
 		return info, nerr.Translate(err).Addf("failed to get host info")
 	}
 
 	info["users"] = users
+
+	temps := make(map[string]interface{})
+	count := make(map[string]int)
+	info["temperature"] = temps
+
+	filepath.Walk(temperatureRootPath, func(path string, info os.FileInfo, err error) error {
+		if info.Mode()&os.ModeSymlink == os.ModeSymlink && strings.Contains(path, "thermal_") {
+			// get type
+			ttype, err := ioutil.ReadFile(path + "/type")
+			if err != nil {
+				return err
+			}
+
+			// get temperature
+			ttemp, err := ioutil.ReadFile(path + "/temp")
+			if err != nil {
+				return err
+			}
+
+			stype := strings.TrimSpace(string(ttype))
+			dtemp, err := strconv.ParseFloat(strings.TrimSpace(string(ttemp)), 64)
+
+			temps[fmt.Sprintf("%s%d", stype, count[stype])] = dtemp / 1000
+			count[stype]++
+		}
+
+		if info.IsDir() && path != temperatureRootPath {
+			return filepath.SkipDir
+		}
+
+		return nil
+	})
 
 	return info, nil
 }
