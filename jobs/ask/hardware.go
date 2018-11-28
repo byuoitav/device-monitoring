@@ -7,8 +7,11 @@ import (
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/docker"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/net"
 )
 
 const (
@@ -20,9 +23,12 @@ type HardwareInfoJob struct{}
 
 // HardwareInfo is the struct of hardware information that is returned by this job.
 type HardwareInfo struct {
-	Host   map[string]interface{} `json:"host,omitempty"`
-	Memory map[string]interface{} `json:"memory,omitemtpy"`
-	CPU    map[string]interface{} `json:"cpu,omitempty"`
+	Host    map[string]interface{} `json:"host,omitempty"`
+	Memory  map[string]interface{} `json:"memory,omitemtpy"`
+	CPU     map[string]interface{} `json:"cpu,omitempty"`
+	Disk    map[string]interface{} `json:"disk,omitempty"`
+	Network map[string]interface{} `json:"network,omitempty"`
+	Docker  map[string]interface{} `json:"docker,omitempty"`
 }
 
 // Run runs the job
@@ -43,6 +49,21 @@ func (j *HardwareInfoJob) Run(ctx interface{}, eventWrite chan events.Event) int
 	}
 
 	ret.Host, err = getHostInfo()
+	if err != nil {
+		return nerr.Translate(err).Addf("failed to get hardware info")
+	}
+
+	ret.Disk, err = getDiskInfo()
+	if err != nil {
+		return nerr.Translate(err).Addf("failed to get hardware info")
+	}
+
+	ret.Network, err = getNetworkInfo()
+	if err != nil {
+		return nerr.Translate(err).Addf("failed to get hardware info")
+	}
+
+	ret.Docker, err = getDockerInfo()
 	if err != nil {
 		return nerr.Translate(err).Addf("failed to get hardware info")
 	}
@@ -81,7 +102,7 @@ func getCPUInfo() (map[string]interface{}, *nerr.E) {
 	}
 
 	if len(avgPercent) == 1 {
-		usage["cpu"] = avgPercent[0]
+		usage["avg"] = avgPercent[0]
 	}
 
 	return info, nil
@@ -131,6 +152,52 @@ func getHostInfo() (map[string]interface{}, *nerr.E) {
 	}
 
 	info["users"] = users
+
+	return info, nil
+}
+
+func getDiskInfo() (map[string]interface{}, *nerr.E) {
+	info := make(map[string]interface{})
+
+	usage, err := disk.Usage("/")
+	if err != nil {
+		return info, nerr.Translate(err).Addf("failed to get host info")
+	}
+
+	info["usage"] = usage
+
+	ioCounters, err := disk.IOCounters("sda", "mmcblk0")
+	if err != nil {
+		return info, nerr.Translate(err).Addf("failed to get host info")
+	}
+
+	info["io-counters"] = ioCounters
+
+	return info, nil
+}
+
+func getNetworkInfo() (map[string]interface{}, *nerr.E) {
+	info := make(map[string]interface{})
+
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return info, nerr.Translate(err).Addf("failed to get host info")
+	}
+
+	info["interfaces"] = interfaces
+
+	return info, nil
+}
+
+func getDockerInfo() (map[string]interface{}, *nerr.E) {
+	info := make(map[string]interface{})
+
+	stats, err := docker.GetDockerStat()
+	if err != nil {
+		return info, nerr.Translate(err).Addf("failed to get host info")
+	}
+
+	info["stats"] = stats
 
 	return info, nil
 }
