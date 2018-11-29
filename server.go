@@ -42,6 +42,7 @@ func main() {
 	router.GET("/device/network", handlers.IsConnectedToInternet)
 	router.GET("/device/status", handlers.GetStatusInfo)
 	router.GET("/device/dhcp", handlers.GetDHCPState)
+	router.GET("/device/screenshot", handlers.GetScreenshot)
 	router.GET("/device/hardwareinfo", handlers.GetMyHardwareInfo)
 
 	// router.GET("/hardwareinfo/:id", handlers.GetHardwareInfo)
