@@ -19,7 +19,7 @@ func (j *ScreenshotJob) Run(ctx interface{}, eventWrite chan events.Event) inter
 
 	log.L.Infof("Taking screenshot of the pi")
 
-	cmd := exec.Command("/usr/bin/xwd", "-root", "-display", ":0")
+	cmd := exec.Command("XAUTHORITY=/home/pi/.Xauthority /usr/bin/xwd", "-root")
 	cmd.Stdout = xwd
 	cmd.Stderr = stderr
 	cmd.Env = []string{"DISPLAY=:0.0"}
