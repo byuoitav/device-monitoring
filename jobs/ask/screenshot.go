@@ -17,13 +17,13 @@ func (j *ScreenshotJob) Run(ctx interface{}, eventWrite chan events.Event) inter
 	xwd := &bytes.Buffer{}
 	log.L.Infof("Taking screenshot of the pi")
 
-	cmd := exec.Command("/usr/bin/xwd", "-root")
+	cmd := exec.Command("/usr/bin/xwd", "-root", "-display", ":0")
 	cmd.Stdout = xwd
 
 	log.L.Debugf("Getting xwd screenshot with command: %s", cmd.Args)
 	err := cmd.Run()
 	if err != nil {
-		return nerr.Translate(err).Addf("failed to get a screenshot")
+		return nerr.Translate(err).Addf("failed to get a screenshot: %s", xwd.Bytes())
 	}
 
 	jpg := &bytes.Buffer{}
@@ -34,7 +34,7 @@ func (j *ScreenshotJob) Run(ctx interface{}, eventWrite chan events.Event) inter
 	log.L.Debugf("Converting xwd screenshot to jpeg with command: %s", cmd.Args)
 	err = cmd.Run()
 	if err != nil {
-		return nerr.Translate(err).Addf("failed to get a screenshot")
+		return nerr.Translate(err).Addf("failed to get a screenshot: %s", jpg.Bytes())
 	}
 
 	log.L.Debugf("Successfully took screenshot.")
