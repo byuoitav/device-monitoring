@@ -15,26 +15,38 @@ type ScreenshotJob struct{}
 // Run runs the job
 func (j *ScreenshotJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
 	xwd := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
 	log.L.Infof("Taking screenshot of the pi")
 
 	cmd := exec.Command("/usr/bin/xwd", "-root", "-display", ":0")
 	cmd.Stdout = xwd
+	cmd.Stderr = stderr
 
 	log.L.Debugf("Getting xwd screenshot with command: %s", cmd.Args)
 	err := cmd.Run()
 	if err != nil {
-		return nerr.Translate(err).Addf("failed to get a screenshot: %s", xwd.Bytes())
+		if stderr.Len() > 0 {
+			return nerr.Translate(err).Addf("failed to get a screenshot: %s", stderr)
+		}
+
+		return nerr.Translate(err).Addf("failed to get a screenshot")
 	}
 
 	jpg := &bytes.Buffer{}
 	cmd = exec.Command("/usr/bin/convert", "xwd:-", "jpg:-")
 	cmd.Stdin = xwd
 	cmd.Stdout = jpg
+	cmd.Stderr = stderr
 
 	log.L.Debugf("Converting xwd screenshot to jpeg with command: %s", cmd.Args)
 	err = cmd.Run()
 	if err != nil {
-		return nerr.Translate(err).Addf("failed to get a screenshot: %s", jpg.Bytes())
+		if stderr.Len() > 0 {
+			return nerr.Translate(err).Addf("failed to get a screenshot: %s", stderr)
+		}
+
+		return nerr.Translate(err).Addf("failed to get a screenshot")
 	}
 
 	log.L.Debugf("Successfully took screenshot.")
