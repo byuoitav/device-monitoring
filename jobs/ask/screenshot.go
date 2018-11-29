@@ -22,6 +22,7 @@ func (j *ScreenshotJob) Run(ctx interface{}, eventWrite chan events.Event) inter
 	cmd := exec.Command("/usr/bin/xwd", "-root", "-display", ":0")
 	cmd.Stdout = xwd
 	cmd.Stderr = stderr
+	cmd.Env = []string{"DISPLAY=:0.0"}
 
 	log.L.Debugf("Getting xwd screenshot with command: %s", cmd.Args)
 	err := cmd.Run()
