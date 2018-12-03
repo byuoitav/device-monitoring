@@ -45,8 +45,7 @@ func main() {
 	router.GET("/device/screenshot", handlers.GetScreenshot)
 	router.GET("/device/hardwareinfo", handlers.GetMyHardwareInfo)
 
-	// router.GET("/hardwareinfo/:id", handlers.GetHardwareInfo)
-
+	// room info endpoints
 	router.GET("/room", handlers.GetRoom)
 	router.GET("/room/state", handlers.RoomState)
 	router.GET("/room/ping", handlers.PingStatus)
@@ -54,6 +53,10 @@ func main() {
 	// action endpoints
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
+
+	// test mode endpoints
+	router.GET("/maintenance", handlers.IsInMaintMode)
+	router.PUT("/maintenance", handlers.ToggleMaintMode)
 
 	// provisioning endpoints
 	router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioning.SocketManager()))

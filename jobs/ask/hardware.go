@@ -83,7 +83,6 @@ func init() {
 
 // Run runs the job
 func (j *HardwareInfoJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
-	log.SetLevel("debug")
 	ret := HardwareInfo{}
 	err := &nerr.E{}
 
@@ -130,13 +129,19 @@ func (j *HardwareInfoJob) Run(ctx interface{}, eventWrite chan events.Event) int
 		return ret
 	}
 
+	roomID, err := localsystem.RoomID()
+	if err != nil {
+		log.L.Warnf("SYSTEM_ID not set, so I wont send any hardware events.")
+		return ret
+	}
+
 	// send event with all the information
 	event := events.Event{
 		GeneratingSystem: systemID,
 		Timestamp:        time.Now(),
 		EventTags:        []string{},
 		TargetDevice:     events.GenerateBasicDeviceInfo(systemID),
-		AffectedRoom:     events.GenerateBasicRoomInfo(systemID),
+		AffectedRoom:     events.GenerateBasicRoomInfo(roomID),
 		Key:              "hardware-info",
 		Data:             ret,
 	}
