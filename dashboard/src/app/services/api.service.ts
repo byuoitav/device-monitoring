@@ -77,9 +77,7 @@ export class APIService {
 
   public async getMaintenanceMode() {
     try {
-      const data = await this.http
-        .get("maintenance", { responseType: "text" })
-        .toPromise();
+      const data = await this.http.get("maintenance").toPromise();
 
       return (<any>data) as boolean;
     } catch (e) {
@@ -89,9 +87,7 @@ export class APIService {
 
   public async toggleMaintenanceMode() {
     try {
-      const data = await this.http
-        .put("maintenance", { responseType: "text" })
-        .toPromise();
+      const data = await this.http.put("maintenance", null).toPromise();
 
       return (<any>data) as boolean;
     } catch (e) {
