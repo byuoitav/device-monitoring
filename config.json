@@ -1,77 +1,77 @@
 [
-    {
-        "name": "ping",
-        "triggers": [
-            {
-                "type": "interval",
-                "every": "1m"
-            }
-        ],
-        "enabled": true
-    },
-    {
-        "name": "state-update",
-        "triggers": [
-            {
-                "type": "interval",
-                "every": "5m"
-            }
-        ],
-        "enabled": true
-    },
-    {
-        "name": "status",
-        "triggers": [
-            {
-                "type": "interval",
-                "every": "1m"
-            }
-        ],
-        "context": [
-            {
-                "name": "AV API",
-                "port": 8000
-            },
-            {
-                "name": "Central Event Hub",
-                "port": 7100
-            },
-            {
-                "name": "UI",
-                "port": 8888
-            },
-            {
-                "name": "Device Monitoring Service",
-                "port": 10000
-            }
-        ],
-        "enabled": true
-    },
-    {
-        "name": "example job",
-        "triggers": [
-            {
-                "type": "daily",
-                "at": "14:45:00-06:00"
-            },
-            {
-                "type": "interval",
-                "every": "5m"
-            },
-            {
-                "type": "match",
-                "match": {
-                    "hostname": "teton",
-                    "event": {
-                        "eventInfoKey": "button.*",
-                        "type": "CORE"
-                    }
-                }
-            },
-            {
-                "type": "match"
-            }
-        ],
-        "enabled": false
-    }
+  {
+    "name": "ping",
+    "triggers": [
+      {
+        "type": "interval",
+        "every": "1m"
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "name": "state-update",
+    "triggers": [
+      {
+        "type": "interval",
+        "every": "5m"
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "name": "status",
+    "triggers": [
+      {
+        "type": "interval",
+        "every": "1m"
+      }
+    ],
+    "context": [
+      {
+        "name": "AV API",
+        "port": 8000
+      },
+      {
+        "name": "Central Event Hub",
+        "port": 7100
+      },
+      {
+        "name": "UI",
+        "port": 8888
+      },
+      {
+        "name": "Device Monitoring Service",
+        "port": 10000
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "name": "example job",
+    "triggers": [
+      {
+        "type": "daily",
+        "at": "14:45:00-06:00"
+      },
+      {
+        "type": "interval",
+        "every": "5m"
+      },
+      {
+        "type": "match",
+        "match": {
+          "hostname": "teton",
+          "event": {
+            "eventInfoKey": "button.*",
+            "type": "CORE"
+          }
+        }
+      },
+      {
+        "type": "match"
+      }
+    ],
+    "enabled": false
+  }
 ]
