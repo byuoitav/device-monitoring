@@ -75,6 +75,30 @@ export class APIService {
     }
   }
 
+  public async getMaintenanceMode() {
+    try {
+      const data = await this.http
+        .get("maintenance", { responseType: "text" })
+        .toPromise();
+
+      return data as boolean;
+    } catch (e) {
+      throw new Error("error getting maintenance mode: " + e);
+    }
+  }
+
+  public async toggleMaintenanceMode() {
+    try {
+      const data = await this.http
+        .put("maintenance", { responseType: "text" })
+        .toPromise();
+
+      return data as boolean;
+    } catch (e) {
+      throw new Error("error toggling maintenance mode: " + e);
+    }
+  }
+
   public async getSoftwareStati() {
     try {
       const data = await this.http.get("device/status").toPromise();

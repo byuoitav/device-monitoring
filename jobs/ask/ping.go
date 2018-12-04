@@ -119,7 +119,7 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 	for result := range resultChan {
 		if len(result.Error) > 0 {
 			ret.Unsuccessful = append(ret.Unsuccessful, result)
-			log.L.Warnf("error pinging %v: %v", result.DeviceID, result.Error)
+			log.L.Infof("error pinging %v: %v", result.DeviceID, result.Error)
 		} else {
 			ret.Successful = append(ret.Successful, result)
 
