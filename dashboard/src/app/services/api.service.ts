@@ -81,7 +81,7 @@ export class APIService {
         .get("maintenance", { responseType: "text" })
         .toPromise();
 
-      return data as boolean;
+      return (<any>data) as boolean;
     } catch (e) {
       throw new Error("error getting maintenance mode: " + e);
     }
@@ -93,7 +93,7 @@ export class APIService {
         .put("maintenance", { responseType: "text" })
         .toPromise();
 
-      return data as boolean;
+      return (<any>data) as boolean;
     } catch (e) {
       throw new Error("error toggling maintenance mode: " + e);
     }
