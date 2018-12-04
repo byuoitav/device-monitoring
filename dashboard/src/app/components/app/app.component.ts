@@ -31,7 +31,7 @@ export class AppComponent implements OnInit {
   }
 
   public setWideSidenav(val: boolean) {
-    this.urlParams.set("wide-sidenav", val);
+    this.urlParams.set("wide-sidenav", val.toString());
 
     window.history.replaceState(
       null,
