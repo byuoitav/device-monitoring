@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	"github.com/byuoitav/common"
+	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/jobs"
+	"github.com/byuoitav/device-monitoring/jobs/ask"
 	"github.com/byuoitav/device-monitoring/provisioning"
 	"github.com/byuoitav/device-monitoring/socket"
 	"github.com/labstack/echo"
@@ -13,6 +15,17 @@ import (
 )
 
 func main() {
+	x := structs.HardwareInfo{
+		Hostname:     "teton",
+		ModelName:    "x86",
+		SerialNumber: "x867000f",
+		NetworkInfo: structs.NetworkInfo{
+			IPAddress:  "192.168.0.1",
+			MACAddress: "ad:bc:ef:12:34",
+		},
+	}
+	ask.BuildEventsFromStruct(x)
+
 	// start jobs
 	go jobs.StartJobScheduler()
 
