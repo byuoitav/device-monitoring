@@ -130,7 +130,7 @@ func sendHardwareInfoForDevice(device structs.Device, command structs.Command, e
 		eventWrite <- event
 	}
 
-	if info.FirmwareVersion != nil {
+	if len(info.FirmwareVersion) > 0 {
 		event.Key = "firmware-version"
 		// TODO what kind of interface{}...?
 		event.Value = fmt.Sprintf("%v", info.FirmwareVersion)
