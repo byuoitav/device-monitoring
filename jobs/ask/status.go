@@ -115,6 +115,7 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 		Timestamp:        time.Now(),
 		EventTags: []string{
 			events.Heartbeat,
+			events.Mstatus,
 		},
 		AffectedRoom: events.GenerateBasicRoomInfo(localsystem.MustRoomID()),
 		TargetDevice: events.GenerateBasicDeviceInfo(localsystem.MustSystemID()),
