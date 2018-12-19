@@ -9,6 +9,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
 	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/options"
 )
 
 const (
@@ -25,6 +26,7 @@ func initDB() {
 		opts := badger.DefaultOptions
 		opts.Dir = dbLocation
 		opts.ValueDir = dbLocation
+		opts.ValueLogLoadingMode = options.FileIO //maybe?
 
 		var err error
 		log.L.Infof("Opening local database at: %s", dbLocation)
