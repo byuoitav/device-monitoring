@@ -4,10 +4,8 @@ import (
 	"net/http"
 
 	"github.com/byuoitav/common"
-	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/byuoitav/device-monitoring/jobs/ask"
 	"github.com/byuoitav/device-monitoring/provisioning"
 	"github.com/byuoitav/device-monitoring/socket"
 	"github.com/labstack/echo"
@@ -15,10 +13,12 @@ import (
 )
 
 func main() {
-	log.SetLevel("debug")
-	job := &ask.ActiveInputJob{}
-	s := jobs.RunJob(job, nil)
-	log.L.Warnf("response from job: %v", s)
+	/*
+		log.SetLevel("debug")
+		job := &ask.ActiveInputJob{}
+		s := jobs.RunJob(job, nil)
+		log.L.Warnf("response from job: %v", s)
+	*/
 
 	// start jobs
 	go jobs.StartJobScheduler()
