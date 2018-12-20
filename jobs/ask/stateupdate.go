@@ -16,8 +16,7 @@ import (
 )
 
 // StateUpdateJob is a job that gets the status of all the devices in the room, and pushes events from the status to "true up" the state of the room
-type StateUpdateJob struct {
-}
+type StateUpdateJob struct{}
 
 // Run runs the job.
 func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
@@ -46,7 +45,7 @@ func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) inte
 		return nerr.Translate(err).Addf("failed to unmarshal API status response: %v", err)
 	}
 
-	log.L.Infof("Successfully got room status.")
+	log.L.Infof("Successfully got room status")
 
 	// build base event
 	event := events.Event{

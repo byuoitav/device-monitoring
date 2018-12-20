@@ -17,8 +17,7 @@ import (
 )
 
 // StatusJob checks the status of important microservices, and reports their status.
-type StatusJob struct {
-}
+type StatusJob struct{}
 
 type statusConfig struct {
 	Name string `json:"name"`
@@ -116,6 +115,7 @@ func (m *StatusJob) Run(ctx interface{}, eventWrite chan events.Event) interface
 		Timestamp:        time.Now(),
 		EventTags: []string{
 			events.Heartbeat,
+			events.Mstatus,
 		},
 		AffectedRoom: events.GenerateBasicRoomInfo(localsystem.MustRoomID()),
 		TargetDevice: events.GenerateBasicDeviceInfo(localsystem.MustSystemID()),

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 
@@ -157,4 +158,38 @@ func GetDHCPState(context echo.Context) error {
 	ret["toggleable"] = true
 
 	return context.JSON(http.StatusOK, ret)
+}
+
+// GetMyHardwareInfo returns hardware info about the device
+func GetMyHardwareInfo(context echo.Context) error {
+	job := &ask.HardwareInfoJob{}
+
+	s := jobs.RunJob(job, nil)
+	switch v := s.(type) {
+	case error:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case *nerr.E:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case ask.HardwareInfo:
+		return context.JSON(http.StatusOK, v)
+	default:
+		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	}
+}
+
+// GetScreenshot a screenshot of the device's screen
+func GetScreenshot(context echo.Context) error {
+	job := &ask.ScreenshotJob{}
+
+	s := jobs.RunJob(job, nil)
+	switch v := s.(type) {
+	case error:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case *nerr.E:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case *bytes.Buffer:
+		return context.Stream(http.StatusOK, "image/jpeg", v)
+	default:
+		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	}
 }
