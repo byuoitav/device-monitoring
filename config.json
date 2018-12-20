@@ -14,7 +14,7 @@
     "triggers": [
       {
         "type": "interval",
-        "every": "5m"
+        "every": "30m"
       }
     ],
     "enabled": true
@@ -30,7 +30,7 @@
     "enabled": true
   },
   {
-    "name": "active-input",
+    "name": "active-signal",
     "triggers": [
       {
         "type": "interval",

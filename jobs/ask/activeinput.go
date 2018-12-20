@@ -23,11 +23,11 @@ const (
 	activeSignalCommandID = "ActiveSignal"
 )
 
-// ActiveInputJob asks each device what it's current input status to decide if the current input for each device is correct
-type ActiveInputJob struct{}
+// ActiveSignalJob asks each device what it's current input status to decide if the current input for each device is correct
+type ActiveSignalJob struct{}
 
 // Run runs the job
-func (j *ActiveInputJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
+func (j *ActiveSignalJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
 	log.L.Infof("Starting active input job")
 	systemID, err := localsystem.SystemID()
 	if err != nil {
@@ -75,6 +75,8 @@ func (j *ActiveInputJob) Run(ctx interface{}, eventWrite chan events.Event) inte
 		wg.Add(1)
 
 		go func(idx int) {
+			defer wg.Done()
+
 			active := isInputPathActive(roomState.Displays[idx], roomID, graph)
 			deviceID := fmt.Sprintf("%s-%s", roomID, roomState.Displays[idx].Name)
 			activeMap[deviceID] = active
@@ -90,8 +92,6 @@ func (j *ActiveInputJob) Run(ctx interface{}, eventWrite chan events.Event) inte
 				Key:          "active-signal",
 				Value:        fmt.Sprintf("%v", active),
 			}
-
-			wg.Done()
 		}(i)
 	}
 	wg.Wait()

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/byuoitav/common/db"
@@ -26,6 +27,8 @@ type DeviceHardwareJob struct{}
 
 // Run runs the job
 func (j *DeviceHardwareJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
+	log.L.Infof("Getting hardware info for devices in room")
+
 	// get list of devices from database
 	roomID, err := localsystem.RoomID()
 	if err != nil {
@@ -37,79 +40,97 @@ func (j *DeviceHardwareJob) Run(ctx interface{}, eventWrite chan events.Event) i
 		return nerr.Translate(gerr).Addf("failed to get hardware info about devices in %s", roomID)
 	}
 
+	wg := sync.WaitGroup{}
+	hardwareInfo := make(map[string]structs.HardwareInfo)
+
 	for i := range devices {
 		// skip the pi's
 		if devices[i].Type.ID == "Pi3" {
 			continue
 		}
+		wg.Add(1)
 
-		for j := range devices[i].Type.Commands {
-			if devices[i].Type.Commands[j].ID == hardwareInfoCommandID {
-				go sendHardwareInfoForDevice(devices[i], devices[i].Type.Commands[j], eventWrite)
+		go func(idx int) {
+			defer wg.Done()
+
+			info := getHardwareInfo(&devices[idx])
+			if info != nil {
+				sendHardwareInfo(devices[idx].ID, info, eventWrite)
+				hardwareInfo[devices[idx].ID] = *info
 			}
-		}
+		}(i)
 	}
 
-	return nil
+	wg.Wait()
+
+	return hardwareInfo
 }
 
-func sendHardwareInfoForDevice(device structs.Device, command structs.Command, eventWrite chan events.Event) {
-	if command.ID != hardwareInfoCommandID {
-		log.L.Warnf("unable to send hardware info for %s because the wrong command (%s) was passed in.", device.ID, command.ID)
-		return
+func getHardwareInfo(device *structs.Device) *structs.HardwareInfo {
+	if device == nil {
+		log.L.Errorf("device to get hardware info from cannot be null")
+		return nil
 	}
 
-	// build the endpoint to hit
-	url := fmt.Sprintf("%s%s", command.Microservice.Address, command.Endpoint.Path)
-
-	// replace parameters
-	if strings.Contains(url, ":address") {
-		url = strings.Replace(url, ":address", device.Address, 1)
+	address := device.GetCommandByID(hardwareInfoCommandID).BuildCommandAddress()
+	if len(address) == 0 {
+		log.L.Infof("%s doesn't have a %s command, so I can't get any hardware info about it", device.ID, hardwareInfoCommandID)
+		return nil
 	}
+
+	log.L.Infof("Getting hardware info for %s", device.ID)
+
+	address = strings.Replace(address, ":address", device.Address, 1)
 
 	client := &http.Client{
 		Timeout: 20 * time.Second,
 	}
 
+	log.L.Debugf("Sending GET request to: %s", address)
+
 	// get hardware info about device
-	resp, err := client.Get(url)
+	resp, err := client.Get(address)
 	if err != nil {
 		log.L.Warnf("failed to get hardware info for %s: %s", device.ID, err)
-		return
+		return nil
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.L.Warnf("failed to get hardware info for %s: %s", device.ID, err)
-		return
+		return nil
 	}
 
-	info := structs.HardwareInfo{}
-	err = json.Unmarshal(body, &info)
+	ret := &structs.HardwareInfo{}
+
+	err = json.Unmarshal(bytes, ret)
 	if err != nil {
 		log.L.Warnf("failed to get hardware info for %s: %s", device.ID, err)
-		return
+		return nil
 	}
 
+	return ret
+}
+
+func sendHardwareInfo(deviceID string, info *structs.HardwareInfo, eventWrite chan events.Event) {
 	// push up events about device
-	targetDevice := events.GenerateBasicDeviceInfo(device.ID)
+	targetDevice := events.GenerateBasicDeviceInfo(deviceID)
 	event := events.Event{
 		GeneratingSystem: localsystem.MustSystemID(),
 		Timestamp:        time.Now(),
 		EventTags: []string{
-			// TODO add tags
 			events.HardwareInfo,
 			events.DetailState,
 		},
 		TargetDevice: targetDevice,
 		AffectedRoom: events.GenerateBasicRoomInfo(targetDevice.RoomID),
 		Key:          "hardware-info",
-		Value:        "",
-		User:         "",
 		Data:         info,
 	}
 	eventWrite <- event // dump up all the hardware info
+
+	// reset the data/key
 	event.Data = nil
 	event.Key = ""
 
