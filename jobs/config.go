@@ -23,6 +23,7 @@ var (
 		"status":               &ask.StatusJob{},
 		"device-hardware-info": &ask.DeviceHardwareJob{},
 		"hardware-info":        &ask.HardwareInfoJob{},
+		"active-input":         &ask.ActiveInputJob{},
 	}
 )
 

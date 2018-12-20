@@ -30,11 +30,11 @@
     "enabled": true
   },
   {
-    "name": "state-update",
+    "name": "active-input",
     "triggers": [
       {
         "type": "interval",
-        "every": "5m"
+        "every": "3m"
       }
     ],
     "enabled": true
