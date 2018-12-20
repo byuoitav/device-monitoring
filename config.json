@@ -49,19 +49,19 @@
     ],
     "context": [
       {
-        "name": "AV API",
+        "name": "av-api",
         "port": 8000
       },
       {
-        "name": "Central Event Hub",
+        "name": "central-event-hub",
         "port": 7100
       },
       {
-        "name": "UI",
+        "name": "ui",
         "port": 8888
       },
       {
-        "name": "Device Monitoring Service",
+        "name": "device-monitoring",
         "port": 10000
       }
     ],
