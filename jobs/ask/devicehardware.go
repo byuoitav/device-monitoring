@@ -97,8 +97,10 @@ func sendHardwareInfoForDevice(device structs.Device, command structs.Command, e
 	event := events.Event{
 		GeneratingSystem: localsystem.MustSystemID(),
 		Timestamp:        time.Now(),
-		EventTags:        []string{
+		EventTags: []string{
 			// TODO add tags
+			events.HardwareInfo,
+			events.DetailState,
 		},
 		TargetDevice: targetDevice,
 		AffectedRoom: events.GenerateBasicRoomInfo(targetDevice.RoomID),
@@ -145,15 +147,26 @@ func sendHardwareInfoForDevice(device structs.Device, command structs.Command, e
 
 	if len(info.WarningStatus) > 0 {
 		event.Key = "warning-status"
-		// TODO why is this one an []
-		// event.Value = info.WarningStatus
+
+		str := ""
+
+		for i := range info.WarningStatus {
+			str += info.WarningStatus[i]
+		}
+
+		event.Value = str
 		eventWrite <- event
 	}
 
 	if len(info.ErrorStatus) > 0 {
 		event.Key = "error-status"
-		// TODO why is this one an []
-		// event.Value = info.ErrorStatus
+		str := ""
+
+		for i := range info.ErrorStatus {
+			str += info.WarningStatus[i]
+		}
+
+		event.Value = str
 		eventWrite <- event
 	}
 
@@ -165,6 +178,7 @@ func sendHardwareInfoForDevice(device structs.Device, command structs.Command, e
 
 	if info.TimerInfo != nil {
 		event.Key = "timer-info"
+
 		// TODO what kind of interface{}?
 		event.Value = fmt.Sprintf("%v", info.TimerInfo)
 		eventWrite <- event
