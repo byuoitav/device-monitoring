@@ -13,13 +13,6 @@ import (
 )
 
 func main() {
-	/*
-		log.SetLevel("debug")
-		job := &ask.ActiveInputJob{}
-		s := jobs.RunJob(job, nil)
-		log.L.Warnf("response from job: %v", s)
-	*/
-
 	// start jobs
 	go jobs.StartJobScheduler()
 
@@ -55,6 +48,7 @@ func main() {
 	// room info endpoints
 	router.GET("/room", handlers.GetRoom)
 	router.GET("/room/state", handlers.RoomState)
+	router.GET("/room/activeinput", handlers.ActiveInput)
 	router.GET("/room/ping", handlers.PingStatus)
 
 	// action endpoints

@@ -45,7 +45,7 @@ func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) inte
 		return nerr.Translate(err).Addf("failed to unmarshal API status response: %v", err)
 	}
 
-	log.L.Infof("Successfully got room status.")
+	log.L.Infof("Successfully got room status")
 
 	// build base event
 	event := events.Event{

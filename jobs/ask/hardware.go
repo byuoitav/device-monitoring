@@ -26,6 +26,7 @@ import (
 const (
 	temperatureRootPath = "/sys/class/thermal"
 	uSleepCheckInterval = 3 * time.Second
+	uSleepResetInterval = 5 * time.Minute
 )
 
 // HardwareInfoJob gets hardware information about the device and pushes events up about it
@@ -50,33 +51,40 @@ func init() {
 	// constantly measure the number of processes that are in sleep and get an average
 	avgProcsInUSleep = 0
 
-	ticker := time.NewTicker(uSleepCheckInterval)
+	checkTicker := time.NewTicker(uSleepCheckInterval)
+	resetTicker := time.NewTicker(uSleepResetInterval)
 
 	go func() {
-		defer ticker.Stop()
+		defer checkTicker.Stop()
+		defer resetTicker.Stop()
 
-		for range ticker.C {
-			procs, err := process.Processes()
-			if err != nil {
-				log.L.Warnf("failed to get running processes: %s", err)
-				continue
-			}
-
-			count := 0
-
-			for _, p := range procs {
-				status, err := p.Status()
+		for {
+			select {
+			case <-checkTicker.C:
+				procs, err := process.Processes()
 				if err != nil {
+					log.L.Warnf("failed to get running processes: %s", err)
 					continue
 				}
 
-				if status == "D" {
-					count++
-				}
-			}
+				count := 0
 
-			avgProcsInUSleep = (avgProcsInUSleep + float64(count)) / 2
-			avgProcsInUSleep = round(avgProcsInUSleep, .05)
+				for _, p := range procs {
+					status, err := p.Status()
+					if err != nil {
+						continue
+					}
+
+					if status == "D" {
+						count++
+					}
+				}
+
+				avgProcsInUSleep = (avgProcsInUSleep + float64(count)) / 2
+				avgProcsInUSleep = round(avgProcsInUSleep, .05)
+			case <-resetTicker.C:
+				avgProcsInUSleep = 0
+			}
 		}
 	}()
 }

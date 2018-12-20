@@ -104,3 +104,20 @@ func PingStatus(context echo.Context) error {
 		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
 	}
 }
+
+// ActiveInput returns the active inputs in the room
+func ActiveInput(context echo.Context) error {
+	job := &ask.ActiveInputJob{}
+	active := jobs.RunJob(job, nil)
+
+	switch v := active.(type) {
+	case error:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case *nerr.E:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case map[string]bool:
+		return context.JSON(http.StatusOK, v)
+	default:
+		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	}
+}
