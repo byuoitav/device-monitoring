@@ -7,6 +7,7 @@ import (
 
 	"github.com/byuoitav/av-api/base"
 	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/device-monitoring/jobs"
 	"github.com/byuoitav/device-monitoring/jobs/ask"
 	"github.com/labstack/echo"
@@ -99,6 +100,40 @@ func PingStatus(context echo.Context) error {
 	case ask.PingResult:
 		return context.JSON(http.StatusOK, v)
 	case *ask.PingResult:
+		return context.JSON(http.StatusOK, v)
+	default:
+		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	}
+}
+
+// ActiveSignal returns the active inputs in the room
+func ActiveSignal(context echo.Context) error {
+	job := &ask.ActiveSignalJob{}
+	active := jobs.RunJob(job, nil)
+
+	switch v := active.(type) {
+	case error:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case *nerr.E:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case map[string]bool:
+		return context.JSON(http.StatusOK, v)
+	default:
+		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	}
+}
+
+// DeviceHardwareInfo returns the hardware info for all devices in the room
+func DeviceHardwareInfo(context echo.Context) error {
+	job := &ask.DeviceHardwareJob{}
+	info := jobs.RunJob(job, nil)
+
+	switch v := info.(type) {
+	case error:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case *nerr.E:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case map[string]structs.HardwareInfo:
 		return context.JSON(http.StatusOK, v)
 	default:
 		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))

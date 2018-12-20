@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/byuoitav/common"
+	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/jobs"
 	"github.com/byuoitav/device-monitoring/provisioning"
@@ -15,6 +16,8 @@ import (
 func main() {
 	// start jobs
 	go jobs.StartJobScheduler()
+
+	log.SetLevel("info")
 
 	// server
 	port := ":10000"
@@ -42,14 +45,23 @@ func main() {
 	router.GET("/device/network", handlers.IsConnectedToInternet)
 	router.GET("/device/status", handlers.GetStatusInfo)
 	router.GET("/device/dhcp", handlers.GetDHCPState)
+	router.GET("/device/screenshot", handlers.GetScreenshot)
+	router.GET("/device/hardwareinfo", handlers.GetMyHardwareInfo)
 
+	// room info endpoints
 	router.GET("/room", handlers.GetRoom)
 	router.GET("/room/state", handlers.RoomState)
+	router.GET("/room/activeinput", handlers.ActiveSignal)
+	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
 	router.GET("/room/ping", handlers.PingStatus)
 
 	// action endpoints
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
+
+	// test mode endpoints
+	router.GET("/maintenance", handlers.IsInMaintMode)
+	router.PUT("/maintenance", handlers.ToggleMaintMode)
 
 	// provisioning endpoints
 	router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioning.SocketManager()))

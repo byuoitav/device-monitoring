@@ -19,8 +19,11 @@ var (
 			Interval: 3 * time.Second,
 			Timeout:  20 * time.Second,
 		},
-		"state-update": &ask.StateUpdateJob{},
-		"status":       &ask.StatusJob{},
+		"state-update":         &ask.StateUpdateJob{},
+		"status":               &ask.StatusJob{},
+		"device-hardware-info": &ask.DeviceHardwareJob{},
+		"hardware-info":        &ask.HardwareInfoJob{},
+		"active-signal":        &ask.ActiveSignalJob{},
 	}
 )
 

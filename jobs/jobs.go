@@ -158,7 +158,6 @@ func RunJob(job Job, ctx interface{}) interface{} {
 	return job.Run(ctx, eventChan)
 }
 
-// TODO this needs to be updated with new event package
 func readEvents(outChan chan events.Event) {
 	for {
 		event := m.ReceiveEvent()
@@ -226,7 +225,7 @@ func (r *runner) runInterval() {
 	}
 }
 
-// EventNode returns the event node.
+// Messenger returns the event node.
 func Messenger() *messenger.Messenger {
 	return m
 }

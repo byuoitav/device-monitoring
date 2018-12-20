@@ -35,7 +35,6 @@
                 <div class="list-item">
                     <p>Internet Connectivity</p>
 
-                    <!-- TODO make a color palatte for status colors success/warn/error -->
                     <div id="status-theme">
                         <mat-icon color="primary" *ngIf="deviceInfo?.internetConnectivity">wifi_off</mat-icon>
                         <mat-icon color="warn" *ngIf="!deviceInfo?.internetConnectivity">wifi</mat-icon>
@@ -55,12 +54,24 @@
                     </div>
                 </div>
             </mat-list-item>
+            <mat-divider></mat-divider>
+
+            <mat-list-item>
+                <div class="list-item">
+                    <p>Maintenance Mode Active</p>
+                    <p>{{maintenanceMode}}</p>
+                </div>
+            </mat-list-item>
         </mat-list>
     </mat-card-content>
     <mat-card-actions>
         <button mat-raised-button color="accent" (click)="api.switchToUI()">
             <mat-icon>arrow_back</mat-icon>
             Back To UI
+        </button>
+        <button mat-raised-button color="primary" (click)="toggleMaintenanceMode()">
+            <mat-icon>bug_report</mat-icon>
+            {{maintenanceMode ? "Exit" : "Enter"}} Maintenance
         </button>
         <button mat-raised-button color="warn" (click)="api.reboot()">
             <mat-icon>power_settings_new</mat-icon>
