@@ -20,6 +20,16 @@
     "enabled": true
   },
   {
+    "name": "hardware-info",
+    "triggers": [
+      {
+        "type": "interval",
+        "every": "5m"
+      }
+    ],
+    "enabled": true
+  },
+  {
     "name": "state-update",
     "triggers": [
       {
