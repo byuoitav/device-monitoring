@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/byuoitav/common"
-	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/jobs"
 	"github.com/byuoitav/device-monitoring/provisioning"
@@ -16,8 +15,6 @@ import (
 func main() {
 	// start jobs
 	go jobs.StartJobScheduler()
-
-	log.SetLevel("info")
 
 	// server
 	port := ":10000"
