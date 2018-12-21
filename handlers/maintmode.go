@@ -57,11 +57,13 @@ func ToggleMaintMode(ctx echo.Context) error {
 	jobs.Messenger().SendEvent(events.Event{
 		GeneratingSystem: localsystem.MustSystemID(),
 		Timestamp:        time.Now(),
-		EventTags:        []string{},
-		TargetDevice:     events.GenerateBasicDeviceInfo(localsystem.MustSystemID()),
-		AffectedRoom:     events.GenerateBasicRoomInfo(localsystem.MustRoomID()),
-		Key:              "in-maintenance-mode",
-		Value:            fmt.Sprintf("%v", val),
+		EventTags: []string{
+			events.Support,
+		},
+		TargetDevice: events.GenerateBasicDeviceInfo(localsystem.MustSystemID()),
+		AffectedRoom: events.GenerateBasicRoomInfo(localsystem.MustRoomID()),
+		Key:          "maintenance-mode",
+		Value:        fmt.Sprintf("%v", val),
 	})
 
 	return ctx.String(http.StatusOK, fmt.Sprintf("%v", val))
