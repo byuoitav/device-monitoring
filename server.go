@@ -51,7 +51,7 @@ func main() {
 	// room info endpoints
 	router.GET("/room", handlers.GetRoom)
 	router.GET("/room/state", handlers.RoomState)
-	router.GET("/room/activeinput", handlers.ActiveSignal)
+	router.GET("/room/activesignal", handlers.ActiveSignal)
 	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
 	router.GET("/room/ping", handlers.PingStatus)
 
