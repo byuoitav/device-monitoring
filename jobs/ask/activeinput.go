@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/byuoitav/av-api/base"
-	"github.com/byuoitav/av-api/inputgraph"
 	"github.com/byuoitav/common/db"
+	"github.com/byuoitav/common/inputgraph"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/structs"
