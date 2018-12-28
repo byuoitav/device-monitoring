@@ -68,6 +68,7 @@ func (j *ActiveSignalJob) Run(ctx interface{}, eventWrite chan events.Event) int
 	}
 
 	wg := sync.WaitGroup{}
+	activeMutex := sync.Mutex{}
 	activeMap := make(map[string]bool)
 
 	log.L.Infof("Got room state and built input graph, checking each display for active input")
@@ -79,7 +80,10 @@ func (j *ActiveSignalJob) Run(ctx interface{}, eventWrite chan events.Event) int
 
 			active := isInputPathActive(roomState.Displays[idx], roomID, graph)
 			deviceID := fmt.Sprintf("%s-%s", roomID, roomState.Displays[idx].Name)
+
+			activeMutex.Lock()
 			activeMap[deviceID] = active
+			activeMutex.Unlock()
 
 			eventWrite <- events.Event{
 				GeneratingSystem: systemID,
