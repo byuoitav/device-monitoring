@@ -121,7 +121,6 @@ func sendHardwareInfo(deviceID string, info *structs.HardwareInfo, eventWrite ch
 		Timestamp:        time.Now(),
 		EventTags: []string{
 			events.HardwareInfo,
-			events.DetailState,
 		},
 		TargetDevice: targetDevice,
 		AffectedRoom: events.GenerateBasicRoomInfo(targetDevice.RoomID),
@@ -129,45 +128,54 @@ func sendHardwareInfo(deviceID string, info *structs.HardwareInfo, eventWrite ch
 		Data:         info,
 	}
 	eventWrite <- event // dump up all the hardware info
-
-	// reset the data/key
 	event.Data = nil
-	event.Key = ""
 
 	// push up hostname
 	if len(info.Hostname) > 0 {
-		event.Key = "hostname"
-		event.Value = info.Hostname
-		eventWrite <- event
+		tmp := event
+		tmp.AddToTags(events.DetailState)
+		tmp.Key = "hostname"
+		tmp.Value = info.Hostname
+		eventWrite <- tmp
 	}
 
 	if len(info.ModelName) > 0 {
-		event.Key = "model-name"
-		event.Value = info.ModelName
-		eventWrite <- event
+		tmp := event
+		tmp.AddToTags(events.DetailState)
+		tmp.Key = "model-name"
+		tmp.Value = info.ModelName
+		eventWrite <- tmp
 	}
 
 	if len(info.SerialNumber) > 0 {
-		event.Key = "serial-number"
-		event.Value = info.SerialNumber
-		eventWrite <- event
+		tmp := event
+		tmp.AddToTags(events.DetailState)
+		tmp.Key = "serial-number"
+		tmp.Value = info.SerialNumber
+		eventWrite <- tmp
 	}
 
 	if len(info.FirmwareVersion) > 0 {
-		event.Key = "firmware-version"
+		tmp := event
+		tmp.AddToTags(events.DetailState)
+		tmp.Key = "firmware-version"
 		// TODO what kind of interface{}...?
-		event.Value = fmt.Sprintf("%v", info.FirmwareVersion)
-		eventWrite <- event
+		tmp.Value = fmt.Sprintf("%v", info.FirmwareVersion)
+		eventWrite <- tmp
 	}
 
 	if len(info.FilterStatus) > 0 {
-		event.Key = "filter-status"
-		event.Value = info.FilterStatus
-		eventWrite <- event
+		tmp := event
+		tmp.AddToTags(events.DetailState)
+		tmp.Key = "filter-status"
+		tmp.Value = info.FilterStatus
+		eventWrite <- tmp
 	}
 
 	if len(info.WarningStatus) > 0 {
-		event.Key = "warning-status"
+		tmp := event
+		tmp.AddToTags(events.DetailState)
+		tmp.Key = "warning-status"
 
 		str := ""
 
@@ -175,20 +183,22 @@ func sendHardwareInfo(deviceID string, info *structs.HardwareInfo, eventWrite ch
 			str += info.WarningStatus[i]
 		}
 
-		event.Value = str
-		eventWrite <- event
+		tmp.Value = str
+		eventWrite <- tmp
 	}
 
 	if len(info.ErrorStatus) > 0 {
-		event.Key = "error-status"
+		tmp := event
+		tmp.AddToTags(events.DetailState)
+		tmp.Key = "error-status"
 		str := ""
 
 		for i := range info.ErrorStatus {
 			str += info.WarningStatus[i]
 		}
 
-		event.Value = str
-		eventWrite <- event
+		tmp.Value = str
+		eventWrite <- tmp
 	}
 
 	if len(info.PowerStatus) > 0 {
