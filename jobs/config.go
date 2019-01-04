@@ -37,8 +37,26 @@ type JobConfig struct {
 
 // Trigger matches something that causes a job to be ran.
 type Trigger struct {
-	Type  string      `json:"type"`  // required for all
-	At    string      `json:"at"`    // required for 'time'
-	Every string      `json:"every"` // required for 'interval'
-	Match MatchConfig `json:"match"` // required for 'event'
+	Type  string       `json:"type"`            // required for all
+	At    *string      `json:"at,omitempty"`    // required for 'time'
+	Every *string      `json:"every,omitempty"` // required for 'interval'
+	Match *MatchConfig `json:"match,omitempty"` // required for 'event'
+}
+
+// RunnerInfo contains info about a specific runner
+type RunnerInfo struct {
+	ID      string      `json:"id"`
+	Trigger Trigger     `json:"trigger"`
+	Context interface{} `json:"context,omitempty"`
+
+	RunnerStatus
+}
+
+// RunnerStatus is the status of a runner
+type RunnerStatus struct {
+	LastRunStartTime *time.Time `json:"last-run-start-time,omitempty"`
+	LastRunDuration  string     `json:"last-run-duration"`
+	LastRunError     string     `json:"last-run-error"`
+	CurrentlyRunning bool       `json:"currently-running"`
+	RunCount         int        `json:"run-count"`
 }
