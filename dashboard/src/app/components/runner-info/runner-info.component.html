@@ -1,0 +1,108 @@
+<mat-progress-bar
+  color="accent"
+  *ngIf="infos == null"
+  mode="query"
+></mat-progress-bar>
+
+<div class="container">
+  <mat-accordion [multi]="false">
+    <mat-expansion-panel *ngFor="let info of infos" [hideToggle]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title> {{ info?.id }} </mat-panel-title>
+
+        <mat-panel-description>
+          Last Ran: {{ info?.lastRunTime | date: "short" }}
+          <div>{{ info?.runCount }}</div>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <mat-list>
+        <mat-list-item>
+          <div class="list-item">
+            <span>ID</span>
+            <pre>{{ info?.id }}</pre>
+          </div>
+        </mat-list-item>
+        <mat-divider></mat-divider>
+
+        <mat-list-item>
+          <div class="list-item">
+            <span>Run Count</span>
+            <pre>{{ info?.runCount }}</pre>
+          </div>
+        </mat-list-item>
+        <mat-divider></mat-divider>
+
+        <mat-list-item>
+          <div class="list-item">
+            <span>Currently Running</span>
+            <pre>{{ info?.currentlyRunning }}</pre>
+          </div>
+        </mat-list-item>
+        <mat-divider></mat-divider>
+
+        <mat-list-item>
+          <div class="list-item">
+            <span>Trigger Type</span>
+            <pre>{{ info?.trigger?.tType }}</pre>
+          </div>
+        </mat-list-item>
+        <mat-divider></mat-divider>
+
+        <mat-list-item *ngIf="info?.trigger?.at !== undefined">
+          <div class="list-item">
+            <span>Runs At</span>
+            <pre>{{ info?.trigger?.at }}</pre>
+          </div>
+        </mat-list-item>
+        <mat-divider *ngIf="info?.trigger?.at !== undefined"></mat-divider>
+
+        <mat-list-item *ngIf="info?.trigger?.every !== undefined">
+          <div class="list-item">
+            <span>Running Every</span>
+            <pre>{{ info?.trigger?.every }}</pre>
+          </div>
+        </mat-list-item>
+        <mat-divider *ngIf="info?.trigger?.every !== undefined"></mat-divider>
+
+        <mat-list-item class="json" *ngIf="info?.trigger?.match !== undefined">
+          <div class="list-item">
+            <span>Match Config</span>
+            <pre><code>{{ info?.trigger?.match }}</code></pre>
+          </div>
+        </mat-list-item>
+        <mat-divider *ngIf="info?.trigger?.match !== undefined"></mat-divider>
+
+        <mat-list-item>
+          <div class="list-item">
+            <span>Last Run Started At</span>
+            <pre *ngIf="info?.lastRunTime !== undefined">{{
+              info?.lastRunTime | date: "long"
+            }}</pre>
+            <pre *ngIf="info?.lastRunTime === undefined">Never</pre>
+          </div>
+        </mat-list-item>
+        <mat-divider
+          *ngIf="
+            info?.lastRunDuration?.length > 0 || info?.lastRunError?.length > 0
+          "
+        ></mat-divider>
+
+        <mat-list-item *ngIf="info?.lastRunDuration?.length > 0">
+          <div class="list-item">
+            <span>Last Run Duration</span>
+            <pre>{{ info?.lastRunDuration }}</pre>
+          </div>
+        </mat-list-item>
+        <mat-divider *ngIf="info?.lastRunError?.length > 0"></mat-divider>
+
+        <mat-list-item class="json" *ngIf="info?.lastRunError?.length > 0">
+          <div class="list-item">
+            <span>Last Run Error</span>
+            <pre><code>{{ info?.lastRunError }}</code></pre>
+          </div>
+        </mat-list-item>
+      </mat-list>
+    </mat-expansion-panel>
+  </mat-accordion>
+</div>

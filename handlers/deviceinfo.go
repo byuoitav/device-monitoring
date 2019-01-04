@@ -193,3 +193,8 @@ func GetScreenshot(context echo.Context) error {
 		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
 	}
 }
+
+// GetRunnerInfo returns the list of each job's status
+func GetRunnerInfo(context echo.Context) error {
+	return context.JSON(http.StatusOK, jobs.RunnerInfos())
+}

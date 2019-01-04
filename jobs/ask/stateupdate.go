@@ -69,7 +69,7 @@ func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) inte
 			event.TargetDevice = events.GenerateBasicDeviceInfo(fmt.Sprintf("%v-%v", localsystem.MustRoomID(), dev.Name))
 		}
 
-		log.L.Debugf("Reporting status of %v", event.TargetDevice.DeviceID)
+		log.L.Infof("Reporting status of %v", event.TargetDevice.DeviceID)
 
 		// report power status
 		if len(dev.Power) > 0 {
@@ -102,6 +102,8 @@ func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) inte
 		} else {
 			event.TargetDevice = events.GenerateBasicDeviceInfo(fmt.Sprintf("%v-%v", localsystem.MustRoomID(), dev.Name))
 		}
+
+		log.L.Infof("Reporting status of %v", event.TargetDevice.DeviceID)
 
 		if dev.Muted != nil {
 			event.Key = "muted"

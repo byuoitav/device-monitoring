@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { JsonConvert, OperationMode, ValueCheckingMode } from "json2typescript";
 
-import { DeviceInfo, Status, PingResult } from "../objects";
+import { DeviceInfo, Status, PingResult, RunnerInfo } from "../objects";
 
 @Injectable({
   providedIn: "root"
@@ -126,6 +126,17 @@ export class APIService {
       return pingResult;
     } catch (e) {
       throw new Error("error getting room ping info: " + e);
+    }
+  }
+
+  public async getRunnerInfo() {
+    try {
+      const data = await this.http.get("device/runners").toPromise();
+      const info = this.jsonConvert.deserialize(data, RunnerInfo);
+
+      return info;
+    } catch (e) {
+      throw new Error("error getting device runner info: " + e);
     }
   }
 }
