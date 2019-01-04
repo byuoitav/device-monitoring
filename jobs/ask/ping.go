@@ -103,7 +103,18 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 		}(i)
 	}
 
-	wg.Wait()
+	// timeout while waiting for waitgroup to finish
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(20 * time.Second):
+	}
+
 	close(resultChan)
 
 	// build a generic event to send for every device
