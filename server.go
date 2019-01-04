@@ -44,6 +44,7 @@ func main() {
 	router.GET("/device/dhcp", handlers.GetDHCPState)
 	router.GET("/device/screenshot", handlers.GetScreenshot)
 	router.GET("/device/hardwareinfo", handlers.GetMyHardwareInfo)
+	router.GET("/device/runners", handlers.GetRunnerInfo)
 
 	// room info endpoints
 	router.GET("/room", handlers.GetRoom)

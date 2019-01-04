@@ -23,6 +23,7 @@ import { ProvisioningComponent } from "./components/provisioning/provisioning.co
 import { SoftwareInfoComponent } from "./components/software-info/software-info.component";
 import { ReachableDevicesComponent } from "./components/reachable-devices/reachable-devices.component";
 import { APIService } from "./services/api.service";
+import { RunnerInfoComponent } from "./components/runner-info/runner-info.component";
 
 const routes: Routes = [
   {
@@ -45,6 +46,10 @@ const routes: Routes = [
   {
     path: "reachable-devices",
     component: ReachableDevicesComponent
+  },
+  {
+    path: "runner-info",
+    component: RunnerInfoComponent
   }
 ];
 
@@ -54,7 +59,8 @@ const routes: Routes = [
     OverviewComponent,
     ProvisioningComponent,
     SoftwareInfoComponent,
-    ReachableDevicesComponent
+    ReachableDevicesComponent,
+    RunnerInfoComponent
   ],
   imports: [
     BrowserModule,

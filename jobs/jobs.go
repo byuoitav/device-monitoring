@@ -28,6 +28,8 @@ type runner struct {
 	Config       JobConfig
 	Trigger      Trigger
 	TriggerIndex int
+
+	RunnerStatus
 }
 
 func init() {
@@ -168,21 +170,32 @@ func readEvents(outChan chan events.Event) {
 func (r *runner) run(context interface{}) {
 	log.L.Debugf("[%s|%v] Running job...", r.Config.Name, r.TriggerIndex)
 
+	startTime := time.Now()
+	r.CurrentlyRunning = true
+
 	resp := RunJob(r.Job, context)
 	switch v := resp.(type) {
 	case error:
+		r.LastRunError = fmt.Sprintf("%s", v)
 		log.L.Warnf("failed to run job: %s", v)
 	case *nerr.E:
+		r.LastRunError = fmt.Sprintf("%s", v.String())
 		log.L.Warnf("failed to run job: %s", v.String())
 	case nerr.E:
+		r.LastRunError = fmt.Sprintf("%s", v.String())
 		log.L.Warnf("failed to run job: %s", v.String())
 	}
+
+	r.LastRunDuration = time.Since(startTime).String()
+	r.CurrentlyRunning = false
+	r.LastRunStartTime = &startTime
+	r.RunCount++
 
 	log.L.Debugf("[%s|%v] Finished.", r.Config.Name, r.TriggerIndex)
 }
 
 func (r *runner) runDaily() {
-	tmpDate := fmt.Sprintf("2006-01-02T%s", r.Trigger.At)
+	tmpDate := fmt.Sprintf("2006-01-02T%s", *r.Trigger.At)
 	runTime, err := time.Parse(time.RFC3339, tmpDate)
 	runTime = runTime.UTC()
 	if err != nil {
@@ -211,9 +224,9 @@ func (r *runner) runDaily() {
 }
 
 func (r *runner) runInterval() {
-	interval, err := time.ParseDuration(r.Trigger.Every)
+	interval, err := time.ParseDuration(*r.Trigger.Every)
 	if err != nil {
-		log.L.Warnf("unable to parse duration '%s' to execute job %s on an interval. error: %s", r.Trigger.Every, r.Config.Name, err)
+		log.L.Warnf("unable to parse duration '%s' to execute job %s on an interval. error: %s", *r.Trigger.Every, r.Config.Name, err)
 		return
 	}
 
@@ -239,4 +252,22 @@ func GetJobContext(job string) interface{} {
 	}
 
 	return nil
+}
+
+// RunnerInfos returns the info of all the runners
+func RunnerInfos() []RunnerInfo {
+	infos := []RunnerInfo{}
+
+	for _, runner := range runners {
+		info := RunnerInfo{
+			RunnerStatus: runner.RunnerStatus,
+			ID:           fmt.Sprintf("%s#%d", runner.Config.Name, runner.TriggerIndex),
+			Trigger:      runner.Trigger,
+			Context:      runner.Config.Context,
+		}
+
+		infos = append(infos, info)
+	}
+
+	return infos
 }
