@@ -1,4 +1,10 @@
-import { JsonObject, JsonProperty, Any } from "json2typescript";
+import {
+  JsonObject,
+  JsonProperty,
+  Any,
+  JsonConverter,
+  JsonCustomConvert
+} from "json2typescript";
 
 @JsonObject("Status")
 export class Status {
@@ -91,4 +97,84 @@ export class PingResult {
 
   @JsonProperty("unsuccessful", [DevicePingResult], true)
   unsuccessful: DevicePingResult[] = Array<DevicePingResult>();
+}
+
+@JsonConverter
+class DateConverter implements JsonCustomConvert<Date> {
+  serialize(date: Date): any {
+    function pad(n) {
+      return n < 10 ? "0" + n : n;
+    }
+
+    return (
+      date.getUTCFullYear() +
+      "-" +
+      pad(date.getUTCMonth() + 1) +
+      "-" +
+      pad(date.getUTCDate()) +
+      "T" +
+      pad(date.getUTCHours()) +
+      ":" +
+      pad(date.getUTCMinutes()) +
+      ":" +
+      pad(date.getUTCSeconds()) +
+      "Z"
+    );
+  }
+
+  deserialize(date: any): Date {
+    if (date == null) {
+      return undefined;
+    }
+
+    return new Date(date);
+  }
+}
+
+@JsonObject("Trigger")
+export class Trigger {
+  @JsonProperty("type", String)
+  tType: String = undefined;
+
+  @JsonProperty("at", String, true)
+  at: String = undefined;
+
+  @JsonProperty("every", String, true)
+  every: String = undefined;
+
+  @JsonProperty("match", Any, true)
+  match: any = undefined;
+
+  constructor(tType: string) {
+    if (tType === undefined) {
+      return;
+    }
+  }
+}
+
+@JsonObject("RunnerInfo")
+export class RunnerInfo {
+  @JsonProperty("id", String)
+  id: string = undefined;
+
+  @JsonProperty("trigger", Trigger)
+  trigger = new Trigger(undefined);
+
+  @JsonProperty("context", Any, true)
+  context: any = undefined;
+
+  @JsonProperty("last-run-start-time", DateConverter, true)
+  lastRunTime: Date = undefined;
+
+  @JsonProperty("last-run-duration", String, true)
+  lastRunDuration: string = undefined;
+
+  @JsonProperty("last-run-error", String, true)
+  lastRunError: String = undefined;
+
+  @JsonProperty("currently-running", Boolean, true)
+  currentlyRunning: boolean = undefined;
+
+  @JsonProperty("run-count", Number)
+  runCount: number = undefined;
 }

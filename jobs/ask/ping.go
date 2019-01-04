@@ -116,6 +116,8 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 		AffectedRoom: events.GenerateBasicRoomInfo(localsystem.MustRoomID()),
 	}
 
+	resultCount := len(resultChan)
+
 	for result := range resultChan {
 		if len(result.Error) > 0 {
 			ret.Unsuccessful = append(ret.Unsuccessful, result)
@@ -135,6 +137,10 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 	event.Key = "last-heartbeat"
 	event.Value = time.Now().Format(time.RFC3339)
 	eventWrite <- event
+
+	if len(ret.Unsuccessful) == resultCount && resultCount > 0 {
+		return nerr.Create(fmt.Sprintf("every single ping was unsuccessful. error: %s", ret.Unsuccessful[0].Error), "error")
+	}
 
 	return ret
 }
