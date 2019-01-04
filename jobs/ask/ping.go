@@ -112,7 +112,7 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 
 	select {
 	case <-done:
-	case <-time.After(20 * time.Second):
+	case <-time.After(10 * time.Second):
 	}
 
 	close(resultChan)
