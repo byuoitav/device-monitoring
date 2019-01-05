@@ -91,7 +91,7 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 			select {
 			case <-resolved:
 			case <-time.After(p.Timeout):
-				result.Error = fmt.Sprintf("unable to resolve an ip address for %s: exceeded timeout", devices[index].ID)
+				result.Error = fmt.Sprintf("unable to resolve an ip address for %s: exceeded timeout (%v)", devices[index].ID, p.Timeout.String())
 				return
 			}
 
