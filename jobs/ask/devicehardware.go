@@ -42,6 +42,7 @@ func (j *DeviceHardwareJob) Run(ctx interface{}, eventWrite chan events.Event) i
 
 	wg := sync.WaitGroup{}
 	hardwareInfo := make(map[string]structs.HardwareInfo)
+	mu := sync.Mutex{}
 
 	for i := range devices {
 		// skip the pi's
@@ -56,7 +57,10 @@ func (j *DeviceHardwareJob) Run(ctx interface{}, eventWrite chan events.Event) i
 			info := getHardwareInfo(&devices[idx])
 			if info != nil {
 				sendHardwareInfo(devices[idx].ID, info, eventWrite)
+
+				mu.Lock()
 				hardwareInfo[devices[idx].ID] = *info
+				mu.Unlock()
 			}
 		}(i)
 	}
