@@ -74,10 +74,24 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 				wg.Done()
 			}()
 
-			// build pinger
-			pinger, err := ping.NewPinger(devices[index].Address)
-			if err != nil {
-				result.Error = fmt.Sprintf("unable to create pinger for device %v (address: %v): %v", devices[index].ID, devices[index].Address, err)
+			var pinger *ping.Pinger
+			resolved := make(chan struct{})
+
+			go func() {
+				// build pinger
+				pinger, err = ping.NewPinger(devices[index].Address)
+				if err != nil {
+					result.Error = fmt.Sprintf("unable to create pinger for device %v (address: %v): %v", devices[index].ID, devices[index].Address, err)
+					return
+				}
+
+				close(resolved)
+			}()
+
+			select {
+			case <-resolved:
+			case <-time.After(p.Timeout):
+				result.Error = fmt.Sprintf("unable to resolve an ip address for %s: exceeded timeout", devices[index].ID)
 				return
 			}
 
@@ -86,20 +100,7 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 			pinger.Timeout = p.Timeout
 			pinger.SetPrivileged(true)
 
-			// run ping test with timeout
-			done := make(chan struct{})
-			go func() {
-				pinger.Run()
-				close(done)
-			}()
-
-			select {
-			case <-done:
-			case <-time.After(p.Timeout):
-				pinger.Stop()
-				result.Error = fmt.Sprintf("ping timed out")
-				return
-			}
+			pinger.Run()
 
 			// parse results
 			result.PacketsReceived = pinger.Statistics().PacketsRecv
