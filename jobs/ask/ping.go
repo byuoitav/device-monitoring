@@ -61,17 +61,23 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 		wg.Add(1)
 
 		go func(index int) {
-			defer wg.Done()
-
 			result := devicePingResult{
 				DeviceID: devices[index].ID,
 			}
+
+			defer func() {
+				if r := recover(); r != nil {
+					log.L.Errorf("recovered from fatal error while pinging %s: %s", devices[index].ID, r)
+				}
+
+				resultChan <- result
+				wg.Done()
+			}()
 
 			// build pinger
 			pinger, err := ping.NewPinger(devices[index].Address)
 			if err != nil {
 				result.Error = fmt.Sprintf("unable to create pinger for device %v (address: %v): %v", devices[index].ID, devices[index].Address, err)
-				resultChan <- result
 				return
 			}
 
@@ -81,7 +87,6 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 			pinger.SetPrivileged(true)
 
 			// run ping test with timeout
-			skip := false
 			done := make(chan struct{})
 			go func() {
 				pinger.Run()
@@ -92,13 +97,7 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 			case <-done:
 			case <-time.After(p.Timeout):
 				pinger.Stop()
-				skip = true
-			}
-
-			if skip {
-				result.PacketLoss = -1
 				result.Error = fmt.Sprintf("ping timed out")
-				resultChan <- result
 				return
 			}
 
@@ -117,8 +116,6 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 			} else if result.PacketLoss == 100 {
 				result.Error = fmt.Sprintf("no packets were successful")
 			}
-
-			resultChan <- result
 		}(i)
 	}
 
