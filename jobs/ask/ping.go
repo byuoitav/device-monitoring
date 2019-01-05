@@ -80,8 +80,27 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 			pinger.Timeout = p.Timeout
 			pinger.SetPrivileged(true)
 
-			// run ping test
-			pinger.Run()
+			// run ping test with timeout
+			skip := false
+			done := make(chan struct{})
+			go func() {
+				pinger.Run()
+				close(done)
+			}()
+
+			select {
+			case <-done:
+			case <-time.After(p.Timeout):
+				pinger.Stop()
+				skip = true
+			}
+
+			if skip {
+				result.PacketLoss = -1
+				result.Error = fmt.Sprintf("ping timed out")
+				resultChan <- result
+				return
+			}
 
 			// parse results
 			result.PacketsReceived = pinger.Statistics().PacketsRecv
@@ -103,18 +122,7 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 		}(i)
 	}
 
-	// timeout while waiting for waitgroup to finish
-	done := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(20 * time.Second):
-	}
-
+	wg.Wait()
 	close(resultChan)
 
 	// build a generic event to send for every device
