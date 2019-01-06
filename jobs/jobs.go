@@ -172,6 +172,7 @@ func (r *runner) run(context interface{}) {
 
 	startTime := time.Now()
 	r.CurrentlyRunning = true
+	r.LastRunError = ""
 
 	resp := RunJob(r.Job, context)
 	switch v := resp.(type) {
