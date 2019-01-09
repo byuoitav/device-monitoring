@@ -13,6 +13,8 @@ import (
 )
 
 func main() {
+	// gpio.Read()
+
 	// start jobs
 	go jobs.StartJobScheduler()
 
