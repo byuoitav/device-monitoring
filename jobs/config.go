@@ -5,6 +5,7 @@ import (
 
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/jobs/ask"
+	"github.com/byuoitav/device-monitoring/jobs/gpio"
 )
 
 // Job . :)
@@ -24,6 +25,7 @@ var (
 		"device-hardware-info": &ask.DeviceHardwareJob{},
 		"hardware-info":        &ask.HardwareInfoJob{},
 		"active-signal":        &ask.ActiveSignalJob{},
+		"divider-sensors":      &gpio.DividerSensorJob{},
 	}
 )
 

@@ -68,6 +68,28 @@
     "enabled": true
   },
   {
+    "name": "divider-sensors",
+    "enabled": true,
+    "triggers": [
+      {
+        "type": "oneshot"
+      }
+    ],
+    "context": [
+      {
+        "pin": 7,
+        "displays": "1,2,3/4,5",
+        "connect": [
+          {
+            "method": "PUT",
+            "url": "http://ITB-1101-DSP1.byu.edu:8888/sendevent",
+            "body": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "example job",
     "triggers": [
       {

@@ -113,6 +113,8 @@ func StartJobScheduler() {
 			go runner.runInterval()
 		case "match":
 			matchRunners = append(matchRunners, runner)
+		case "oneshot":
+			go runner.run(runner.Config.Context)
 		default:
 			log.L.Warnf("unknown trigger type '%v' for job %v|%v", runner.Trigger.Type, runner.Config.Name, runner.TriggerIndex)
 		}
