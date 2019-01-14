@@ -21,6 +21,10 @@ type pin struct {
 	Displays           string    `json:"displays"`
 	ConnectRequests    []request `json:"connect-requests"`
 	DisconnectRequests []request `json:"disconnect-requests"`
+
+	ReadFrequency string `json:"read-frequency"`
+
+	Connected bool `json:"connected"`
 }
 
 type request struct {
@@ -68,10 +72,12 @@ func (j *DividerSensorJob) Run(ctx interface{}, eventWrite chan events.Event) in
 }
 
 func (p *pin) monitor(adaptor *raspi.Adaptor) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
 	pin := gpio.NewDirectPinDriver(adaptor, strconv.Itoa(p.Pin))
 
 	log.L.Infof("Monitoring pin %v", p.Pin)
+
+	newStateCount := 0
 
 	for {
 		select {
@@ -82,7 +88,19 @@ func (p *pin) monitor(adaptor *raspi.Adaptor) {
 				continue
 			}
 
-			log.L.Infof("read: %v", read)
+			connected := read == 1
+
+			// if the status is different than we thought it was
+			if connected != p.Connected {
+				newStateCount++
+
+				if newStateCount >= 7 {
+					newStateCount = 0
+
+					p.Connected = connected
+					log.L.Infof("changed state to %v", p.Connected)
+				}
+			}
 		}
 	}
 }

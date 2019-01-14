@@ -11,46 +11,63 @@ import (
 
 	"github.com/byuoitav/central-event-system/hub/base"
 	"github.com/byuoitav/central-event-system/messenger"
+	"github.com/byuoitav/common/db"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
 var (
 	runners []*runner
-	configs []JobConfig
+	configs []structs.JobConfig
 
 	m *messenger.Messenger
 )
 
 type runner struct {
 	Job          Job
-	Config       JobConfig
-	Trigger      Trigger
+	Config       structs.JobConfig
+	Trigger      structs.Trigger
 	TriggerIndex int
 
 	RunnerStatus
 }
 
 func init() {
-	// TODO check if there is a config in couchdb first
-	// parse configuration
-	path := os.Getenv("JOB_CONFIG_LOCATION")
-	if len(path) < 1 {
-		path = "./config.json" // default config location
-	}
-	log.L.Infof("Parsing job configuration from %v", path)
-
-	// read configuration
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.L.Fatalf("failed to read job configuration: %v", err)
+	log.SetLevel("info")
+	id, gerr := localsystem.SystemID()
+	if gerr != nil {
+		log.L.Warnf("SYSTEM_ID not set")
 	}
 
-	// unmarshal job config
-	err = json.Unmarshal(b, &configs)
+	// get config from couchdb
+	dmJobs, err := db.GetDB().GetDMJobs(id)
 	if err != nil {
-		log.L.Fatalf("unable to parse job configuration: %v", err)
+		log.L.Warnf("unable to get job config from couch (%s), looking for local job configuration", err)
+
+		// parse configuration
+		path := os.Getenv("JOB_CONFIG_LOCATION")
+		if len(path) < 1 {
+			path = "./config.json" // default config location
+		}
+		log.L.Infof("Parsing job configuration from %v", path)
+
+		// read configuration
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			log.L.Fatalf("failed to read job configuration: %v", err)
+		}
+
+		// unmarshal job config
+		err = json.Unmarshal(b, &configs)
+		if err != nil {
+			log.L.Fatalf("unable to parse job configuration: %v", err)
+		}
+	} else {
+		log.L.Infof("Successfully got job config from CouchDB")
+		configs = dmJobs.Jobs
 	}
 
 	// validate all jobs exist
@@ -86,7 +103,7 @@ func init() {
 
 // StartJobScheduler starts the jobs in the job map
 func StartJobScheduler() {
-	// start event router
+	// start messenger
 	hubAddr := os.Getenv("HUB_ADDRESS")
 	if len(hubAddr) == 0 {
 		log.L.Fatalf("HUB_ADDRESS is not set.")

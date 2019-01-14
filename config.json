@@ -79,6 +79,8 @@
       {
         "pin": 7,
         "displays": "1,2,3/4,5",
+        "read-frequency": "200ms",
+        "reads-before-change": 10,
         "connect": [
           {
             "method": "PUT",

@@ -3,6 +3,7 @@ package jobs
 import (
 	"time"
 
+	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/jobs/ask"
 	"github.com/byuoitav/device-monitoring/jobs/gpio"
@@ -29,27 +30,11 @@ var (
 	}
 )
 
-// JobConfig defines a configuration of a specific job.
-type JobConfig struct {
-	Name     string      `json:"name"`
-	Triggers []Trigger   `json:"triggers"`
-	Enabled  bool        `json:"enabled"`
-	Context  interface{} `json:"context"`
-}
-
-// Trigger matches something that causes a job to be ran.
-type Trigger struct {
-	Type  string       `json:"type"`            // required for all
-	At    *string      `json:"at,omitempty"`    // required for 'time'
-	Every *string      `json:"every,omitempty"` // required for 'interval'
-	Match *MatchConfig `json:"match,omitempty"` // required for 'event'
-}
-
 // RunnerInfo contains info about a specific runner
 type RunnerInfo struct {
-	ID      string      `json:"id"`
-	Trigger Trigger     `json:"trigger"`
-	Context interface{} `json:"context,omitempty"`
+	ID      string          `json:"id"`
+	Trigger structs.Trigger `json:"trigger"`
+	Context interface{}     `json:"context,omitempty"`
 
 	RunnerStatus
 }
