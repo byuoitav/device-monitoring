@@ -37,48 +37,52 @@ type runner struct {
 
 func init() {
 	log.SetLevel("info")
+	defer log.SetLevel("warn")
+
+	l := log.L.Named("jobs.init")
+
 	id, gerr := localsystem.SystemID()
 	if gerr != nil {
-		log.L.Warnf("SYSTEM_ID not set")
+		l.Warnf("SYSTEM_ID not set")
 	}
 
 	// get config from couchdb
 	dmJobs, err := db.GetDB().GetDMJobs(id)
 	if err != nil {
-		log.L.Warnf("unable to get job config from couch (%s), looking for local job configuration", err)
+		l.Warnf("unable to get job config from couch (%s), looking for local job configuration", err)
 
 		// parse configuration
 		path := os.Getenv("JOB_CONFIG_LOCATION")
 		if len(path) < 1 {
 			path = "./config.json" // default config location
 		}
-		log.L.Infof("Parsing job configuration from %v", path)
+		l.Infof("Parsing job configuration from %v", path)
 
 		// read configuration
 		b, err := ioutil.ReadFile(path)
 		if err != nil {
-			log.L.Fatalf("failed to read job configuration: %v", err)
+			l.Fatalf("failed to read job configuration: %v", err)
 		}
 
 		// unmarshal job config
 		err = json.Unmarshal(b, &configs)
 		if err != nil {
-			log.L.Fatalf("unable to parse job configuration: %v", err)
+			l.Fatalf("unable to parse job configuration: %v", err)
 		}
 	} else {
-		log.L.Infof("Successfully got job config from CouchDB")
+		l.Infof("Successfully got job config from CouchDB")
 		configs = dmJobs.Jobs
 	}
 
 	// validate all jobs exist
 	for _, config := range configs {
 		if !config.Enabled {
-			log.L.Debugf("Skipping %v, because it's disabled.", config.Name)
+			l.Debugf("Skipping %v, because it's disabled.", config.Name)
 			continue
 		}
 
 		if _, ok := jobs[config.Name]; !ok {
-			log.L.Fatalf("job %v doesn't exist.", config.Name)
+			l.Fatalf("job %v doesn't exist.", config.Name)
 		}
 
 		// build a runner for each trigger
@@ -95,7 +99,7 @@ func init() {
 				runner.buildMatchRegex()
 			}
 
-			log.L.Infof("Adding runner for job '%v', trigger #%v. Execution Type: %v", runner.Config.Name, runner.TriggerIndex, runner.Trigger.Type)
+			l.Infof("Adding runner for job '%v', trigger #%v. Execution Type: %v", runner.Config.Name, runner.TriggerIndex, runner.Trigger.Type)
 			runners = append(runners, runner)
 		}
 	}

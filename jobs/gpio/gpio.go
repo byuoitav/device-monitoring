@@ -22,7 +22,8 @@ type pin struct {
 	ConnectRequests    []request `json:"connect-requests"`
 	DisconnectRequests []request `json:"disconnect-requests"`
 
-	ReadFrequency string `json:"read-frequency"`
+	ReadFrequency     string `json:"read-frequency"`
+	ReadsBeforeChange int    `json:"reads-before-change"`
 
 	Connected bool `json:"connected"`
 }
@@ -39,21 +40,20 @@ var (
 
 // Run .
 func (j *DividerSensorJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
-	log.SetLevel("info")
 	if ctx != nil {
 		data, err := json.Marshal(ctx)
 		if err != nil {
-			return nerr.Translate(err).Addf("failed to start divider sensor job")
+			return nerr.Translate(err).Addf("failed to run divider sensor job")
 		}
 
 		var pins []pin
 		err = json.Unmarshal(data, &pins)
 		if err != nil {
-			return nerr.Translate(err).Addf("failed to start divider sensor job")
+			return nerr.Translate(err).Addf("failed to run divider sensor job")
 		}
 
 		if len(pins) == 0 {
-			return nerr.Createf("empty", "failed to start divider sensor job - no pins configured")
+			return nerr.Createf("empty", "failed to run divider sensor job - no pins configured")
 		}
 
 		once.Do(func() {
@@ -72,12 +72,18 @@ func (j *DividerSensorJob) Run(ctx interface{}, eventWrite chan events.Event) in
 }
 
 func (p *pin) monitor(adaptor *raspi.Adaptor) {
-	ticker := time.NewTicker(500 * time.Millisecond)
 	pin := gpio.NewDirectPinDriver(adaptor, strconv.Itoa(p.Pin))
 
-	log.L.Infof("Monitoring pin %v", p.Pin)
+	// get read duration
+	duration, err := time.ParseDuration(p.ReadFrequency)
+	if err != nil {
+		log.L.Warnf("invalid read frequency: '%s'. defaulting to 200ms", p.ReadFrequency)
+		duration = 200 * time.Millisecond // default duration
+	}
+	log.L.Infof("Monitoring pin %v every %v", p.Pin, duration.String())
 
 	newStateCount := 0
+	ticker := time.NewTicker(duration)
 
 	for {
 		select {
@@ -94,13 +100,29 @@ func (p *pin) monitor(adaptor *raspi.Adaptor) {
 			if connected != p.Connected {
 				newStateCount++
 
-				if newStateCount >= 7 {
+				if newStateCount >= p.ReadsBeforeChange {
 					newStateCount = 0
 
 					p.Connected = connected
 					log.L.Infof("changed state to %v", p.Connected)
+
+					if p.Connected {
+						for i := range p.ConnectRequests {
+							p.ConnectRequests[i].execute()
+						}
+					} else {
+						for i := range p.DisconnectRequests {
+							p.DisconnectRequests[i].execute()
+						}
+					}
 				}
 			}
 		}
 	}
+}
+
+func (r *request) execute() {
+	log.SetLevel("info")
+	log.L.Infof("executing %s request against %s", r.Method, r.Body)
+	log.SetLevel("warn")
 }

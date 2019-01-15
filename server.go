@@ -6,7 +6,6 @@ import (
 	"github.com/byuoitav/common"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/byuoitav/device-monitoring/jobs/gpio"
 	"github.com/byuoitav/device-monitoring/provisioning"
 	"github.com/byuoitav/device-monitoring/socket"
 	"github.com/labstack/echo"
@@ -16,9 +15,6 @@ import (
 func main() {
 	// start jobs
 	go jobs.StartJobScheduler()
-
-	job := &gpio.DividerSensorJob{}
-	jobs.RunJob(job, jobs.GetJobContext("divider-sensors"))
 
 	// server
 	port := ":10000"
@@ -60,6 +56,7 @@ func main() {
 	// action endpoints
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
+	router.POST("/event", handlers.SendEvent)
 
 	// test mode endpoints
 	router.GET("/maintenance", handlers.IsInMaintMode)
