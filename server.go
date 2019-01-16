@@ -53,9 +53,14 @@ func main() {
 	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
 	router.GET("/room/ping", handlers.PingStatus)
 
+	// divider endpoints
+	router.GET("/divider/state", handlers.GetDividerState)
+	router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
+
 	// action endpoints
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
+	router.POST("/event", handlers.SendEvent)
 
 	// test mode endpoints
 	router.GET("/maintenance", handlers.IsInMaintMode)
