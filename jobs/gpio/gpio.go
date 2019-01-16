@@ -23,7 +23,8 @@ type DividerSensorJob struct{}
 
 // Pin .
 type Pin struct {
-	Pin int `json:"pin"`
+	Pin  int  `json:"pin"`
+	Flip bool `json:"flip"`
 
 	Displays string `json:"displays"`
 	Presets  struct {
@@ -97,7 +98,7 @@ func (p *Pin) monitor(adaptor *raspi.Adaptor) {
 	log.L.Infof("Monitoring pin %v every %v", p.Pin, readDuration.String())
 
 	// get true up duration
-	trueUpDuration, err := time.ParseDuration(p.ReadFrequency)
+	trueUpDuration, err := time.ParseDuration(p.TrueUpFrequency)
 	if err != nil {
 		log.L.Warnf("invalid true up frequency: '%s'. defaulting to 5m", p.ReadFrequency)
 		trueUpDuration = 5 * time.Minute // default true up duration
@@ -107,6 +108,7 @@ func (p *Pin) monitor(adaptor *raspi.Adaptor) {
 	readTick := time.NewTicker(readDuration)
 	trueUpTick := time.NewTicker(trueUpDuration)
 
+	// TODO handle case if true up & change occur at the same time
 	for {
 		select {
 		case <-readTick.C:
@@ -117,6 +119,10 @@ func (p *Pin) monitor(adaptor *raspi.Adaptor) {
 			}
 
 			connected := read == 1
+
+			if p.Flip {
+				connected = !connected
+			}
 
 			// if the status is different than we thought it was
 			if connected != p.Connected {
@@ -134,6 +140,8 @@ func (p *Pin) monitor(adaptor *raspi.Adaptor) {
 				}
 			}
 		case <-trueUpTick.C:
+			log.L.Infof("Sending divider sensor true-up requests.")
+
 			for i := range p.TrueUpRequests {
 				go p.TrueUpRequests[i].execute(p)
 			}
@@ -148,7 +156,7 @@ func (r *request) execute(pin *Pin) {
 		return
 	}
 
-	log.L.Infof("Building %s request against %s", r.Method, url)
+	log.L.Debugf("Building %s request against %s", r.Method, url)
 	body := ""
 
 	// fill template if body is not nil
