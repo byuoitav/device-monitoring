@@ -75,7 +75,7 @@ ifneq "$(BRANCH)" "master"
 endif
 	$(GOGET) -d -v
 
-deploy: $(NAME)-arm $(NAME).service.tmpl files/$(NG1) config.json version.txt
+deploy: $(NAME)-arm $(NAME).service.tmpl files/$(NG1) version.txt
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
