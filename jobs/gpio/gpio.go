@@ -178,7 +178,7 @@ func (r *request) execute(pin *Pin) {
 	}
 
 	// build request
-	req, err := http.NewRequest(r.Method, r.URL, bytes.NewReader([]byte(body)))
+	req, err := http.NewRequest(r.Method, url, bytes.NewReader([]byte(body)))
 	if err != nil {
 		log.L.Warnf("unable to execute request against %s: %s", url, err)
 		return
