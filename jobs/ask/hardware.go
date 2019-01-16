@@ -346,7 +346,7 @@ func getDiskInfo() (map[string]interface{}, *nerr.E) {
 
 	usage, err := disk.Usage("/")
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get host info")
+		return info, nerr.Translate(err).Addf("failed to get disk info")
 	}
 
 	usage.UsedPercent = round(usage.UsedPercent, .01)
@@ -354,7 +354,7 @@ func getDiskInfo() (map[string]interface{}, *nerr.E) {
 
 	ioCounters, err := disk.IOCounters("sda", "mmcblk0")
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get host info")
+		return info, nerr.Translate(err).Addf("failed to get disk info")
 	}
 
 	info["io-counters"] = ioCounters
@@ -367,7 +367,7 @@ func getNetworkInfo() (map[string]interface{}, *nerr.E) {
 
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get host info")
+		return info, nerr.Translate(err).Addf("failed to get network info")
 	}
 
 	info["interfaces"] = interfaces
@@ -380,7 +380,7 @@ func getDockerInfo() (map[string]interface{}, *nerr.E) {
 
 	stats, err := docker.GetDockerStat()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get host info")
+		return info, nerr.Translate(err).Addf("failed to get docker info")
 	}
 
 	info["stats"] = stats

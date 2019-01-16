@@ -44,6 +44,7 @@ type devicePingResult struct {
 // Run runs the job.
 func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
 	log.L.Infof("Getting pinggable status of devices in room %s", localsystem.MustRoomID())
+	defer log.L.Infof("Finished ping job.")
 
 	devices, err := db.GetDB().GetDevicesByRoom(localsystem.MustRoomID())
 	if err != nil {
@@ -67,7 +68,11 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 
 			defer func() {
 				if r := recover(); r != nil {
-					log.L.Errorf("recovered from fatal error while pinging %s: %s", devices[index].ID, r)
+					log.L.Errorf("recovered from fatal error while pinging %s: %s", result.DeviceID, r)
+				}
+
+				if len(result.Error) > 0 {
+					log.L.Warnf("something went wrong pinging %s: %s", result.DeviceID, result.Error)
 				}
 
 				resultChan <- result
@@ -97,10 +102,21 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 
 			pinger.Count = p.Count
 			pinger.Interval = p.Interval
-			pinger.Timeout = p.Timeout
 			pinger.SetPrivileged(true)
 
-			pinger.Run()
+			done := make(chan struct{})
+			go func() {
+				pinger.Run()
+				close(done)
+			}()
+
+			select {
+			case <-done:
+			case <-time.After(p.Timeout):
+				result.Error = "pinger timeout"
+				pinger.Stop()
+				return
+			}
 
 			// parse results
 			result.PacketsReceived = pinger.Statistics().PacketsRecv
@@ -138,7 +154,6 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 	for result := range resultChan {
 		if len(result.Error) > 0 {
 			ret.Unsuccessful = append(ret.Unsuccessful, result)
-			log.L.Infof("error pinging %v: %v", result.DeviceID, result.Error)
 		} else {
 			ret.Successful = append(ret.Successful, result)
 

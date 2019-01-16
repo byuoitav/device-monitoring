@@ -11,57 +11,78 @@ import (
 
 	"github.com/byuoitav/central-event-system/hub/base"
 	"github.com/byuoitav/central-event-system/messenger"
+	"github.com/byuoitav/common/db"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
 var (
 	runners []*runner
-	configs []JobConfig
+	configs []structs.JobConfig
 
 	m *messenger.Messenger
 )
 
 type runner struct {
 	Job          Job
-	Config       JobConfig
-	Trigger      Trigger
+	Config       structs.JobConfig
+	Trigger      structs.Trigger
 	TriggerIndex int
 
 	RunnerStatus
 }
 
 func init() {
-	// TODO check if there is a config in couchdb first
-	// parse configuration
-	path := os.Getenv("JOB_CONFIG_LOCATION")
-	if len(path) < 1 {
-		path = "./config.json" // default config location
-	}
-	log.L.Infof("Parsing job configuration from %v", path)
+	log.SetLevel("info")
+	defer log.SetLevel("warn")
 
-	// read configuration
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.L.Fatalf("failed to read job configuration: %v", err)
+	l := log.L.Named("jobs.init")
+
+	id, gerr := localsystem.SystemID()
+	if gerr != nil {
+		l.Warnf("SYSTEM_ID not set")
 	}
 
-	// unmarshal job config
-	err = json.Unmarshal(b, &configs)
+	// get config from couchdb
+	dmJobs, err := db.GetDB().GetDMJobs(id)
 	if err != nil {
-		log.L.Fatalf("unable to parse job configuration: %v", err)
+		l.Warnf("unable to get job config from couch (%s), looking for local job configuration", err)
+
+		// parse configuration
+		path := os.Getenv("JOB_CONFIG_LOCATION")
+		if len(path) < 1 {
+			path = "./config.json" // default config location
+		}
+		l.Infof("Parsing job configuration from %v", path)
+
+		// read configuration
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			l.Fatalf("failed to read job configuration: %v", err)
+		}
+
+		// unmarshal job config
+		err = json.Unmarshal(b, &configs)
+		if err != nil {
+			l.Fatalf("unable to parse job configuration: %v", err)
+		}
+	} else {
+		l.Infof("Successfully got job config from CouchDB")
+		configs = dmJobs.Jobs
 	}
 
 	// validate all jobs exist
 	for _, config := range configs {
 		if !config.Enabled {
-			log.L.Debugf("Skipping %v, because it's disabled.", config.Name)
+			l.Debugf("Skipping %v, because it's disabled.", config.Name)
 			continue
 		}
 
 		if _, ok := jobs[config.Name]; !ok {
-			log.L.Fatalf("job %v doesn't exist.", config.Name)
+			l.Fatalf("job %v doesn't exist.", config.Name)
 		}
 
 		// build a runner for each trigger
@@ -78,7 +99,7 @@ func init() {
 				runner.buildMatchRegex()
 			}
 
-			log.L.Infof("Adding runner for job '%v', trigger #%v. Execution Type: %v", runner.Config.Name, runner.TriggerIndex, runner.Trigger.Type)
+			l.Infof("Adding runner for job '%v', trigger #%v. Execution Type: %v", runner.Config.Name, runner.TriggerIndex, runner.Trigger.Type)
 			runners = append(runners, runner)
 		}
 	}
@@ -86,7 +107,7 @@ func init() {
 
 // StartJobScheduler starts the jobs in the job map
 func StartJobScheduler() {
-	// start event router
+	// start messenger
 	hubAddr := os.Getenv("HUB_ADDRESS")
 	if len(hubAddr) == 0 {
 		log.L.Fatalf("HUB_ADDRESS is not set.")
@@ -113,6 +134,8 @@ func StartJobScheduler() {
 			go runner.runInterval()
 		case "match":
 			matchRunners = append(matchRunners, runner)
+		case "oneshot":
+			go runner.run(runner.Config.Context)
 		default:
 			log.L.Warnf("unknown trigger type '%v' for job %v|%v", runner.Trigger.Type, runner.Config.Name, runner.TriggerIndex)
 		}
@@ -172,6 +195,7 @@ func (r *runner) run(context interface{}) {
 
 	startTime := time.Now()
 	r.CurrentlyRunning = true
+	r.LastRunError = ""
 
 	resp := RunJob(r.Job, context)
 	switch v := resp.(type) {
