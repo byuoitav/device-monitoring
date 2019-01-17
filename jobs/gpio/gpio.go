@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"text/template"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/localsystem"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/platforms/raspi"
 )
@@ -242,4 +244,31 @@ func (p Pin) CurrentPreset(hostname string) string {
 	}
 
 	return "not a valid hostname"
+}
+
+// SystemID returns this pi's device id
+func (p Pin) SystemID() string {
+	return localsystem.MustSystemID()
+}
+
+// RoomID returns this pi's room id
+func (p Pin) RoomID() string {
+	return localsystem.MustRoomID()
+}
+
+// Room returns this pi's room number
+func (p Pin) Room() string {
+	id := localsystem.MustRoomID()
+	split := strings.Split(id, "-")
+
+	if len(split) == 2 {
+		return split[1]
+	}
+
+	return id
+}
+
+// BuildingID returns this pi's building id
+func (p Pin) BuildingID() string {
+	return localsystem.MustBuildingID()
 }
