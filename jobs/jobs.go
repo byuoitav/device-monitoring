@@ -36,8 +36,13 @@ type runner struct {
 }
 
 func init() {
+	prev, nErr := log.GetLevel()
+	if nErr == nil {
+		defer log.SetLevel(prev)
+	} else {
+		defer log.SetLevel("warn")
+	}
 	log.SetLevel("info")
-	defer log.SetLevel("warn")
 
 	l := log.L.Named("jobs.init")
 
