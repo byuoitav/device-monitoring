@@ -76,6 +76,8 @@ export class APIService {
   }
 
   public async getMaintenanceMode() {
+    return false;
+    /*
     try {
       const data = await this.http.get("maintenance").toPromise();
 
@@ -83,9 +85,12 @@ export class APIService {
     } catch (e) {
       throw new Error("error getting maintenance mode: " + e);
     }
+     */
   }
 
   public async toggleMaintenanceMode() {
+    return false;
+    /*
     try {
       const data = await this.http.put("maintenance", null).toPromise();
 
@@ -93,6 +98,7 @@ export class APIService {
     } catch (e) {
       throw new Error("error toggling maintenance mode: " + e);
     }
+     */
   }
 
   public async getSoftwareStati() {

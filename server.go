@@ -63,8 +63,8 @@ func main() {
 	router.POST("/event", handlers.SendEvent)
 
 	// test mode endpoints
-	router.GET("/maintenance", handlers.IsInMaintMode)
-	router.PUT("/maintenance", handlers.ToggleMaintMode)
+	// router.GET("/maintenance", handlers.IsInMaintMode)
+	// router.PUT("/maintenance", handlers.ToggleMaintMode)
 
 	// provisioning endpoints
 	router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioning.SocketManager()))
