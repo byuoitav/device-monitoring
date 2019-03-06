@@ -178,3 +178,12 @@ export class RunnerInfo {
   @JsonProperty("run-count", Number)
   runCount: number = undefined;
 }
+
+@JsonObject("ViaInfo")
+export class ViaInfo {
+  @JsonProperty("name", String)
+  name: string = undefined;
+
+  @JsonProperty("address", String)
+  address: string = undefined;
+}
