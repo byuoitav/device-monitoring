@@ -40,7 +40,7 @@
       >
         <mat-icon>home</mat-icon>
 
-        <ng-container *ngIf="wideSidenav()"> Overview </ng-container>
+        <ng-container *ngIf="wideSidenav()">Overview</ng-container>
       </button>
       <!-- TODO
         <button mat-flat-button color="" routerLink="/provisioning" routerLinkActive="mat-accent" queryParamsHandling="merge">
@@ -60,7 +60,7 @@
       >
         <mat-icon>network_check</mat-icon>
 
-        <ng-container *ngIf="wideSidenav()"> Reachable Devices </ng-container>
+        <ng-container *ngIf="wideSidenav()">Reachable Devices</ng-container>
       </button>
       <button
         mat-flat-button
@@ -71,7 +71,7 @@
       >
         <mat-icon>code</mat-icon>
 
-        <ng-container *ngIf="wideSidenav()"> Software Status </ng-container>
+        <ng-container *ngIf="wideSidenav()">Software Status</ng-container>
       </button>
       <button
         mat-flat-button
@@ -82,7 +82,18 @@
       >
         <mat-icon>directions_run</mat-icon>
 
-        <ng-container *ngIf="wideSidenav()"> Runner Info </ng-container>
+        <ng-container *ngIf="wideSidenav()">Runner Info</ng-container>
+      </button>
+      <button
+        mat-flat-button
+        color=""
+        routerLink="/via-control"
+        routerLinkActive="mat-accent"
+        queryParamsHandling="merge"
+      >
+        <mat-icon>settings_input_antenna</mat-icon>
+
+        <ng-container *ngIf="wideSidenav()">Via Control</ng-container>
       </button>
 
       <!-- at the bottom -->

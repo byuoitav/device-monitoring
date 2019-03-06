@@ -52,6 +52,7 @@ func main() {
 	router.GET("/room/activesignal", handlers.ActiveSignal)
 	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
 	router.GET("/room/ping", handlers.PingStatus)
+	router.GET("/room/viainfo", handlers.ViaInfo)
 
 	// divider endpoints
 	router.GET("/divider/state", handlers.GetDividerState)

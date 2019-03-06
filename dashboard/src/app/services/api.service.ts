@@ -2,7 +2,13 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { JsonConvert, OperationMode, ValueCheckingMode } from "json2typescript";
 
-import { DeviceInfo, Status, PingResult, RunnerInfo } from "../objects";
+import {
+  DeviceInfo,
+  Status,
+  PingResult,
+  RunnerInfo,
+  ViaInfo
+} from "../objects";
 
 @Injectable({
   providedIn: "root"
@@ -143,6 +149,41 @@ export class APIService {
       return info;
     } catch (e) {
       throw new Error("error getting device runner info: " + e);
+    }
+  }
+
+  public async getViaInfo() {
+    try {
+      const data = await this.http.get("room/viainfo").toPromise();
+      const info = this.jsonConvert.deserialize(data, ViaInfo);
+
+      return info;
+    } catch (e) {
+      throw new Error("error getting via info: " + e);
+    }
+  }
+
+  public async resetVia(address: string) {
+    try {
+      const data = await this.http
+        .get("http://" + location.hostname + ":8014/via/" + address + "/reset")
+        .toPromise();
+
+      console.log("data", data);
+    } catch (e) {
+      throw new Error("error resetting via: " + e);
+    }
+  }
+
+  public async rebootVia(address: string) {
+    try {
+      const data = await this.http
+        .get("http://" + location.hostname + ":8014/via/" + address + "/reboot")
+        .toPromise();
+
+      console.log("data", data);
+    } catch (e) {
+      throw new Error("error rebooting via: " + e);
     }
   }
 }

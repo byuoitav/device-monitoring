@@ -24,6 +24,7 @@ import { SoftwareInfoComponent } from "./components/software-info/software-info.
 import { ReachableDevicesComponent } from "./components/reachable-devices/reachable-devices.component";
 import { APIService } from "./services/api.service";
 import { RunnerInfoComponent } from "./components/runner-info/runner-info.component";
+import { ViaControlComponent } from "./components/via-control/via-control.component";
 
 const routes: Routes = [
   {
@@ -50,6 +51,10 @@ const routes: Routes = [
   {
     path: "runner-info",
     component: RunnerInfoComponent
+  },
+  {
+    path: "via-control",
+    component: ViaControlComponent
   }
 ];
 
@@ -60,7 +65,8 @@ const routes: Routes = [
     ProvisioningComponent,
     SoftwareInfoComponent,
     ReachableDevicesComponent,
-    RunnerInfoComponent
+    RunnerInfoComponent,
+    ViaControlComponent
   ],
   imports: [
     BrowserModule,
