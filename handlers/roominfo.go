@@ -8,6 +8,7 @@ import (
 	"github.com/byuoitav/av-api/base"
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/structs"
+	"github.com/byuoitav/device-monitoring/actions/then/ping"
 	"github.com/byuoitav/device-monitoring/jobs"
 	"github.com/byuoitav/device-monitoring/jobs/ask"
 	"github.com/labstack/echo"
@@ -100,6 +101,8 @@ func PingStatus(context echo.Context) error {
 	case ask.PingResult:
 		return context.JSON(http.StatusOK, v)
 	case *ask.PingResult:
+		return context.JSON(http.StatusOK, v)
+	case map[string]*ping.Result:
 		return context.JSON(http.StatusOK, v)
 	default:
 		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))

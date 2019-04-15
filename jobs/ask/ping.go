@@ -1,9 +1,9 @@
 package ask
 
 import (
-	"fmt"
-	"math"
+	"context"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -12,8 +12,8 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/actions/then/ping"
 	"github.com/byuoitav/device-monitoring/localsystem"
-	ping "github.com/sparrc/go-ping"
 )
 
 // PingJob is a job that pings each of the devices in the room and reports whether or not they are connected.
@@ -41,8 +41,22 @@ type devicePingResult struct {
 	AverageRoundTrip string  `json:"average-round-trip"`
 }
 
+var (
+	permCheck sync.Once
+	root      bool
+)
+
 // Run runs the job.
 func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
+	// check permissions
+	permCheck.Do(func() {
+		root = os.Getuid() == 0
+	})
+
+	if !root {
+		return nerr.Createf("error", "insufficient permissions to ping; please run program as root user")
+	}
+
 	log.L.Infof("Getting pinggable status of devices in room %s", localsystem.MustRoomID())
 	defer log.L.Infof("Finished ping job.")
 
@@ -51,128 +65,25 @@ func (p *PingJob) Run(ctx interface{}, eventWrite chan events.Event) interface{}
 		return nerr.Translate(err).Addf("unable to get devices in room %v: %v", localsystem.MustRoomID(), err)
 	}
 
-	ret := PingResult{}
-	resultChan := make(chan devicePingResult, len(devices))
+	// ret := PingResult{}
+	// resultChan := make(chan devicePingResult, len(devices))
 
-	wg := &sync.WaitGroup{}
+	hosts := []string{}
 	for i := range devices {
 		if len(devices[i].Address) == 0 || strings.EqualFold(devices[i].Address, "0.0.0.0") {
 			continue
 		}
-		wg.Add(1)
-
-		go func(index int) {
-			result := devicePingResult{
-				DeviceID: devices[index].ID,
-			}
-
-			defer func() {
-				if r := recover(); r != nil {
-					log.L.Errorf("recovered from fatal error while pinging %s: %s", result.DeviceID, r)
-				}
-
-				if len(result.Error) > 0 {
-					log.L.Warnf("something went wrong pinging %s: %s", result.DeviceID, result.Error)
-				}
-
-				resultChan <- result
-				wg.Done()
-			}()
-
-			var pinger *ping.Pinger
-			resolved := make(chan struct{})
-
-			go func() {
-				// build pinger
-				pinger, err = ping.NewPinger(devices[index].Address)
-				if err != nil {
-					result.Error = fmt.Sprintf("unable to create pinger for device %v (address: %v): %v", devices[index].ID, devices[index].Address, err)
-					return
-				}
-
-				close(resolved)
-			}()
-
-			select {
-			case <-resolved:
-			case <-time.After(p.Timeout):
-				result.Error = fmt.Sprintf("unable to resolve an ip address for %s: exceeded timeout (%v)", devices[index].ID, p.Timeout.String())
-				return
-			}
-
-			pinger.Count = p.Count
-			pinger.Interval = p.Interval
-			pinger.SetPrivileged(true)
-
-			done := make(chan struct{})
-			go func() {
-				pinger.Run()
-				close(done)
-			}()
-
-			select {
-			case <-done:
-			case <-time.After(p.Timeout):
-				result.Error = "pinger timeout"
-				pinger.Stop()
-				return
-			}
-
-			// parse results
-			result.PacketsReceived = pinger.Statistics().PacketsRecv
-			result.PacketsSent = pinger.Statistics().PacketsSent
-			result.PacketLoss = pinger.Statistics().PacketLoss
-			result.IPAddr = pinger.Statistics().IPAddr.IP
-			result.Addr = pinger.Statistics().Addr
-			result.AverageRoundTrip = fmt.Sprintf("%dms", pinger.Statistics().AvgRtt/time.Millisecond)
-
-			// add in errors
-			if math.IsNaN(result.PacketLoss) {
-				result.PacketLoss = -1
-				result.Error = fmt.Sprintf("unknown error, but packet loss was NaN")
-			} else if result.PacketLoss == 100 {
-				result.Error = fmt.Sprintf("no packets were successful")
-			}
-		}(i)
+		hosts = append(hosts, devices[i].Address)
 	}
 
-	wg.Wait()
-	close(resultChan)
+	c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	// build a generic event to send for every device
-	event := events.Event{
-		GeneratingSystem: localsystem.MustSystemID(),
-		Timestamp:        time.Now(),
-		EventTags: []string{
-			events.Heartbeat,
-		},
-		AffectedRoom: events.GenerateBasicRoomInfo(localsystem.MustRoomID()),
+	pinger, err := ping.NewPinger()
+	if err != nil {
+		log.L.Fatal(err)
 	}
 
-	resultCount := len(resultChan)
-
-	for result := range resultChan {
-		if len(result.Error) > 0 {
-			ret.Unsuccessful = append(ret.Unsuccessful, result)
-		} else {
-			ret.Successful = append(ret.Successful, result)
-
-			event.TargetDevice = events.GenerateBasicDeviceInfo(result.DeviceID)
-			event.Key = "last-heartbeat"
-			event.Value = time.Now().Format(time.RFC3339)
-			eventWrite <- event
-		}
-	}
-
-	// send an event for my own heartbeat
-	event.TargetDevice = events.GenerateBasicDeviceInfo(localsystem.MustSystemID())
-	event.Key = "last-heartbeat"
-	event.Value = time.Now().Format(time.RFC3339)
-	eventWrite <- event
-
-	if len(ret.Unsuccessful) == resultCount && resultCount > 0 {
-		return nerr.Create(fmt.Sprintf("every single ping was unsuccessful. error: %s", ret.Unsuccessful[0].Error), "error")
-	}
-
-	return ret
+	results := pinger.Ping(c, hosts...)
+	return results
 }

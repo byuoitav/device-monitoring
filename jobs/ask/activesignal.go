@@ -44,7 +44,7 @@ func (j *ActiveSignalJob) Run(ctx interface{}, eventWrite chan events.Event) int
 		return nerr.Translate(gerr).Addf("failed to get active input information in room %s", roomID)
 	}
 
-	graph, gerr := inputgraph.BuildGraph(devices)
+	graph, gerr := inputgraph.BuildGraph(devices, "video")
 	if err != nil {
 		return nerr.Translate(gerr).Addf("failed to get active input inforamtion in room %s", roomID)
 	}
