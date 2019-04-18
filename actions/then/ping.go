@@ -1,14 +1,19 @@
-package ping
+package then
 
 import (
 	"context"
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/byuoitav/common/db"
 	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/device-monitoring/localsystem"
+	"go.uber.org/zap"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 )
@@ -34,6 +39,12 @@ type Pinger struct {
 // Result .
 type Result struct {
 	Err error `json:"error,omitempty"`
+
+	IP               net.IP        `json:"ip,omitempty"`
+	PacketsSent      int           `json:"packets-sent,omitempty"`
+	PacketsReceived  int           `json:"packets-received,omitempty"`
+	PacketsLost      int           `json:"packets-lost,omitempty"`
+	AverageRoundTrip time.Duration `json:"average-round-trip,omitempty"`
 }
 
 type reply struct {
@@ -48,6 +59,39 @@ type host struct {
 	replies chan reply
 
 	// stats go here
+}
+
+// PingDevices .
+func PingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+	// get devices from db
+	devices, err := db.GetDB().GetDevicesByRoom(localsystem.MustRoomID())
+	if err != nil {
+		return nerr.Translate(err).Addf("unable to get devices in room %v", localsystem.MustRoomID())
+	}
+
+	hosts := []string{}
+	for i := range devices {
+		if len(devices[i].Address) == 0 || strings.EqualFold(devices[i].Address, "0.0.0.0") {
+			continue
+		}
+		hosts = append(hosts, devices[i].Address)
+	}
+
+	log.Infof("Pinging %v devices in room", len(hosts))
+
+	c, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	pinger, err := NewPinger()
+	if err != nil {
+		return nerr.Translate(err).Addf("failed to ping devices")
+	}
+	defer pinger.Close()
+
+	results := pinger.Ping(c, hosts...)
+	log.Infof("results: %v", results)
+
+	return nil
 }
 
 // NewPinger .
@@ -160,10 +204,13 @@ func (p *Pinger) ping(ctx context.Context, host *host) *Result {
 		return result
 	}
 
+	result.PacketsSent++
+
 	// wait for a response
 	select {
 	case reply := <-host.replies:
 		log.L.Infof("received a reply from %s at %s", host.host, reply.at)
+		result.PacketsReceived++
 	case <-ctx.Done():
 		result.Err = fmt.Errorf("timed out waiting for a response from %s", host.host)
 	}
