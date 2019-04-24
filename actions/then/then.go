@@ -24,3 +24,8 @@ func PingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr
 	log.Infof("results: %+v", results)
 	return err
 }
+
+// ActiveSignal .
+func ActiveSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+	return nil
+}

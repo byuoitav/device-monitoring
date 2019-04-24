@@ -1,15 +1,12 @@
 package ask
 
-import (
-	"github.com/byuoitav/common/v2/events"
-)
+/*
 
 // StateUpdateJob is a job that gets the status of all the devices in the room, and pushes events from the status to "true up" the state of the room
 type StateUpdateJob struct{}
 
 // Run runs the job.
 func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
-	/*
 		// build base event
 		event := events.Event{
 			GeneratingSystem: localsystem.MustHostname(),
@@ -97,7 +94,6 @@ func (s *StateUpdateJob) Run(ctx interface{}, eventWrite chan events.Event) inte
 		}
 
 		return status
-	*/
-
 	return nil
 }
+*/
