@@ -1,17 +1,14 @@
 package handlers
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/status"
-	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/byuoitav/device-monitoring/jobs/ask"
 	"github.com/byuoitav/device-monitoring/localsystem"
 	"github.com/labstack/echo"
 )
+
+/*
 
 // GetDeviceInfo combines lots of device information into a response.
 func GetDeviceInfo(context echo.Context) error {
@@ -84,6 +81,7 @@ func GetDeviceInfo(context echo.Context) error {
 
 	return context.JSON(http.StatusOK, data)
 }
+*/
 
 // GetHostname returns the hostname of the device we are on
 func GetHostname(context echo.Context) error {
@@ -121,6 +119,7 @@ func IsConnectedToInternet(context echo.Context) error {
 	return context.String(http.StatusOK, fmt.Sprintf("%v", status))
 }
 
+/*
 // GetStatusInfo returns the default status info
 func GetStatusInfo(context echo.Context) error {
 	job := &ask.StatusJob{}
@@ -198,3 +197,4 @@ func GetScreenshot(context echo.Context) error {
 func GetRunnerInfo(context echo.Context) error {
 	return context.JSON(http.StatusOK, jobs.RunnerInfos())
 }
+*/

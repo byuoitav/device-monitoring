@@ -1,19 +1,56 @@
 package handlers
 
 import (
-	"fmt"
+	"context"
 	"net/http"
 	"time"
 
-	"github.com/byuoitav/av-api/base"
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/structs"
-	"github.com/byuoitav/device-monitoring/actions/then/ping"
-	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/byuoitav/device-monitoring/jobs/ask"
+	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/device-monitoring/actions/ping"
 	"github.com/labstack/echo"
 )
 
+// PingRoom .
+func PingRoom(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	results, err := ping.Room(ctx, log.L)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.String())
+	}
+
+	return c.JSON(http.StatusOK, results)
+}
+
+/*
+// PingStatus .
+func PingStatus(context echo.Context) error {
+	job := &ask.PingJob{
+		Count:    3,
+		Interval: 500 * time.Millisecond,
+		Timeout:  1500 * time.Millisecond,
+	}
+	result := jobs.RunJob(job, nil)
+
+	switch v := result.(type) {
+	case error:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case *nerr.E:
+		return context.String(http.StatusInternalServerError, v.Error())
+	case ask.PingResult:
+		return context.JSON(http.StatusOK, v)
+	case *ask.PingResult:
+		return context.JSON(http.StatusOK, v)
+	case map[string]*ping.Result:
+		return context.JSON(http.StatusOK, v)
+	default:
+		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	}
+}
+*/
+
+/*
 // GetRoom .
 func GetRoom(context echo.Context) error {
 	data := make(map[string]interface{})
@@ -142,3 +179,4 @@ func DeviceHardwareInfo(context echo.Context) error {
 		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
 	}
 }
+*/

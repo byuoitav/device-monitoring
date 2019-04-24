@@ -1,13 +1,6 @@
 package handlers
 
-import (
-	"net/http"
-
-	"github.com/byuoitav/common/db"
-	"github.com/byuoitav/device-monitoring/localsystem"
-	"github.com/labstack/echo"
-)
-
+/*
 // ViaData .
 type ViaData struct {
 	Name    string `json:"name"`
@@ -35,3 +28,4 @@ func ViaInfo(ctx echo.Context) error {
 
 	return ctx.JSON(http.StatusOK, ret)
 }
+*/
