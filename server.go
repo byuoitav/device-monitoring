@@ -3,10 +3,14 @@ package main
 import (
 	"context"
 	"net/http"
+	"os"
 
+	"github.com/byuoitav/central-event-system/hub/base"
 	"github.com/byuoitav/common"
+	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/actions"
 	"github.com/byuoitav/device-monitoring/handlers"
+	"github.com/byuoitav/device-monitoring/messenger"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
@@ -15,6 +19,13 @@ import (
 
 func main() {
 	go actions.ActionManager().Start(context.TODO())
+
+	messenger, err := messenger.BuildMessenger(os.Getenv("HUB_ADDRESS"), base.Messenger, 5000)
+	if err != nil {
+		log.L.Fatalf("failed to build messenger: %s", err.Error())
+	}
+
+	messenger.Register(actions.ActionManager().EventStream)
 
 	// server
 	port := ":10000"
