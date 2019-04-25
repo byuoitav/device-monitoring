@@ -38,18 +38,6 @@ func GetDeviceAPIHealth(ctx context.Context) (map[string]bool, *nerr.E) {
 	healthyMu := sync.Mutex{}
 	wg := sync.WaitGroup{}
 
-	/*
-		hasCommand := func(device structs.Device, cmdID string) bool {
-			for i := range device.Type.Commands {
-				if device.Type.Commands[i].ID == cmdID {
-					return true
-				}
-			}
-
-			return false
-		}
-	*/
-
 	for i := range devices {
 		if len(devices[i].GetCommandByID(healthyCommandID).ID) > 0 {
 			wg.Add(1)
