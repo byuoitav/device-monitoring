@@ -142,7 +142,7 @@ func sendHardwareInfo(deviceID string, info *structs.HardwareInfo, eventWrite ch
 	if len(info.ModelName) > 0 {
 		tmp := event
 		tmp.AddToTags(events.DetailState)
-		tmp.Key = "model-name"
+		tmp.Key = "model-name" // TODO change to hardware-version
 		tmp.Value = info.ModelName
 		eventWrite <- tmp
 	}
@@ -158,7 +158,7 @@ func sendHardwareInfo(deviceID string, info *structs.HardwareInfo, eventWrite ch
 	if len(info.FirmwareVersion) > 0 {
 		tmp := event
 		tmp.AddToTags(events.DetailState)
-		tmp.Key = "firmware-version"
+		tmp.Key = "firmware-version" // TODO change to software-version
 		// TODO what kind of interface{}...?
 		tmp.Value = fmt.Sprintf("%v", info.FirmwareVersion)
 		eventWrite <- tmp

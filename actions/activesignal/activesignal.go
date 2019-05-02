@@ -29,10 +29,6 @@ const (
 // GetMap .
 func GetMap(ctx context.Context) (map[string]bool, *nerr.E) {
 	log.L.Infof("Getting active signal map")
-	//	systemID, err := localsystem.SystemID()
-	//	if err != nil {
-	//		return nil, err.Addf("failed to get active signal info")
-	//	}
 
 	roomID, err := localsystem.RoomID()
 	if err != nil {

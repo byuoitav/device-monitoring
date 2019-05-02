@@ -1,118 +1,117 @@
-package ask
+package then
 
-/*
-const (
-	temperatureRootPath = "/sys/class/thermal"
-	uSleepCheckInterval = 3 * time.Second
-	uSleepResetInterval = 5 * time.Minute
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/actions/hardwareinfo"
+	"github.com/byuoitav/device-monitoring/localsystem"
+	"github.com/byuoitav/device-monitoring/messenger"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
+	"go.uber.org/zap"
 )
 
-// HardwareInfoJob gets hardware information about the device and pushes events up about it
-type HardwareInfoJob struct{}
-
-// Run runs the job
-func (j *HardwareInfoJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
-	ret := HardwareInfo{}
-	err := &nerr.E{}
-
-	log.L.Infof("Getting Hardware Info")
-
+func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
 	systemID, err := localsystem.SystemID()
 	if err != nil {
-		log.L.Warnf("SYSTEM_ID not set, so I wont send any hardware events.")
-		return ret
+		return err.Addf("unable to get hardware info")
 	}
 
-	roomID, err := localsystem.RoomID()
+	deviceInfo := events.GenerateBasicDeviceInfo(systemID)
+
+	info, err := hardwareinfo.PiInfo()
 	if err != nil {
-		log.L.Warnf("SYSTEM_ID not set, so I wont send any hardware events.")
-		return ret
+		return err.Addf("unable to get hardware info")
 	}
 
-	// send event with all the information
+	// build base event
 	event := events.Event{
 		GeneratingSystem: systemID,
 		Timestamp:        time.Now(),
 		EventTags: []string{
 			events.HardwareInfo,
 		},
-		TargetDevice: events.GenerateBasicDeviceInfo(systemID),
-		AffectedRoom: events.GenerateBasicRoomInfo(roomID),
+		TargetDevice: deviceInfo,
+		AffectedRoom: deviceInfo.BasicRoomInfo,
 		Key:          "hardware-info",
-		Data:         ret,
+		Data:         info,
 	}
-	eventWrite <- event
+
+	// send info dump
+	messenger.Get().SendEvent(event)
 	event.Data = nil
 
-	// send info about cpu usage
-	if usage, ok := ret.CPU["usage"].(map[string]float64); ok {
+	if usage, ok := info.CPU["usage"].(map[string]float64); ok {
 		if avg, ok := usage["avg"]; ok {
 			tmp := event
 			tmp.AddToTags(events.DetailState)
 			tmp.Key = "cpu-usage-percent"
 			tmp.Value = fmt.Sprintf("%v", avg)
-			eventWrite <- tmp
+			messenger.Get().SendEvent(tmp)
 		}
 	}
 
 	// send info about memory usage
-	if vMem, ok := ret.Memory["virtual"].(*mem.VirtualMemoryStat); ok {
+	if vMem, ok := info.Memory["virtual"].(*mem.VirtualMemoryStat); ok {
 		tmp := event
 		tmp.AddToTags(events.DetailState)
 		tmp.Key = "v-mem-used-percent"
 		tmp.Value = fmt.Sprintf("%v", vMem.UsedPercent)
-		eventWrite <- tmp
+		messenger.Get().SendEvent(tmp)
 	}
 
 	// send info about swap usage
-	if sMem, ok := ret.Memory["swap"].(*mem.SwapMemoryStat); ok {
+	if sMem, ok := info.Memory["swap"].(*mem.SwapMemoryStat); ok {
 		event.Key = "s-mem-used-percent"
 		event.Value = fmt.Sprintf("%v", sMem.UsedPercent)
-		eventWrite <- event
+		messenger.Get().SendEvent(event)
 	}
 
 	// send info about chip temp
-	if temps, ok := ret.Host["temperature"].(map[string]float64); ok {
+	if temps, ok := info.Host["temperature"].(map[string]float64); ok {
 		for chip, temp := range temps {
 			tmp := event
 			tmp.AddToTags(events.DetailState)
 			tmp.Key = fmt.Sprintf("%s-temp", chip)
 			tmp.Value = fmt.Sprintf("%v", temp)
-			eventWrite <- tmp
+			messenger.Get().SendEvent(tmp)
 		}
 	}
 
 	// send info about # of writes
-	if counters, ok := ret.Disk["io-counters"]; ok {
+	if counters, ok := info.Disk["io-counters"]; ok {
 		if disks, ok := counters.(map[string]disk.IOCountersStat); ok {
 			for disk, stats := range disks {
 				tmp := event
 				tmp.AddToTags(events.DetailState)
 				tmp.Key = fmt.Sprintf("writes-to-%s", disk)
 				tmp.Value = fmt.Sprintf("%v", stats.WriteCount)
-				eventWrite <- tmp
+				messenger.Get().SendEvent(tmp)
 			}
 		}
 	}
 
 	// send info about total disk usage
-	if usage, ok := ret.Disk["usage"].(*disk.UsageStat); ok {
+	if usage, ok := info.Disk["usage"].(*disk.UsageStat); ok {
 		tmp := event
 		tmp.AddToTags(events.DetailState)
 		tmp.Key = "disk-used-percent"
 		tmp.Value = fmt.Sprintf("%v", usage.UsedPercent)
-		eventWrite <- tmp
+		messenger.Get().SendEvent(tmp)
 	}
 
 	// send info about avg # of processes in uninterruptible sleep
-	if avg, ok := ret.Procs["avg-procs-u-sleep"]; ok {
+	if avg, ok := info.Procs["avg-procs-u-sleep"]; ok {
 		tmp := event
 		tmp.AddToTags(events.DetailState)
 		tmp.Key = "avg-procs-u-sleep"
 		tmp.Value = fmt.Sprintf("%v", avg)
-		eventWrite <- tmp
+		messenger.Get().SendEvent(tmp)
 	}
 
-	return ret
+	return nil
 }
-*/
