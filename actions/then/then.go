@@ -29,3 +29,16 @@ func PingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr
 func ActiveSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
 	return nil
 }
+
+// CheckServices .
+func CheckServices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+	/*
+		var configs []health.ServiceCheckConfig
+
+		err := then.FillStructFromTemplate(ctx, string(with), log)
+		if err != nil {
+		}
+
+	*/
+	return nil
+}

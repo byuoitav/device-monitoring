@@ -13,9 +13,9 @@ import (
 	"github.com/byuoitav/common/nerr"
 )
 
-// GetRoomState .
-func GetRoomState(ctx context.Context, roomID string) (base.PublicRoom, *nerr.E) {
-	log.L.Infof("Getting the status of %s", roomID)
+// Get .
+func Get(ctx context.Context, roomID string) (base.PublicRoom, *nerr.E) {
+	log.L.Infof("Getting the state of %s", roomID)
 	var state base.PublicRoom
 
 	// build the request
@@ -40,7 +40,7 @@ func GetRoomState(ctx context.Context, roomID string) (base.PublicRoom, *nerr.E)
 	// read the body
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return state, nerr.Translate(err).Addf("failed to read API status response: %v", err)
+		return state, nerr.Translate(err).Addf("failed to read AV-API response: %v", err)
 	}
 
 	if resp.StatusCode/100 != 2 {

@@ -43,16 +43,13 @@ func Room(ctx context.Context, log *zap.SugaredLogger) (map[string]*Result, *ner
 
 	log.Infof("Pinging %v devices in room", len(hosts))
 
-	c, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
 	pinger, err := NewPinger()
 	if err != nil {
 		return map[string]*Result{}, nerr.Translate(err).Addf("failed to ping devices")
 	}
 	defer pinger.Close()
 
-	results := pinger.Ping(c, 3, hosts...)
+	results := pinger.Ping(ctx, 3, hosts...)
 	return results, nil
 }
 

@@ -6,7 +6,7 @@ import (
 	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
-// HardwareInfo is the struct of hardware information that is returned by this job.
+// HardwareInfo .
 type HardwareInfo struct {
 	Host    map[string]interface{} `json:"host,omitempty"`
 	Memory  map[string]interface{} `json:"memory,omitempty"`

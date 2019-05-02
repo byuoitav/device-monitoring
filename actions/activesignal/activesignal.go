@@ -26,8 +26,8 @@ const (
 	activeSignalCommandID = "ActiveSignal"
 )
 
-// GetActiveSignalMap .
-func GetActiveSignalMap(ctx context.Context) (map[string]bool, *nerr.E) {
+// GetMap .
+func GetMap(ctx context.Context) (map[string]bool, *nerr.E) {
 	log.L.Infof("Getting active signal map")
 	//	systemID, err := localsystem.SystemID()
 	//	if err != nil {
@@ -50,7 +50,7 @@ func GetActiveSignalMap(ctx context.Context) (map[string]bool, *nerr.E) {
 	}
 
 	// get current state of room
-	state, err := roomstate.GetRoomState(ctx, roomID)
+	state, err := roomstate.Get(ctx, roomID)
 	if err != nil {
 		return nil, err.Addf("failed to get active signal info")
 	}

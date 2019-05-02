@@ -3,11 +3,8 @@ package main
 import (
 	"context"
 	"net/http"
-	"os"
 
-	"github.com/byuoitav/central-event-system/hub/base"
 	"github.com/byuoitav/common"
-	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/actions"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/messenger"
@@ -19,13 +16,9 @@ import (
 
 func main() {
 	go actions.ActionManager().Start(context.TODO())
+	messenger.Get().Register(actions.ActionManager().EventStream)
 
-	messenger, err := messenger.BuildMessenger(os.Getenv("HUB_ADDRESS"), base.Messenger, 5000)
-	if err != nil {
-		log.L.Fatalf("failed to build messenger: %s", err.Error())
-	}
-
-	messenger.Register(actions.ActionManager().EventStream)
+	// subscribe to something?
 
 	// server
 	port := ":10000"
@@ -49,9 +42,18 @@ func main() {
 	router.GET("/device/hostname", handlers.GetHostname)
 	router.GET("/device/id", handlers.GetDeviceID)
 	router.GET("/device/ip", handlers.GetIPAddress)
+	router.GET("/device/network", handlers.IsConnectedToInternet)
+	router.GET("/device/dhcp", handlers.GetDHCPState)
+	router.GET("/device/screenshot", handlers.GetScreenshot)
+	router.GET("/device/hardwareinfo", handlers.HardwareInfo)
+	router.GET("/device/servicehealth", handlers.GetServiceHealth)
 
 	// room info endpoints
 	router.GET("/room/ping", handlers.PingRoom)
+	router.GET("/room/state", handlers.RoomState)
+	router.GET("/room/activesignal", handlers.ActiveSignal)
+	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
+	router.GET("/room/viainfo", handlers.ViaInfo)
 
 	// action endpoints
 	router.PUT("/device/reboot", handlers.RebootPi)
@@ -59,20 +61,6 @@ func main() {
 	router.POST("/event", handlers.SendEvent)
 
 	/*
-		router.GET("/device", handlers.GetDeviceInfo)
-		router.GET("/device/network", handlers.IsConnectedToInternet)
-		router.GET("/device/status", handlers.GetStatusInfo)
-		router.GET("/device/dhcp", handlers.GetDHCPState)
-		router.GET("/device/screenshot", handlers.GetScreenshot)
-		router.GET("/device/hardwareinfo", handlers.GetMyHardwareInfo)
-		router.GET("/device/runners", handlers.GetRunnerInfo)
-
-		router.GET("/room", handlers.GetRoom)
-		router.GET("/room/state", handlers.RoomState)
-		router.GET("/room/activesignal", handlers.ActiveSignal)
-		router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
-		router.GET("/room/viainfo", handlers.ViaInfo)
-
 		// divider endpoints
 		router.GET("/divider/state", handlers.GetDividerState)
 		router.GET("/divider/preset/:hostname", handlers.PresetForHostname)

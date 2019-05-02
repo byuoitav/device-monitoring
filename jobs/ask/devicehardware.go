@@ -1,21 +1,16 @@
 package ask
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/byuoitav/common/db"
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/localsystem"
 )
+
+/*
 
 const (
 	// TODO change this command name to match whatever command we need
@@ -116,6 +111,7 @@ func getHardwareInfo(device *structs.Device) *structs.HardwareInfo {
 
 	return ret
 }
+*/
 
 func sendHardwareInfo(deviceID string, info *structs.HardwareInfo, eventWrite chan events.Event) {
 	// push up events about device
