@@ -8,6 +8,7 @@ import (
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/actions/activesignal"
+	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/actions/ping"
 	"github.com/byuoitav/device-monitoring/localsystem"
 	"github.com/byuoitav/device-monitoring/messenger"
@@ -65,13 +66,38 @@ func activeSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) *ner
 
 // CheckServices .
 func CheckServices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
-	/*
-		var configs []health.ServiceCheckConfig
+	var configs []health.ServiceCheckConfig
+	err := then.FillStructFromTemplate(ctx, string(with), log)
+	if err != nil {
+		return err.Addf("unable to check services")
+	}
 
-		err := then.FillStructFromTemplate(ctx, string(with), log)
-		if err != nil {
-		}
+	systemID, err := localsystem.SystemID()
+	if err != nil {
+		return err.Addf("unable to get active signal")
+	}
+	deviceInfo := events.GenerateBasicDeviceInfo(systemID)
 
-	*/
+	// build the base event
+	event := events.Event{
+		GeneratingSystem: localsystem.MustHostname(),
+		Timestamp:        time.Now(),
+		EventTags: []string{
+			events.Heartbeat,
+			events.Mstatus,
+		},
+		TargetDevice: deviceInfo,
+		AffectedRoom: deviceInfo.BasicRoomInfo,
+	}
+
+	resps := health.CheckServices(ctx, configs)
+	for i := range resps {
+		event.Key = fmt.Sprintf("%v-status", resps[i].Name)
+		event.Value = fmt.Sprintf("%v", resps[i].StatusCode)
+		event.Data = resps[i]
+
+		messenger.Get().SendEvent(event)
+	}
+
 	return nil
 }
