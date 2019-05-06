@@ -23,12 +23,14 @@ type host struct {
 	replies chan reply
 }
 
-func (p *Pinger) ping(ctx context.Context, host *host, count int) *Result {
+func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 	result := &Result{
 		IP: host.ip,
 	}
 
-	for host.seq < count {
+	var avgrtt time.Duration
+
+	for host.seq < config.Count {
 		// format the message
 		msg := icmp.Message{
 			Type: ipv4.ICMPTypeEcho,
@@ -63,11 +65,27 @@ func (p *Pinger) ping(ctx context.Context, host *host, count int) *Result {
 
 		// wait for a response
 		select {
-		case reply := <-host.replies:
-			log.L.Infof("received a reply from %s at %s (seq: %d)", host.host, reply.at, reply.body.(*icmp.Echo).Seq)
-			result.PacketsReceived++
-			result.AverageRoundTrip += reply.at.Sub(tSent)
+		case <-time.After(config.Delay):
+			// count this as a lost packet
+			log.L.Infof("lost packet (seq %v) to %s", host.seq, host.host)
+			result.PacketsLost++
 			host.seq++
+		case reply := <-host.replies:
+			// discard the reply if it's old
+			if body, ok := reply.body.(*icmp.Echo); ok {
+				if body.Seq == host.seq {
+					log.L.Infof("received a reply from %s at %s (seq: %d)", host.host, reply.at, body.Seq)
+				} else {
+					log.L.Infof("received a *late* reply from %s at %s (seq: %d)", host.host, reply.at, body.Seq)
+				}
+
+				host.seq++
+				result.PacketsReceived++
+				avgrtt += reply.at.Sub(tSent)
+				time.Sleep(config.Delay)
+			} else {
+				log.L.Infof("received a reply from %s at %s (unknown type: %#v)", host.host, reply.at, reply.body)
+			}
 		case <-ctx.Done():
 			result.Err = fmt.Sprintf("timed out waiting for a response from %s", host.host)
 		}
@@ -78,7 +96,10 @@ func (p *Pinger) ping(ctx context.Context, host *host, count int) *Result {
 	}
 
 	// calculate info in result
-	result.AverageRoundTrip /= time.Duration(result.PacketsSent)
+	avgrtt /= time.Duration(result.PacketsSent)
+	if avgrtt != 0 {
+		result.AverageRoundTrip = avgrtt.String()
+	}
 
 	return result
 }

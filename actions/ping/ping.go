@@ -14,21 +14,27 @@ import (
 	"go.uber.org/zap"
 )
 
+// Config .
+type Config struct {
+	Count int           // the number of pings to send
+	Delay time.Duration // the delay after sending a ping before sending the next
+}
+
 // Result .
 type Result struct {
 	Err string `json:"error,omitempty"`
 
-	IP               net.IP        `json:"ip,omitempty"`
-	PacketsSent      int           `json:"packets-sent,omitempty"`
-	PacketsReceived  int           `json:"packets-received,omitempty"`
-	PacketsLost      int           `json:"packets-lost,omitempty"`
-	AverageRoundTrip time.Duration `json:"average-round-trip,omitempty"`
+	IP               net.IP `json:"ip,omitempty"`
+	PacketsSent      int    `json:"packets-sent,omitempty"`
+	PacketsReceived  int    `json:"packets-received,omitempty"`
+	PacketsLost      int    `json:"packets-lost,omitempty"`
+	AverageRoundTrip string `json:"average-round-trip,omitempty"`
 }
 
 // Room pings the room and returns the results
-func Room(ctx context.Context, log *zap.SugaredLogger) (map[string]*Result, *nerr.E) {
+func Room(ctx context.Context, roomID string, config Config, log *zap.SugaredLogger) (map[string]*Result, *nerr.E) {
 	// get devices from db
-	devices, err := db.GetDB().GetDevicesByRoom(localsystem.MustRoomID())
+	devices, err := db.GetDB().GetDevicesByRoom(roomID)
 	if err != nil {
 		return map[string]*Result{}, nerr.Translate(err).Addf("unable to get devices in room %v", localsystem.MustRoomID())
 	}
@@ -41,7 +47,7 @@ func Room(ctx context.Context, log *zap.SugaredLogger) (map[string]*Result, *ner
 		hosts = append(hosts, devices[i].Address)
 	}
 
-	log.Infof("Pinging %v devices in room", len(hosts))
+	log.Infof("Pinging %v devices in %s", len(hosts), roomID)
 
 	pinger, err := NewPinger()
 	if err != nil {
@@ -49,12 +55,12 @@ func Room(ctx context.Context, log *zap.SugaredLogger) (map[string]*Result, *ner
 	}
 	defer pinger.Close()
 
-	results := pinger.Ping(ctx, 3, hosts...)
+	results := pinger.Ping(ctx, config, hosts...)
 	return results, nil
 }
 
 // Ping .
-func (p *Pinger) Ping(ctx context.Context, count int, addrs ...string) map[string]*Result {
+func (p *Pinger) Ping(ctx context.Context, config Config, addrs ...string) map[string]*Result {
 	// TODO Payload size?
 	results := make(map[string]*Result)
 	resultsMu := sync.Mutex{}
@@ -106,7 +112,7 @@ func (p *Pinger) Ping(ctx context.Context, count int, addrs ...string) map[strin
 		p.hostsMu.Unlock()
 
 		go func(hh *host) {
-			result := p.ping(ctx, hh, count)
+			result := p.ping(ctx, hh, config)
 
 			resultsMu.Lock()
 			results[hh.host] = result

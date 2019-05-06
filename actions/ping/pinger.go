@@ -105,6 +105,7 @@ func (p *Pinger) receive(source net.IP, bytes []byte, at time.Time) {
 			return
 		}
 
+		log.L.Warnf("GOT DEST UNREACHABLE PACKET")
 		p.process(source, msg.Body, at)
 	default:
 		return

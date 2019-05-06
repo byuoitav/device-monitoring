@@ -16,6 +16,8 @@ import (
 	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
+// TODO handle gated devices
+
 const (
 	hardwareInfoCommandID = "HardwareInfo"
 )

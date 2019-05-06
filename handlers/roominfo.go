@@ -19,7 +19,15 @@ func PingRoom(ectx echo.Context) error {
 	ctx, cancel := context.WithTimeout(ectx.Request().Context(), 10*time.Second)
 	defer cancel()
 
-	results, err := ping.Room(ctx, log.L)
+	roomID, err := localsystem.RoomID()
+	if err != nil {
+		return err.Addf("unable to ping devices")
+	}
+
+	results, err := ping.Room(ctx, roomID, ping.Config{
+		Count: 3,
+		Delay: 1 * time.Second,
+	}, log.L)
 	if err != nil {
 		return ectx.String(http.StatusInternalServerError, err.String())
 	}
