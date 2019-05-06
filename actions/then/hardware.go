@@ -123,6 +123,10 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 		return err.Addf("unable to get device hardware info")
 	}
 
+	// timeout if this takes longer than 30 seconds
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	info, err := hardwareinfo.RoomDevicesInfo(ctx)
 	if err != nil {
 		return err.Addf("unable to get device hardware info")

@@ -29,31 +29,63 @@ func init() {
 }
 
 func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
-	/*
-		systemID, err := localsystem.SystemID()
-		if err != nil {
-			return err.Addf("unable to ping room")
-		}
-	*/
-
-	// TODO add a max time of 20 seconds or something
+	systemID, err := localsystem.SystemID()
+	if err != nil {
+		return err.Addf("unable to ping room")
+	}
 
 	roomID, err := localsystem.RoomID()
 	if err != nil {
 		return err.Addf("unable to ping devices")
 	}
 
+	// timeout if this takes longer than 30 seconds
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	results, err := ping.Room(ctx, roomID, ping.Config{
 		Count: 3,
 		Delay: 1 * time.Second,
 	}, log)
 	if err != nil {
-		return err
+		return err.Addf("unable to ping devices")
 	}
 
-	// TODO push up results
-	log.Infof("results: %+v", results)
-	return err
+	// push up results
+	for id, result := range results {
+		if len(result.Error) > 0 || result.PacketsLost > result.PacketsReceived {
+			// unsuccessful
+		} else {
+			// successful
+			messenger.Get().SendEvent(events.Event{
+				GeneratingSystem: systemID,
+				Timestamp:        time.Now(),
+				EventTags: []string{
+					events.Heartbeat,
+				},
+				AffectedRoom: events.GenerateBasicRoomInfo(roomID),
+				TargetDevice: events.GenerateBasicDeviceInfo(id),
+				Key:          "last-heartbeat",
+				Value:        time.Now().Format(time.RFC3339),
+				Data:         result,
+			})
+		}
+	}
+
+	// send one up for me too!
+	messenger.Get().SendEvent(events.Event{
+		GeneratingSystem: systemID,
+		Timestamp:        time.Now(),
+		EventTags: []string{
+			events.Heartbeat,
+		},
+		AffectedRoom: events.GenerateBasicRoomInfo(roomID),
+		TargetDevice: events.GenerateBasicDeviceInfo(systemID),
+		Key:          "last-heartbeat",
+		Value:        time.Now().Format(time.RFC3339),
+	})
+
+	return nil
 }
 
 func activeSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
@@ -61,6 +93,10 @@ func activeSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) *ner
 	if err != nil {
 		return err.Addf("unable to get active signal")
 	}
+
+	// timeout if this takes longer than 30 seconds
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 
 	active, err := activesignal.GetMap(ctx)
 	if err != nil {
@@ -100,25 +136,25 @@ func serviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger
 	}
 	deviceInfo := events.GenerateBasicDeviceInfo(systemID)
 
-	// build the base event
-	event := events.Event{
-		GeneratingSystem: localsystem.MustHostname(),
-		Timestamp:        time.Now(),
-		EventTags: []string{
-			events.Heartbeat,
-			events.Mstatus,
-		},
-		TargetDevice: deviceInfo,
-		AffectedRoom: deviceInfo.BasicRoomInfo,
-	}
+	// timeout if this takes longer than 30 seconds
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 
 	resps := health.CheckServices(ctx, configs)
 	for i := range resps {
-		event.Key = fmt.Sprintf("%v-status", resps[i].Name)
-		event.Value = fmt.Sprintf("%v", resps[i].StatusCode)
-		event.Data = resps[i]
-
-		messenger.Get().SendEvent(event)
+		messenger.Get().SendEvent(events.Event{
+			GeneratingSystem: systemID,
+			Timestamp:        time.Now(),
+			EventTags: []string{
+				events.Heartbeat,
+				events.Mstatus,
+			},
+			TargetDevice: deviceInfo,
+			AffectedRoom: deviceInfo.BasicRoomInfo,
+			Key:          fmt.Sprintf("%v-status", resps[i].Name),
+			Value:        fmt.Sprintf("%v", resps[i].StatusCode),
+			Data:         resps[i],
+		})
 	}
 
 	return nil
@@ -134,6 +170,10 @@ func stateUpdate(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr
 	if err != nil {
 		return err.Addf("unable to send state update")
 	}
+
+	// timeout if this takes longer than 30 seconds
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 
 	state, err := roomstate.Get(ctx, roomID)
 	if err != nil {
