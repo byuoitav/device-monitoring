@@ -20,9 +20,15 @@ type Config struct {
 	Delay time.Duration // the delay after sending a ping before sending the next
 }
 
+// Host .
+type Host struct {
+	ID   string
+	Addr string
+}
+
 // Result .
 type Result struct {
-	Err string `json:"error,omitempty"`
+	Error string `json:"error,omitempty"`
 
 	IP               net.IP `json:"ip,omitempty"`
 	PacketsSent      int    `json:"packets-sent,omitempty"`
@@ -39,12 +45,16 @@ func Room(ctx context.Context, roomID string, config Config, log *zap.SugaredLog
 		return map[string]*Result{}, nerr.Translate(err).Addf("unable to get devices in room %v", localsystem.MustRoomID())
 	}
 
-	hosts := []string{}
+	hosts := []Host{}
 	for i := range devices {
 		if len(devices[i].Address) == 0 || strings.EqualFold(devices[i].Address, "0.0.0.0") {
 			continue
 		}
-		hosts = append(hosts, devices[i].Address)
+
+		hosts = append(hosts, Host{
+			ID:   devices[i].ID,
+			Addr: devices[i].Address,
+		})
 	}
 
 	log.Infof("Pinging %v devices in %s", len(hosts), roomID)
@@ -60,22 +70,22 @@ func Room(ctx context.Context, roomID string, config Config, log *zap.SugaredLog
 }
 
 // Ping .
-func (p *Pinger) Ping(ctx context.Context, config Config, addrs ...string) map[string]*Result {
+func (p *Pinger) Ping(ctx context.Context, config Config, hosts ...Host) map[string]*Result {
 	// TODO Payload size?
 	results := make(map[string]*Result)
 	resultsMu := sync.Mutex{}
 	wg := sync.WaitGroup{}
 
 	// create a host struct for each host
-	for _, addr := range addrs {
+	for i := range hosts {
 		wg.Add(1)
 
 		// make a result struct for each addr
-		ips, err := p.resolver.LookupIPAddr(ctx, addr)
+		ips, err := p.resolver.LookupIPAddr(ctx, hosts[i].Addr)
 		if err != nil {
 			resultsMu.Lock()
-			results[addr] = &Result{
-				Err: fmt.Sprintf("failed to resolve ip address: %s", err),
+			results[hosts[i].ID] = &Result{
+				Error: fmt.Sprintf("failed to resolve ip address: %s", err),
 			}
 			resultsMu.Unlock()
 
@@ -92,8 +102,8 @@ func (p *Pinger) Ping(ctx context.Context, config Config, addrs ...string) map[s
 
 		if ip == nil {
 			resultsMu.Lock()
-			results[addr] = &Result{
-				Err: fmt.Sprintf("ip ipv4 address found"),
+			results[hosts[i].ID] = &Result{
+				Error: fmt.Sprintf("ip ipv4 address found"),
 			}
 			resultsMu.Unlock()
 
@@ -102,9 +112,12 @@ func (p *Pinger) Ping(ctx context.Context, config Config, addrs ...string) map[s
 		}
 
 		h := &host{
-			host:    addr,
+			Host: Host{
+				ID:   hosts[i].ID,
+				Addr: hosts[i].Addr,
+			},
 			ip:      ip,
-			replies: make(chan reply, 5),
+			replies: make(chan reply, 10),
 		}
 
 		p.hostsMu.Lock()
@@ -115,7 +128,7 @@ func (p *Pinger) Ping(ctx context.Context, config Config, addrs ...string) map[s
 			result := p.ping(ctx, hh, config)
 
 			resultsMu.Lock()
-			results[hh.host] = result
+			results[hh.ID] = result
 			resultsMu.Unlock()
 
 			wg.Done()

@@ -115,7 +115,7 @@ func (p *Pinger) receive(source net.IP, bytes []byte, at time.Time) {
 func (p *Pinger) process(source net.IP, body icmp.MessageBody, at time.Time) {
 	echo, ok := body.(*icmp.Echo)
 	if !ok || echo == nil {
-		log.L.Infof("expected *icmp.Echo, got %#v", body)
+		log.L.Warnf("expected *icmp.Echo, got %#v", body)
 		return
 	}
 

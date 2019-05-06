@@ -17,7 +17,7 @@ type reply struct {
 }
 
 type host struct {
-	host    string
+	Host
 	ip      net.IP
 	seq     int
 	replies chan reply
@@ -44,7 +44,7 @@ func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 
 		b, err := msg.Marshal(nil)
 		if err != nil {
-			result.Err = fmt.Sprintf("failed to marshal ping message: %s", err)
+			result.Error = fmt.Sprintf("failed to marshal ping message: %s", err)
 			break
 		}
 
@@ -54,10 +54,10 @@ func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 			IP: host.ip,
 		})
 		if err != nil {
-			result.Err = fmt.Sprintf("failed to send ping: %s", err)
+			result.Error = fmt.Sprintf("failed to send ping: %s", err)
 			break
 		} else if n != len(b) {
-			result.Err = fmt.Sprintf("sending ping failed: wrote %v bytes, expected %v", n, len(b))
+			result.Error = fmt.Sprintf("sending ping failed: wrote %v bytes, expected %v", n, len(b))
 			break
 		}
 
@@ -67,16 +67,16 @@ func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 		select {
 		case <-time.After(config.Delay):
 			// count this as a lost packet
-			log.L.Infof("lost packet (seq %v) to %s", host.seq, host.host)
+			log.L.Infof("lost packet (seq %v) to %s", host.seq, host.Addr)
 			result.PacketsLost++
 			host.seq++
 		case reply := <-host.replies:
 			// discard the reply if it's old
 			if body, ok := reply.body.(*icmp.Echo); ok {
 				if body.Seq == host.seq {
-					log.L.Infof("received a reply from %s at %s (seq: %d)", host.host, reply.at, body.Seq)
+					log.L.Infof("received a reply from %s at %s (seq: %d)", host.Addr, reply.at, body.Seq)
 				} else {
-					log.L.Infof("received a *late* reply from %s at %s (seq: %d)", host.host, reply.at, body.Seq)
+					log.L.Infof("received a *late* reply from %s at %s (seq: %d)", host.Addr, reply.at, body.Seq)
 				}
 
 				host.seq++
@@ -84,13 +84,13 @@ func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 				avgrtt += reply.at.Sub(tSent)
 				time.Sleep(config.Delay)
 			} else {
-				log.L.Infof("received a reply from %s at %s (unknown type: %#v)", host.host, reply.at, reply.body)
+				log.L.Infof("received a reply from %s at %s (unknown type: %#v)", host.Addr, reply.at, reply.body)
 			}
 		case <-ctx.Done():
-			result.Err = fmt.Sprintf("timed out waiting for a response from %s", host.host)
+			result.Error = fmt.Sprintf("timed out waiting for a response from %s", host.Addr)
 		}
 
-		if len(result.Err) > 0 {
+		if len(result.Error) > 0 {
 			break
 		}
 	}
