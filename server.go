@@ -39,6 +39,7 @@ func main() {
 	}))
 
 	// device info endpoints
+	router.GET("/device", handlers.GetDeviceInfo)
 	router.GET("/device/hostname", handlers.GetHostname)
 	router.GET("/device/id", handlers.GetDeviceID)
 	router.GET("/device/ip", handlers.GetIPAddress)
@@ -46,7 +47,7 @@ func main() {
 	router.GET("/device/dhcp", handlers.GetDHCPState)
 	router.GET("/device/screenshot", handlers.GetScreenshot)
 	router.GET("/device/hardwareinfo", handlers.HardwareInfo)
-	router.GET("/device/servicehealth", handlers.GetServiceHealth)
+	router.PUT("/device/servicehealth", handlers.GetServiceHealth)
 
 	// room info endpoints
 	router.GET("/room/ping", handlers.PingRoom)

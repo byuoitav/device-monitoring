@@ -20,11 +20,11 @@ type ServiceCheckConfig struct {
 
 // ServiceCheckResponse .
 type ServiceCheckResponse struct {
-	ServiceCheckConfig
+	ServiceCheckConfig `json:"request"`
 
-	StatusCode int
-	Error      string
-	Body       []byte
+	StatusCode int         `json:"status-code,omitempty"`
+	Error      string      `json:"error,omitempty"`
+	Body       interface{} `json:"response-body,omitempty"`
 }
 
 // CheckServices .
@@ -92,6 +92,11 @@ func checkService(ctx context.Context, check ServiceCheckConfig) ServiceCheckRes
 		return sresp
 	}
 
-	sresp.Body = b
+	err = json.Unmarshal(b, &sresp.Body)
+	if err != nil {
+		sresp.Error = fmt.Sprintf("unable to parse response body: %s", err)
+		return sresp
+	}
+
 	return sresp
 }

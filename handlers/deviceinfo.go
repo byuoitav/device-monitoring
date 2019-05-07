@@ -1,14 +1,69 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/device-monitoring/actions/hardwareinfo"
+	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/actions/screenshot"
 	"github.com/byuoitav/device-monitoring/localsystem"
 	"github.com/labstack/echo"
 )
+
+// DeviceInfo .
+type DeviceInfo struct {
+	Hostname             string `json:"hostname,omitempty"`
+	ID                   string `json:"id,omitempty"`
+	IP                   string `json:"ip,omitempty"`
+	InternetConnectivity bool   `json:"internet-connectivity"`
+
+	DHCPInfo struct {
+		Enabled    bool `json:"enabled"`
+		Toggleable bool `json:"toggleable"`
+	} `json:"dhcp"`
+}
+
+// GetDeviceInfo .
+func GetDeviceInfo(ectx echo.Context) error {
+	var info DeviceInfo
+	var err *nerr.E
+
+	info.Hostname, err = localsystem.Hostname()
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	info.ID, err = localsystem.SystemID()
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	ip, err := localsystem.IPAddress()
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	info.IP = ip.String()
+	info.InternetConnectivity = localsystem.IsConnectedToInternet()
+
+	info.DHCPInfo.Enabled, err = localsystem.UsingDHCP()
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	err = localsystem.CanToggleDHCP()
+	if err != nil {
+		info.DHCPInfo.Toggleable = false
+	} else {
+		info.DHCPInfo.Toggleable = true
+	}
+
+	return ectx.JSON(http.StatusOK, info)
+}
 
 // GetHostname returns the hostname of the device we are on
 func GetHostname(ectx echo.Context) error {
@@ -88,27 +143,16 @@ func HardwareInfo(ectx echo.Context) error {
 
 // GetServiceHealth returns the health of services on this device
 func GetServiceHealth(ectx echo.Context) error {
-	// TODO this endpoint
-	return nil
-}
-
-/*
-// GetStatusInfo returns the default status info
-func GetStatusInfo(context echo.Context) error {
-	job := &ask.StatusJob{}
-	jobContext := jobs.GetJobContext("status")
-
-	s := jobs.RunJob(job, jobContext)
-
-	switch v := s.(type) {
-	case error:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case *nerr.E:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case []status.Status:
-		return context.JSON(http.StatusOK, v)
-	default:
-		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	var configs []health.ServiceCheckConfig
+	err := ectx.Bind(&configs)
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
+
+	// timeout if this takes longer than 15 seconds
+	ctx, cancel := context.WithTimeout(ectx.Request().Context(), 15*time.Second)
+	defer cancel()
+
+	resps := health.CheckServices(ctx, configs)
+	return ectx.JSON(http.StatusOK, resps)
 }
-*/

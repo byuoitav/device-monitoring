@@ -133,9 +133,17 @@ export class APIService {
   public async getRoomPing() {
     try {
       const data = await this.http.get("room/ping").toPromise();
-      const pingResult = this.jsonConvert.deserialize(data, PingResult);
 
-      return pingResult;
+      // build the map
+      const result = new Map<string, PingResult>();
+      for (const key of Object.keys(data)) {
+        if (key && data[key]) {
+          const val = this.jsonConvert.deserialize(data[key], PingResult);
+          result.set(key, val);
+        }
+      }
+
+      return result;
     } catch (e) {
       throw new Error("error getting room ping info: " + e);
     }
