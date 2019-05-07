@@ -14,8 +14,6 @@ import (
 	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
-// TODO handle gated devices
-
 const (
 	healthyCommandID = "HealthCheck"
 )
@@ -39,7 +37,7 @@ func GetDeviceAPIHealth(ctx context.Context) (map[string]bool, *nerr.E) {
 	wg := sync.WaitGroup{}
 
 	for i := range devices {
-		if len(devices[i].GetCommandByID(healthyCommandID).ID) > 0 {
+		if devices[i].HasCommand(healthyCommandID) {
 			wg.Add(1)
 
 			go func(idx int) {
@@ -59,32 +57,32 @@ func GetDeviceAPIHealth(ctx context.Context) (map[string]bool, *nerr.E) {
 
 func isDeviceAPIHealthy(ctx context.Context, device structs.Device) bool {
 	// build the command
-	address := device.GetCommandByID(healthyCommandID).BuildCommandAddress()
-	if len(address) == 0 {
-		log.L.Warnf("command '%s' does not exist on %s", healthyCommandID, device.ID)
-		return true // we'll just assume that it's healthy if we can't check it
+	address, err := device.BuildCommandURL(healthyCommandID)
+	if err != nil {
+		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, err.Error())
+		return false
 	}
 
 	// fill in the address
 	address = strings.Replace(address, ":address", device.Address, 1)
 
-	req, err := http.NewRequest("GET", address, nil)
-	if err != nil {
-		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, err)
+	req, gerr := http.NewRequest("GET", address, nil)
+	if gerr != nil {
+		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, gerr)
 		return false
 	}
 
 	req = req.WithContext(ctx)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, err)
+	resp, gerr := http.DefaultClient.Do(req)
+	if gerr != nil {
+		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, gerr)
 		return false
 	}
 	defer resp.Body.Close()
 
-	bytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, err)
+	bytes, gerr := ioutil.ReadAll(resp.Body)
+	if gerr != nil {
+		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, gerr)
 		return false
 	}
 

@@ -16,8 +16,6 @@ import (
 	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
-// TODO handle gated devices
-
 const (
 	hardwareInfoCommandID = "HardwareInfo"
 )
@@ -45,7 +43,7 @@ func RoomDevicesInfo(ctx context.Context) (map[string]structs.HardwareInfo, *ner
 		if devices[i].Type.ID == "Pi3" ||
 			devices[i].Address == "0.0.0.0" ||
 			len(devices[i].Address) == 0 ||
-			len(devices[i].GetCommandByID(hardwareInfoCommandID).ID) == 0 {
+			!devices[i].HasCommand(hardwareInfoCommandID) {
 			continue
 		}
 
@@ -69,18 +67,18 @@ func RoomDevicesInfo(ctx context.Context) (map[string]structs.HardwareInfo, *ner
 func getHardwareInfo(ctx context.Context, device structs.Device) structs.HardwareInfo {
 	var info structs.HardwareInfo
 
-	address := device.GetCommandByID(hardwareInfoCommandID).BuildCommandAddress()
-	if len(address) == 0 {
-		log.L.Warnf("unable to build command address for %s command on %s", hardwareInfoCommandID, device.ID)
+	address, err := device.BuildCommandURL(hardwareInfoCommandID)
+	if err != nil {
+		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, err.Error())
 		return info
 	}
 
 	log.L.Infof("Getting hardware info for %s", device.ID)
 	address = strings.Replace(address, ":address", device.Address, 1)
 
-	req, err := http.NewRequest("GET", address, nil)
-	if err != nil {
-		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, err)
+	req, gerr := http.NewRequest("GET", address, nil)
+	if gerr != nil {
+		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, gerr)
 		return info
 	}
 
@@ -89,22 +87,22 @@ func getHardwareInfo(ctx context.Context, device structs.Device) structs.Hardwar
 		Timeout: 5 * time.Second,
 	}
 
-	resp, err := c.Do(req)
-	if err != nil {
-		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, err)
+	resp, gerr := c.Do(req)
+	if gerr != nil {
+		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, gerr)
 		return info
 	}
 	defer resp.Body.Close()
 
-	bytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, err)
+	bytes, gerr := ioutil.ReadAll(resp.Body)
+	if gerr != nil {
+		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, gerr)
 		return info
 	}
 
-	err = json.Unmarshal(bytes, &info)
-	if err != nil {
-		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, err)
+	gerr = json.Unmarshal(bytes, &info)
+	if gerr != nil {
+		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, gerr)
 		return info
 	}
 

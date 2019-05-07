@@ -20,8 +20,6 @@ import (
 	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
-// TODO handle gated devices
-
 const (
 	activeSignalCommandID = "ActiveSignal"
 )
@@ -64,7 +62,7 @@ func GetMap(ctx context.Context) (map[string]bool, *nerr.E) {
 			defer wg.Done()
 
 			deviceID := fmt.Sprintf("%s-%s", roomID, state.Displays[idx].Name)
-			a := isInputPathActive(ctx, state.Displays[idx], roomID, graph)
+			a := isInputPathActive(ctx, state.Displays[idx], roomID, graph, devices)
 
 			activeMu.Lock()
 			active[deviceID] = a
@@ -76,7 +74,7 @@ func GetMap(ctx context.Context) (map[string]bool, *nerr.E) {
 	return active, nil
 }
 
-func isInputPathActive(ctx context.Context, display base.Display, roomID string, graph inputgraph.InputGraph) bool {
+func isInputPathActive(ctx context.Context, display base.Display, roomID string, graph inputgraph.InputGraph, roomDevices []structs.Device) bool {
 	if len(display.Input) == 0 || len(display.Name) == 0 {
 		log.L.Debugf("Skipping %s because input or name is empty", display.Name)
 		return false
@@ -117,7 +115,7 @@ func isInputPathActive(ctx context.Context, display base.Display, roomID string,
 			src = &nodes[i-1].Device
 		}
 
-		if !isInputActive(ctx, src, &nodes[i].Device) {
+		if !isInputActive(ctx, src, &nodes[i].Device, roomDevices) {
 			log.L.Infof("There *is not* an active input signal from %s to %s", inputID, displayID)
 			return false
 		}
@@ -129,13 +127,14 @@ func isInputPathActive(ctx context.Context, display base.Display, roomID string,
 
 // isInputActive returns true if the port connecting dest -> src is marked as active
 // if src is nil, then it returns true if dest claims there is an active input
-func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Device) bool {
+func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Device, roomDevices []structs.Device) bool {
 	if dest == nil {
 		log.L.Errorf("destination device passed into isInputActive cannot be null.")
 		return false
 	}
 
 	// TODO maybe cache whether or not a specific input as active for a little while?
+
 	// create a new sub logger
 	l := log.L.Named(dest.ID)
 
@@ -145,11 +144,14 @@ func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Devic
 		l.Debugf("Checking if I'm sending an active input signal")
 	}
 
-	address := dest.GetCommandByID(activeSignalCommandID).BuildCommandAddress()
-	if len(address) == 0 {
-		// for now, if the command doesn't exist, we are going to assume the input was active
-		l.Debugf("I do not have a %s command. Let's assume I'm sending a signal", activeSignalCommandID)
-		return true
+	if !dest.HasCommand(activeSignalCommandID) {
+		return true // assume that the signal is active if we can't check it
+	}
+
+	address, err := dest.BuildCommandURL(activeSignalCommandID)
+	if err != nil {
+		l.Warnf("unable to check if input is active: %s", err.Error())
+		return false
 	}
 
 	address = strings.Replace(address, ":address", dest.Address, 1)
@@ -172,9 +174,9 @@ func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Devic
 		address = strings.Replace(address, ":port", portID, 1)
 	}
 
-	req, err := http.NewRequest("GET", address, nil)
-	if err != nil {
-		l.Warnf("unable to check if input was active: %s", err)
+	req, gerr := http.NewRequest("GET", address, nil)
+	if gerr != nil {
+		l.Warnf("unable to check if input was active: %s", gerr)
 		return false
 	}
 
@@ -184,23 +186,23 @@ func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Devic
 	}
 
 	l.Debugf("Sending GET request to: %s", address)
-	resp, err := c.Do(req)
-	if err != nil {
-		l.Warnf("unable to check if input was active: %s", err)
+	resp, gerr := c.Do(req)
+	if gerr != nil {
+		l.Warnf("unable to check if input was active: %s", gerr)
 		return false
 	}
 	defer resp.Body.Close()
 
-	bytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		l.Warnf("unable to check if input was active: %s", err)
+	bytes, gerr := ioutil.ReadAll(resp.Body)
+	if gerr != nil {
+		l.Warnf("unable to check if input was active: %s", gerr)
 		return false
 	}
 
 	var active structs.ActiveSignal
-	err = json.Unmarshal(bytes, &active)
-	if err != nil {
-		l.Warnf("unable to check if input was active: %s. response body: %s", err, bytes)
+	gerr = json.Unmarshal(bytes, &active)
+	if gerr != nil {
+		l.Warnf("unable to check if input was active: %s. response body: %s", gerr, bytes)
 		return false
 	}
 

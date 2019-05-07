@@ -5,7 +5,6 @@ import (
 
 	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/common/v2/events"
-	"github.com/byuoitav/device-monitoring/jobs/ask"
 	"github.com/byuoitav/device-monitoring/jobs/gpio"
 )
 
@@ -16,17 +15,7 @@ type Job interface {
 
 var (
 	jobs = map[string]Job{
-		"ping": &ask.PingJob{
-			Count:    4,
-			Interval: 3 * time.Second,
-			Timeout:  20 * time.Second,
-		},
-		"state-update":         &ask.StateUpdateJob{},
-		"status":               &ask.StatusJob{},
-		"device-hardware-info": &ask.DeviceHardwareJob{},
-		"hardware-info":        &ask.HardwareInfoJob{},
-		"active-signal":        &ask.ActiveSignalJob{},
-		"divider-sensors":      &gpio.DividerSensorJob{},
+		"divider-sensors": &gpio.DividerSensorJob{},
 	}
 )
 
