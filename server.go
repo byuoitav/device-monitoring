@@ -55,6 +55,7 @@ func main() {
 	router.GET("/room/activesignal", handlers.ActiveSignal)
 	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
 	router.GET("/room/viainfo", handlers.ViaInfo)
+	router.GET("/room/health", handlers.RoomHealth)
 
 	// action endpoints
 	router.PUT("/device/reboot", handlers.RebootPi)

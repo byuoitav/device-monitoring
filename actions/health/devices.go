@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -15,11 +16,14 @@ import (
 )
 
 const (
+	// Healthy represents a healthy response
+	Healthy = "healthy"
+
 	healthyCommandID = "HealthCheck"
 )
 
 // GetDeviceAPIHealth .
-func GetDeviceAPIHealth(ctx context.Context) (map[string]bool, *nerr.E) {
+func GetDeviceAPIHealth(ctx context.Context) (map[string]string, *nerr.E) {
 	log.L.Infof("Getting device api health")
 
 	roomID, err := localsystem.RoomID()
@@ -32,35 +36,38 @@ func GetDeviceAPIHealth(ctx context.Context) (map[string]bool, *nerr.E) {
 		return nil, nerr.Translate(gerr).Addf("failed to get device api health")
 	}
 
-	healthy := make(map[string]bool)
+	healthy := make(map[string]string)
 	healthyMu := sync.Mutex{}
 	wg := sync.WaitGroup{}
 
 	for i := range devices {
-		if devices[i].HasCommand(healthyCommandID) {
-			wg.Add(1)
-
-			go func(idx int) {
-				defer wg.Done()
-				h := isDeviceAPIHealthy(ctx, devices[idx])
-
-				healthyMu.Lock()
-				healthy[devices[idx].ID] = h
-				healthyMu.Unlock()
-			}(i)
+		if devices[i].Address == "0.0.0.0" ||
+			len(devices[i].Address) == 0 ||
+			!devices[i].HasCommand(healthyCommandID) {
+			continue
 		}
+
+		wg.Add(1)
+
+		go func(idx int) {
+			defer wg.Done()
+			h := isDeviceAPIHealthy(ctx, devices[idx])
+
+			healthyMu.Lock()
+			healthy[devices[idx].ID] = h
+			healthyMu.Unlock()
+		}(i)
 	}
 
 	wg.Wait()
 	return healthy, nil
 }
 
-func isDeviceAPIHealthy(ctx context.Context, device structs.Device) bool {
+func isDeviceAPIHealthy(ctx context.Context, device structs.Device) string {
 	// build the command
 	address, err := device.BuildCommandURL(healthyCommandID)
 	if err != nil {
-		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, err.Error())
-		return false
+		return fmt.Sprintf("unable to check if API is healthy: %s", err.Error())
 	}
 
 	// fill in the address
@@ -68,28 +75,24 @@ func isDeviceAPIHealthy(ctx context.Context, device structs.Device) bool {
 
 	req, gerr := http.NewRequest("GET", address, nil)
 	if gerr != nil {
-		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, gerr)
-		return false
+		return fmt.Sprintf("unable to check if API is healthy: %s", err.Error())
 	}
 
 	req = req.WithContext(ctx)
 	resp, gerr := http.DefaultClient.Do(req)
 	if gerr != nil {
-		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, gerr)
-		return false
+		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}
 	defer resp.Body.Close()
 
 	bytes, gerr := ioutil.ReadAll(resp.Body)
 	if gerr != nil {
-		log.L.Warnf("unable to check if %s's API was healthy: %s", device.ID, gerr)
-		return false
+		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}
 
 	if resp.StatusCode/100 != 2 {
-		log.L.Warnf("%s's API is unhealthy. response: %s", device.ID, bytes)
-		return false
+		return fmt.Sprintf("failed health check. response: %s", bytes)
 	}
 
-	return true
+	return Healthy
 }

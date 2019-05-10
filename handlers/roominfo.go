@@ -8,6 +8,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/device-monitoring/actions/activesignal"
 	"github.com/byuoitav/device-monitoring/actions/hardwareinfo"
+	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/actions/ping"
 	"github.com/byuoitav/device-monitoring/actions/roomstate"
 	"github.com/byuoitav/device-monitoring/localsystem"
@@ -33,6 +34,19 @@ func PingRoom(ectx echo.Context) error {
 	}
 
 	return ectx.JSON(http.StatusOK, results)
+}
+
+// RoomHealth .
+func RoomHealth(ectx echo.Context) error {
+	ctx, cancel := context.WithTimeout(ectx.Request().Context(), 10*time.Second)
+	defer cancel()
+
+	health, err := health.GetDeviceAPIHealth(ctx)
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return ectx.JSON(http.StatusOK, health)
 }
 
 // RoomState returns the av-api state of the room

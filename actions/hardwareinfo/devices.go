@@ -28,6 +28,7 @@ func RoomDevicesInfo(ctx context.Context) (map[string]structs.HardwareInfo, *ner
 	if err != nil {
 		return info, err.Addf("failed to get hardware info about devices in room")
 	}
+
 	log.L.Infof("Getting hardware info about devices in room")
 
 	devices, gerr := db.GetDB().GetDevicesByRoom(roomID)
@@ -73,7 +74,6 @@ func getHardwareInfo(ctx context.Context, device structs.Device) structs.Hardwar
 		return info
 	}
 
-	log.L.Infof("Getting hardware info for %s", device.ID)
 	address = strings.Replace(address, ":address", device.Address, 1)
 
 	req, gerr := http.NewRequest("GET", address, nil)

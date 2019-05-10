@@ -17,10 +17,10 @@ export class OverviewComponent implements OnInit {
 
   async ngOnInit() {
     this.deviceInfo = await this.api.getDeviceInfo();
-    console.log("deviceInfo", this.deviceInfo);
+    console.log("device info", this.deviceInfo);
 
     this.pingResult = await this.api.getRoomPing();
-    console.log("pingResult", this.pingResult);
+    console.log("ping result", this.pingResult);
 
     /*
     this.maintenanceMode = await this.api.getMaintenanceMode();

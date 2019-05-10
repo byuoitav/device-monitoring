@@ -18,6 +18,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// TODO device health check
+
 func init() {
 	then.Add("ping-devices", pingDevices)
 	then.Add("active-signal", activeSignal)

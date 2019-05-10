@@ -149,6 +149,24 @@ export class APIService {
     }
   }
 
+  public async getRoomHealth() {
+    try {
+      const data = await this.http.get("room/health").toPromise();
+
+      // build the map
+      const result = new Map<string, string>();
+      for (const key of Object.keys(data)) {
+        if (key && data[key]) {
+          result.set(key, data[key]);
+        }
+      }
+
+      return result;
+    } catch (e) {
+      throw new Error("error getting room ping info: " + e);
+    }
+  }
+
   public async getRunnerInfo() {
     try {
       const data = await this.http.get("device/runners").toPromise();

@@ -10,11 +10,15 @@ import { PingResult } from "../../objects";
 })
 export class ReachableDevicesComponent implements OnInit {
   public pingResult: Map<string, PingResult>;
+  public roomHealth: Map<string, string>;
 
   constructor(private api: APIService) {}
 
   async ngOnInit() {
     this.pingResult = await this.api.getRoomPing();
     console.log("ping result:", this.pingResult);
+
+    this.roomHealth = await this.api.getRoomHealth();
+    console.log("room health:", this.roomHealth);
   }
 }
