@@ -9,7 +9,7 @@ import { PingResult } from "../../objects";
   styleUrls: ["./reachable-devices.component.scss"]
 })
 export class ReachableDevicesComponent implements OnInit {
-  public pingResult: PingResult;
+  public pingResult: Map<string, PingResult>;
 
   constructor(private api: APIService) {}
 
