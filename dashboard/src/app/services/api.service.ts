@@ -133,9 +133,35 @@ export class APIService {
   public async getRoomPing() {
     try {
       const data = await this.http.get("room/ping").toPromise();
-      const pingResult = this.jsonConvert.deserialize(data, PingResult);
 
-      return pingResult;
+      // build the map
+      const result = new Map<string, PingResult>();
+      for (const key of Object.keys(data)) {
+        if (key && data[key]) {
+          const val = this.jsonConvert.deserialize(data[key], PingResult);
+          result.set(key, val);
+        }
+      }
+
+      return result;
+    } catch (e) {
+      throw new Error("error getting room ping info: " + e);
+    }
+  }
+
+  public async getRoomHealth() {
+    try {
+      const data = await this.http.get("room/health").toPromise();
+
+      // build the map
+      const result = new Map<string, string>();
+      for (const key of Object.keys(data)) {
+        if (key && data[key]) {
+          result.set(key, data[key]);
+        }
+      }
+
+      return result;
     } catch (e) {
       throw new Error("error getting room ping info: " + e);
     }

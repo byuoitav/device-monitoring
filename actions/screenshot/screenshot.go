@@ -1,23 +1,21 @@
-package ask
+package screenshot
 
 import (
 	"bytes"
+	"context"
 	"os/exec"
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/v2/events"
 )
 
-// ScreenshotJob takes a screenshot of what is currently on the pi
-type ScreenshotJob struct{}
+// Take .
+func Take(ctx context.Context) ([]byte, *nerr.E) {
+	log.L.Infof("Taking screenshot of the pi")
 
-// Run runs the job
-func (j *ScreenshotJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
+	// get the xwd dump
 	xwd := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-
-	log.L.Infof("Taking screenshot of the pi")
 
 	cmd := exec.Command("/usr/bin/xwd", "-root", "-display", ":0")
 	cmd.Stdout = xwd
@@ -25,31 +23,33 @@ func (j *ScreenshotJob) Run(ctx interface{}, eventWrite chan events.Event) inter
 	// cmd.Env = []string{"DISPLAY=:0"}
 
 	log.L.Debugf("Getting xwd screenshot with command: %s", cmd.Args)
+
 	err := cmd.Run()
 	if err != nil {
 		if stderr.Len() > 0 {
-			return nerr.Translate(err).Addf("failed to get a screenshot: %s", stderr)
+			return []byte{}, nerr.Translate(err).Addf("unable to take a screenshot: %s", stderr)
 		}
 
-		return nerr.Translate(err).Addf("failed to get a screenshot")
+		return []byte{}, nerr.Translate(err).Addf("unable to take a screenshot")
 	}
 
+	// convert the xwd dump to a jpg
 	jpg := &bytes.Buffer{}
 	cmd = exec.Command("/usr/bin/convert", "xwd:-", "jpg:-")
 	cmd.Stdin = xwd
 	cmd.Stdout = jpg
 	cmd.Stderr = stderr
 
-	log.L.Debugf("Converting xwd screenshot to jpeg with command: %s", cmd.Args)
+	log.L.Debugf("Converting xwd screenshot to jpg with command: %s", cmd.Args)
 	err = cmd.Run()
 	if err != nil {
 		if stderr.Len() > 0 {
-			return nerr.Translate(err).Addf("failed to get a screenshot: %s", stderr)
+			return []byte{}, nerr.Translate(err).Addf("unable to take screenshot: %s", stderr)
 		}
 
-		return nerr.Translate(err).Addf("failed to get a screenshot")
+		return []byte{}, nerr.Translate(err).Addf("unable to take screenshot")
 	}
 
 	log.L.Debugf("Successfully took screenshot.")
-	return jpg
+	return jpg.Bytes(), nil
 }

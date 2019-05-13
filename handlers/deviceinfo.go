@@ -1,200 +1,158 @@
 package handlers
 
 import (
-	"bytes"
+	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/status"
-	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/byuoitav/device-monitoring/jobs/ask"
+	"github.com/byuoitav/device-monitoring/actions/hardwareinfo"
+	"github.com/byuoitav/device-monitoring/actions/health"
+	"github.com/byuoitav/device-monitoring/actions/screenshot"
 	"github.com/byuoitav/device-monitoring/localsystem"
 	"github.com/labstack/echo"
 )
 
-// GetDeviceInfo combines lots of device information into a response.
-func GetDeviceInfo(context echo.Context) error {
-	data := make(map[string]interface{})
+// DeviceInfo .
+type DeviceInfo struct {
+	Hostname             string `json:"hostname,omitempty"`
+	ID                   string `json:"id,omitempty"`
+	IP                   string `json:"ip,omitempty"`
+	InternetConnectivity bool   `json:"internet-connectivity"`
 
-	// internet status
-	internet := localsystem.IsConnectedToInternet()
-	data["internet-connectivity"] = internet
+	DHCPInfo struct {
+		Enabled    bool `json:"enabled"`
+		Toggleable bool `json:"toggleable"`
+	} `json:"dhcp"`
+}
 
-	// device hostname
-	hostname, err := localsystem.Hostname()
+// GetDeviceInfo .
+func GetDeviceInfo(ectx echo.Context) error {
+	var info DeviceInfo
+	var err *nerr.E
+
+	info.Hostname, err = localsystem.Hostname()
 	if err != nil {
-		data["error"] = err
-		return context.JSON(http.StatusInternalServerError, data)
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
-	data["hostname"] = hostname
 
-	// device id
-	id, err := localsystem.SystemID()
+	info.ID, err = localsystem.SystemID()
 	if err != nil {
-		data["error"] = err
-		return context.JSON(http.StatusInternalServerError, data)
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
-	data["id"] = id
 
-	// device ip address
 	ip, err := localsystem.IPAddress()
 	if err != nil {
-		data["error"] = err
-		return context.JSON(http.StatusInternalServerError, data)
-	}
-	data["ip"] = ip
-
-	// status
-	job := &ask.StatusJob{}
-	jobContext := jobs.GetJobContext("status")
-
-	s := jobs.RunJob(job, jobContext)
-
-	switch v := s.(type) {
-	case error:
-		data["error"] = v
-		return context.JSON(http.StatusInternalServerError, data)
-	case *nerr.E:
-		data["error"] = v.String()
-		return context.JSON(http.StatusInternalServerError, data)
-	case []status.Status:
-		data["status"] = v
-	default:
-		data["error"] = fmt.Sprintf("unable to get status: unexpected type from job: %v", v)
-		return context.JSON(http.StatusInternalServerError, data)
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	dhcpMap := make(map[string]interface{})
-	data["dhcp"] = dhcpMap
+	info.IP = ip.String()
+	info.InternetConnectivity = localsystem.IsConnectedToInternet()
 
-	// dhcp status
-	usingDHCP, err := localsystem.UsingDHCP()
+	info.DHCPInfo.Enabled, err = localsystem.UsingDHCP()
 	if err != nil {
-		dhcpMap["error"] = err.String()
-		return context.JSON(http.StatusInternalServerError, data)
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
-	dhcpMap["enabled"] = usingDHCP
 
-	if err = localsystem.CanToggleDHCP(); err != nil {
-		dhcpMap["error"] = err.String()
-		return context.JSON(http.StatusInternalServerError, data)
+	err = localsystem.CanToggleDHCP()
+	if err != nil {
+		info.DHCPInfo.Toggleable = false
+	} else {
+		info.DHCPInfo.Toggleable = true
 	}
-	dhcpMap["toggleable"] = true
 
-	return context.JSON(http.StatusOK, data)
+	return ectx.JSON(http.StatusOK, info)
 }
 
 // GetHostname returns the hostname of the device we are on
-func GetHostname(context echo.Context) error {
+func GetHostname(ectx echo.Context) error {
 	hostname, err := localsystem.Hostname()
 	if err != nil {
-		return context.String(http.StatusInternalServerError, err.Error())
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	return context.String(http.StatusOK, hostname)
+	return ectx.String(http.StatusOK, hostname)
 }
 
 // GetDeviceID returns the hostname of the device we are on
-func GetDeviceID(context echo.Context) error {
+func GetDeviceID(ectx echo.Context) error {
 	id, err := localsystem.SystemID()
 	if err != nil {
-		return context.String(http.StatusInternalServerError, err.Error())
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	return context.String(http.StatusOK, id)
+	return ectx.String(http.StatusOK, id)
 }
 
 // GetIPAddress returns the ip address of the device we are on
-func GetIPAddress(context echo.Context) error {
+func GetIPAddress(ectx echo.Context) error {
 	ip, err := localsystem.IPAddress()
 	if err != nil {
-		return context.String(http.StatusInternalServerError, err.Error())
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	return context.String(http.StatusOK, ip.String())
+	return ectx.String(http.StatusOK, ip.String())
 }
 
 // IsConnectedToInternet returns a bool of true/false
-func IsConnectedToInternet(context echo.Context) error {
+func IsConnectedToInternet(ectx echo.Context) error {
 	status := localsystem.IsConnectedToInternet()
-	return context.String(http.StatusOK, fmt.Sprintf("%v", status))
-}
-
-// GetStatusInfo returns the default status info
-func GetStatusInfo(context echo.Context) error {
-	job := &ask.StatusJob{}
-	jobContext := jobs.GetJobContext("status")
-
-	s := jobs.RunJob(job, jobContext)
-
-	switch v := s.(type) {
-	case error:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case *nerr.E:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case []status.Status:
-		return context.JSON(http.StatusOK, v)
-	default:
-		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
-	}
+	return ectx.String(http.StatusOK, fmt.Sprintf("%v", status))
 }
 
 // GetDHCPState returns whether or not dhcp is enabled and if it can be toggled or not
-func GetDHCPState(context echo.Context) error {
+func GetDHCPState(ectx echo.Context) error {
 	ret := make(map[string]interface{})
 
 	usingDHCP, err := localsystem.UsingDHCP()
 	if err != nil {
 		ret["error"] = err.String()
-		return context.JSON(http.StatusInternalServerError, ret)
+		return ectx.JSON(http.StatusInternalServerError, ret)
 	}
 	ret["enabled"] = usingDHCP
 
 	if err = localsystem.CanToggleDHCP(); err != nil {
 		ret["error"] = err.String()
-		return context.JSON(http.StatusInternalServerError, ret)
+		return ectx.JSON(http.StatusInternalServerError, ret)
 	}
 	ret["toggleable"] = true
 
-	return context.JSON(http.StatusOK, ret)
-}
-
-// GetMyHardwareInfo returns hardware info about the device
-func GetMyHardwareInfo(context echo.Context) error {
-	job := &ask.HardwareInfoJob{}
-
-	s := jobs.RunJob(job, nil)
-	switch v := s.(type) {
-	case error:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case *nerr.E:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case ask.HardwareInfo:
-		return context.JSON(http.StatusOK, v)
-	default:
-		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
-	}
+	return ectx.JSON(http.StatusOK, ret)
 }
 
 // GetScreenshot a screenshot of the device's screen
-func GetScreenshot(context echo.Context) error {
-	job := &ask.ScreenshotJob{}
-
-	s := jobs.RunJob(job, nil)
-	switch v := s.(type) {
-	case error:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case *nerr.E:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case *bytes.Buffer:
-		return context.Stream(http.StatusOK, "image/jpeg", v)
-	default:
-		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+func GetScreenshot(ectx echo.Context) error {
+	bytes, err := screenshot.Take(ectx.Request().Context())
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
+
+	return ectx.Blob(http.StatusOK, "image/jpeg", bytes)
 }
 
-// GetRunnerInfo returns the list of each job's status
-func GetRunnerInfo(context echo.Context) error {
-	return context.JSON(http.StatusOK, jobs.RunnerInfos())
+// HardwareInfo returns hardware info about this device
+func HardwareInfo(ectx echo.Context) error {
+	info, err := hardwareinfo.PiInfo()
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return ectx.JSON(http.StatusOK, info)
+}
+
+// GetServiceHealth returns the health of services on this device
+func GetServiceHealth(ectx echo.Context) error {
+	var configs []health.ServiceCheckConfig
+	err := ectx.Bind(&configs)
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	// timeout if this takes longer than 15 seconds
+	ctx, cancel := context.WithTimeout(ectx.Request().Context(), 15*time.Second)
+	defer cancel()
+
+	resps := health.CheckServices(ctx, configs)
+	return ectx.JSON(http.StatusOK, resps)
 }

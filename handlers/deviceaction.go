@@ -27,6 +27,6 @@ func RebootPi(context echo.Context) error {
 }
 
 // SetDHCPState toggles dhcp to be on/off
-func SetDHCPState(ctx echo.Context) error {
-	return nil
+func SetDHCPState(ectx echo.Context) error {
+	return ectx.String(http.StatusInternalServerError, "not implemented")
 }

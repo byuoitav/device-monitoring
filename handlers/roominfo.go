@@ -1,141 +1,85 @@
 package handlers
 
 import (
-	"fmt"
+	"context"
 	"net/http"
 	"time"
 
-	"github.com/byuoitav/av-api/base"
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/structs"
-	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/byuoitav/device-monitoring/jobs/ask"
+	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/device-monitoring/actions/activesignal"
+	"github.com/byuoitav/device-monitoring/actions/hardwareinfo"
+	"github.com/byuoitav/device-monitoring/actions/health"
+	"github.com/byuoitav/device-monitoring/actions/ping"
+	"github.com/byuoitav/device-monitoring/actions/roomstate"
+	"github.com/byuoitav/device-monitoring/localsystem"
 	"github.com/labstack/echo"
 )
 
-// GetRoom .
-func GetRoom(context echo.Context) error {
-	data := make(map[string]interface{})
+// PingRoom pings all the devices for this room
+func PingRoom(ectx echo.Context) error {
+	ctx, cancel := context.WithTimeout(ectx.Request().Context(), 10*time.Second)
+	defer cancel()
 
-	// pulse the room state
-	stateJob := &ask.StateUpdateJob{}
-	state := jobs.RunJob(stateJob, nil)
-
-	switch v := state.(type) {
-	case error:
-		data["error"] = fmt.Sprintf("%v", v)
-		return context.JSON(http.StatusInternalServerError, data)
-	case *nerr.E:
-		data["error"] = fmt.Sprintf("%v", v)
-		return context.JSON(http.StatusInternalServerError, data)
-	case base.PublicRoom:
-		data["state"] = v
-	case *base.PublicRoom:
-		data["state"] = v
-	default:
-		data["error"] = fmt.Sprintf("unexpected type from mstatus job: %v", v)
-		return context.JSON(http.StatusInternalServerError, data)
+	roomID, err := localsystem.RoomID()
+	if err != nil {
+		return err.Addf("unable to ping devices")
 	}
 
-	pingJob := &ask.PingJob{
-		Count:    4,
-		Interval: 1 * time.Second,
-		Timeout:  2 * time.Second,
-	}
-	result := jobs.RunJob(pingJob, nil)
-
-	switch v := result.(type) {
-	case error:
-		data["error"] = fmt.Sprintf("%v", v)
-		return context.JSON(http.StatusInternalServerError, data)
-	case *nerr.E:
-		data["error"] = fmt.Sprintf("%v", v)
-		return context.JSON(http.StatusInternalServerError, data)
-	case ask.PingResult:
-		data["ping-result"] = v
-	case *ask.PingResult:
-		data["ping-result"] = v
-	default:
-		data["error"] = fmt.Sprintf("unexpected type from mstatus job: %v", v)
-		return context.JSON(http.StatusInternalServerError, data)
+	results, err := ping.Room(ctx, roomID, ping.Config{
+		Count: 3,
+		Delay: 1 * time.Second,
+	}, log.L)
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.String())
 	}
 
-	return context.JSON(http.StatusOK, data)
+	return ectx.JSON(http.StatusOK, results)
 }
 
-// RoomState returns the room state, but also pulses it around the room
-func RoomState(context echo.Context) error {
-	// pulse the room state
-	job := &ask.StateUpdateJob{}
-	state := jobs.RunJob(job, nil)
+// RoomHealth .
+func RoomHealth(ectx echo.Context) error {
+	ctx, cancel := context.WithTimeout(ectx.Request().Context(), 10*time.Second)
+	defer cancel()
 
-	switch v := state.(type) {
-	case error:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case *nerr.E:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case base.PublicRoom:
-		return context.JSON(http.StatusOK, v)
-	case *base.PublicRoom:
-		return context.JSON(http.StatusOK, v)
-	default:
-		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	health, err := health.GetDeviceAPIHealth(ctx)
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
+
+	return ectx.JSON(http.StatusOK, health)
 }
 
-// PingStatus .
-func PingStatus(context echo.Context) error {
-	job := &ask.PingJob{
-		Count:    3,
-		Interval: 500 * time.Millisecond,
-		Timeout:  1500 * time.Millisecond,
+// RoomState returns the av-api state of the room
+func RoomState(ectx echo.Context) error {
+	roomID, err := localsystem.RoomID()
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
-	result := jobs.RunJob(job, nil)
 
-	switch v := result.(type) {
-	case error:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case *nerr.E:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case ask.PingResult:
-		return context.JSON(http.StatusOK, v)
-	case *ask.PingResult:
-		return context.JSON(http.StatusOK, v)
-	default:
-		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+	state, err := roomstate.Get(ectx.Request().Context(), roomID)
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
+
+	return ectx.JSON(http.StatusOK, state)
 }
 
 // ActiveSignal returns the active inputs in the room
-func ActiveSignal(context echo.Context) error {
-	job := &ask.ActiveSignalJob{}
-	active := jobs.RunJob(job, nil)
-
-	switch v := active.(type) {
-	case error:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case *nerr.E:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case map[string]bool:
-		return context.JSON(http.StatusOK, v)
-	default:
-		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+func ActiveSignal(ectx echo.Context) error {
+	active, err := activesignal.GetMap(ectx.Request().Context())
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
+
+	return ectx.JSON(http.StatusOK, active)
 }
 
 // DeviceHardwareInfo returns the hardware info for all devices in the room
-func DeviceHardwareInfo(context echo.Context) error {
-	job := &ask.DeviceHardwareJob{}
-	info := jobs.RunJob(job, nil)
-
-	switch v := info.(type) {
-	case error:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case *nerr.E:
-		return context.String(http.StatusInternalServerError, v.Error())
-	case map[string]structs.HardwareInfo:
-		return context.JSON(http.StatusOK, v)
-	default:
-		return context.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
+func DeviceHardwareInfo(ectx echo.Context) error {
+	info, err := hardwareinfo.RoomDevicesInfo(ectx.Request().Context())
+	if err != nil {
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
+
+	return ectx.JSON(http.StatusOK, info)
 }
