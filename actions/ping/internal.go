@@ -74,9 +74,9 @@ func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 			// discard the reply if it's old
 			if body, ok := reply.body.(*icmp.Echo); ok {
 				if body.Seq == host.seq {
-					log.L.Infof("received a reply from %s at %s (seq: %d)", host.Addr, reply.at, body.Seq)
+					log.L.Debugf("received a reply from %s at %s (seq: %d)", host.Addr, reply.at, body.Seq)
 				} else {
-					log.L.Infof("received a *late* reply from %s at %s (seq: %d)", host.Addr, reply.at, body.Seq)
+					log.L.Debugf("received a *late* reply from %s at %s (seq: %d)", host.Addr, reply.at, body.Seq)
 				}
 
 				host.seq++
@@ -84,7 +84,7 @@ func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 				avgrtt += reply.at.Sub(tSent)
 				time.Sleep(config.Delay)
 			} else {
-				log.L.Infof("received a reply from %s at %s (unknown type: %#v)", host.Addr, reply.at, reply.body)
+				log.L.Warnf("received a reply from %s at %s (unknown type: %#v)", host.Addr, reply.at, reply.body)
 			}
 		case <-ctx.Done():
 			result.Error = fmt.Sprintf("timed out waiting for a response from %s", host.Addr)

@@ -187,7 +187,7 @@ func deviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger)
 
 func serviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
 	var configs []health.ServiceCheckConfig
-	err := then.FillStructFromTemplate(ctx, string(with), log)
+	err := then.FillStructFromTemplate(ctx, string(with), &configs)
 	if err != nil {
 		return err.Addf("unable to check services")
 	}
