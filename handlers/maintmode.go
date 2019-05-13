@@ -1,21 +1,6 @@
 package handlers
 
-import (
-	"bytes"
-	"encoding/gob"
-	"fmt"
-	"net/http"
-	"time"
-
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/v2/events"
-	"github.com/byuoitav/device-monitoring/dmdb"
-	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/byuoitav/device-monitoring/localsystem"
-	"github.com/labstack/echo"
-)
-
+/*
 const (
 	maintKey = "maintenance"
 )
@@ -112,3 +97,4 @@ func setMaintMode(val bool) *nerr.E {
 
 	return nil
 }
+*/

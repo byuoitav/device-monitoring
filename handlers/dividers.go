@@ -1,15 +1,6 @@
 package handlers
 
-import (
-	"fmt"
-	"net/http"
-
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/byuoitav/device-monitoring/jobs/gpio"
-	"github.com/labstack/echo"
-)
-
+/*
 // GetDividerState returns the state of the dividers
 func GetDividerState(ctx echo.Context) error {
 	job := &gpio.DividerSensorJob{}
@@ -59,3 +50,4 @@ func PresetForHostname(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("unexpected type from job: %v", v))
 	}
 }
+*/
