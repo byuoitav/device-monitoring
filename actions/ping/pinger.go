@@ -48,8 +48,13 @@ func NewPinger() (*Pinger, error) {
 
 // Close .
 func (p *Pinger) Close() {
-	defer p.conn.Close()
-	// any other cleanup
+	p.conn.Close()
+
+	p.hostsMu.Lock()
+	for _, host := range p.hosts {
+		close(host.replies)
+	}
+	p.hostsMu.Unlock()
 }
 
 func (p *Pinger) listen() error {
@@ -105,7 +110,7 @@ func (p *Pinger) receive(source net.IP, bytes []byte, at time.Time) {
 			return
 		}
 
-		log.L.Warnf("GOT DEST UNREACHABLE PACKET")
+		log.L.Warnf("GOT DEST UNREACHABLE PACKET from %s", source.String())
 		p.process(source, msg.Body, at)
 	default:
 		return
