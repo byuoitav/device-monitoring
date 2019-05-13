@@ -73,6 +73,7 @@ ifneq "$(BRANCH)" "master"
 	gvt fetch -tag v3.3.10 github.com/labstack/echo
 	$(VENDOR) github.com/byuoitav/common
 	$(VENDOR) github.com/byuoitav/central-event-system
+	$(VENDOR) github.com/byuoitav/shipwright
 endif
 	$(GOGET) -d -v
 
