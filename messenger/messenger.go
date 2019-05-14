@@ -20,9 +20,6 @@ type Messenger struct {
 // BuildMessenger .
 func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messenger, *nerr.E) {
 	msgr, err := mess.BuildMessenger(hubAddress, connectionType, bufferSize)
-	if err != nil {
-		return nil, err
-	}
 
 	m := &Messenger{
 		Messenger: msgr,
@@ -46,7 +43,7 @@ func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messeng
 		}
 	}()
 
-	return m, nil
+	return m, err
 }
 
 // Register .
