@@ -21,7 +21,7 @@ func Get() *Messenger {
 
 		m, err = BuildMessenger(os.Getenv("HUB_ADDRESS"), base.Messenger, 5000)
 		if err != nil {
-			log.L.Fatalf("failed to build messenger: %s", err.Error())
+			log.L.Warnf("failed to build messenger: %s", err.Error())
 		}
 	})
 
