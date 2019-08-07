@@ -2,6 +2,7 @@ package then
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/actions/activesignal"
+	"github.com/byuoitav/device-monitoring/actions/gpio"
 	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/actions/ping"
 	"github.com/byuoitav/device-monitoring/actions/roomstate"
@@ -27,6 +29,7 @@ func init() {
 
 	then.Add("hardware-info", hardwareInfo)
 	then.Add("device-hardware-info", deviceHardwareInfo)
+	then.Add("monitor-dividers", monitorDividerSensors)
 }
 
 func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
@@ -319,6 +322,28 @@ func stateUpdate(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr
 				event.Value = audio.Input
 				messenger.Get().SendEvent(event)
 			}
+		}
+	}
+
+	return nil
+}
+
+func monitorDividerSensors(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+	if ctx != nil {
+		var pins []gpio.Pin
+		err := json.Unmarshal(with, &pins)
+		if err != nil {
+			return nerr.Translate(err).Addf("failed to run divider sensor action")
+		}
+
+		if len(pins) == 0 {
+			return nerr.Create("empty", "failed to run divider sensor action - no pins configured")
+		}
+
+		gpio.SetPins(pins)
+
+		for i := range pins {
+			go pins[i].Monitor()
 		}
 	}
 
