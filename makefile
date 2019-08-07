@@ -77,7 +77,7 @@ deploy: $(NAME)-arm $(NAME).service.tmpl files/$(NG1) version.txt
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
-	@echo Building deployment zip
+	@echo Building deployment tarball
 	@cp version.txt files/
 	@cp service-config.json files/
 
