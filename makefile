@@ -29,21 +29,12 @@ NPM_INSTALL=$(NPM) install
 NPM_BUILD=npm run-script build
 NG1=dashboard
 
-# aws
-AWS_S3_ADD=aws s3 cp
-S3_BUCKET=$(shell echo $(AWS_S3_SERVICES_BUCKET))
-
 all: deploy clean
 
 ci: deps all
 
-build: build-x86 build-arm build-web
-
-build-x86:
-	env GOOS=linux CGO_ENABLED=0 $(GOBUILD) -o $(NAME)-bin -v
-
-build-arm:
-	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME)-arm -v
+build: build-web
+	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME) -v
 
 build-web: $(NG1)
 	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
@@ -54,13 +45,16 @@ test:
 	$(GOTEST) -v -race $(go list ./... | grep -v /vendor/)
 
 clean:
+ifeq "$(BRANCH)" "master"
+	$(eval BRANCH=development)
+endif
 	$(GOCLEAN)
-	rm -f $(NAME)-bin
-	rm -f $(NAME)-arm
+	rm -f $(NAME)
+	rm -f $(BRANCH).tar.gz
 	rm -rf files/
-
-run: $(NAME)-bin
-	./$(NAME)-bin
+ifeq "$(BRANCH)" "development"
+	$(eval BRANCH=master)
+endif
 
 deps:
 	# TODO remove whenever this npm bug is fixed
@@ -77,26 +71,28 @@ ifneq "$(BRANCH)" "master"
 endif
 	$(GOGET) -d -v
 
-deploy: $(NAME)-arm $(NAME).service.tmpl files/$(NG1) version.txt
+deploy: $(NAME) files/$(NG1) version.txt
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
-	@echo adding files to $(S3_BUCKET)
-	$(AWS_S3_ADD) $(NAME)-arm s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/$(NAME)
-	$(AWS_S3_ADD) $(NAME).service.tmpl s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/device-monitoring.service.tmpl
-	$(AWS_S3_ADD) version.txt s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/version.txt
-	$(AWS_S3_ADD) service-config.json s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/service-config.json
-	$(AWS_S3_ADD) files/ s3://$(S3_BUCKET)/$(BRANCH)/$(NAME)/files/ --recursive
+	@echo Building deployment tarball
+	@cp version.txt files/
+	@cp service-config.json files/
+
+	@tar -czf $(BRANCH).tar.gz $(NAME) files
+
+	@echo Getting current doc revision
+	$(eval rev=$(shell curl -s -n -X GET -u ${DB_USERNAME}:${DB_PASSWORD} "${DB_ADDRESS}/deployment-information/$(NAME)" | cut -d, -f2 | cut -d\" -f4))
+
+	@echo Pushing zip up to couch
+	@curl -X PUT -u ${DB_USERNAME}:${DB_PASSWORD} -H "Content-Type: application/gzip" -H "If-Match: $(rev)" ${DB_ADDRESS}/deployment-information/$(NAME)/$(BRANCH).tar.gz --data-binary @$(BRANCH).tar.gz
 ifeq "$(BRANCH)" "development"
 	$(eval BRANCH=master)
 endif
 
 ### deps
-$(NAME)-bin:
-	$(MAKE) build-x86
-
-$(NAME)-arm:
-	$(MAKE) build-arm
+$(NAME):
+	$(MAKE) build
 
 files/$(NG1):
 	$(MAKE) build-web
