@@ -45,10 +45,16 @@ test:
 	$(GOTEST) -v -race $(go list ./... | grep -v /vendor/)
 
 clean:
+ifeq "$(BRANCH)" "master"
+	$(eval BRANCH=development)
+endif
 	$(GOCLEAN)
 	rm -f $(NAME)
 	rm -f $(BRANCH).tar.gz
 	rm -rf files/
+ifeq "$(BRANCH)" "development"
+	$(eval BRANCH=master)
+endif
 
 deps:
 	# TODO remove whenever this npm bug is fixed
