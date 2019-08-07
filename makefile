@@ -33,13 +33,8 @@ all: deploy clean
 
 ci: deps all
 
-build: build-x86 build-arm build-web
-
-build-x86:
-	env GOOS=linux CGO_ENABLED=0 $(GOBUILD) -o $(NAME)-bin -v
-
-build-arm:
-	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME)-arm -v
+build: build-web
+	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME) -v
 
 build-web: $(NG1)
 	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
@@ -51,12 +46,9 @@ test:
 
 clean:
 	$(GOCLEAN)
-	rm -f $(NAME)-bin
-	rm -f $(NAME)-arm
+	rm -f $(NAME)
+	rm -f $(BRANCH).tar.gz
 	rm -rf files/
-
-run: $(NAME)-bin
-	./$(NAME)-bin
 
 deps:
 	# TODO remove whenever this npm bug is fixed
@@ -73,7 +65,7 @@ ifneq "$(BRANCH)" "master"
 endif
 	$(GOGET) -d -v
 
-deploy: $(NAME)-arm $(NAME).service.tmpl files/$(NG1) version.txt
+deploy: $(NAME) files/$(NG1) version.txt
 ifeq "$(BRANCH)" "master"
 	$(eval BRANCH=development)
 endif
@@ -81,7 +73,7 @@ endif
 	@cp version.txt files/
 	@cp service-config.json files/
 
-	@tar -czf $(BRANCH).tar.gz $(NAME)-arm files
+	@tar -czf $(BRANCH).tar.gz $(NAME) files
 
 	@echo Getting current doc revision
 	$(eval rev=$(shell curl -s -n -X GET -u ${DB_USERNAME}:${DB_PASSWORD} "${DB_ADDRESS}/deployment-information/$(NAME)" | cut -d, -f2 | cut -d\" -f4))
@@ -93,11 +85,8 @@ ifeq "$(BRANCH)" "development"
 endif
 
 ### deps
-$(NAME)-bin:
-	$(MAKE) build-x86
-
-$(NAME)-arm:
-	$(MAKE) build-arm
+$(NAME):
+	$(MAKE) build
 
 files/$(NG1):
 	$(MAKE) build-web
