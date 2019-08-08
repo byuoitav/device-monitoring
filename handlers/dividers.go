@@ -15,9 +15,9 @@ func GetDividerState(ctx echo.Context) error {
 	resp := make(map[string][]string)
 	for i := range v {
 		if v[i].Connected {
-			resp["connected"] = append(resp["connected"], v[i].Displays)
+			resp["connected"] = append(resp["connected"], v[i].BlueberryPresets)
 		} else {
-			resp["disconnected"] = append(resp["disconnected"], v[i].Displays)
+			resp["disconnected"] = append(resp["disconnected"], v[i].BlueberryPresets)
 		}
 	}
 

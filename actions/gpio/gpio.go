@@ -23,8 +23,8 @@ type Pin struct {
 	Pin  int  `json:"pin"`
 	Flip bool `json:"flip"`
 
-	Displays string `json:"displays"`
-	Presets  struct {
+	BlueberryPresets string `json:"blueberry_presets"`
+	Presets          struct {
 		Connected    map[string]string `json:"connected"`
 		Disconnected map[string]string `json:"disconnected"`
 	} `json:"presets"`
