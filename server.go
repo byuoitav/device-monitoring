@@ -62,11 +62,11 @@ func main() {
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
 	router.POST("/event", handlers.SendEvent)
 
-	/*
-		// divider endpoints
-		router.GET("/divider/state", handlers.GetDividerState)
-		router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
+	// divider sensors
+	router.GET("/divider/state", handlers.GetDividerState)
+	router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
 
+	/*
 		// test mode endpoints
 		// router.GET("/maintenance", handlers.IsInMaintMode)
 		// router.PUT("/maintenance", handlers.ToggleMaintMode)

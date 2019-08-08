@@ -52,6 +52,7 @@ endif
 	rm -f $(NAME)
 	rm -f $(BRANCH).tar.gz
 	rm -rf files/
+	rm -rf vendor/
 ifeq "$(BRANCH)" "development"
 	$(eval BRANCH=master)
 endif
@@ -65,6 +66,7 @@ ifneq "$(BRANCH)" "master"
 	# put vendored packages in here
 	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
 	gvt fetch -tag v3.3.10 github.com/labstack/echo
+	gvt fetch -tag v6.15.3 github.com/go-redis/redis
 	$(VENDOR) github.com/byuoitav/common
 	$(VENDOR) github.com/byuoitav/central-event-system
 	$(VENDOR) github.com/byuoitav/shipwright
