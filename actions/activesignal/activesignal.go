@@ -1,6 +1,7 @@
-package ask
+package activesignal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,7 +16,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/structs"
-	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/actions/roomstate"
 	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
@@ -23,87 +24,57 @@ const (
 	activeSignalCommandID = "ActiveSignal"
 )
 
-// ActiveSignalJob asks each device what it's current input status to decide if the current input for each device is correct
-type ActiveSignalJob struct{}
-
-// Run runs the job
-func (j *ActiveSignalJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
-	log.L.Infof("Starting active input job")
-	systemID, err := localsystem.SystemID()
-	if err != nil {
-		return err.Addf("failed to get active input information")
-	}
+// GetMap .
+func GetMap(ctx context.Context) (map[string]bool, *nerr.E) {
+	log.L.Infof("Getting active signal map")
 
 	roomID, err := localsystem.RoomID()
 	if err != nil {
-		return err.Addf("failed to get active input information")
+		return nil, err.Addf("failed to get active signal info")
 	}
 
 	devices, gerr := db.GetDB().GetDevicesByRoom(roomID)
 	if gerr != nil {
-		return nerr.Translate(gerr).Addf("failed to get active input information in room %s", roomID)
+		return nil, nerr.Translate(gerr).Addf("failed to get active signal info")
 	}
 
-	graph, gerr := inputgraph.BuildGraph(devices)
+	graph, gerr := inputgraph.BuildGraph(devices, "video")
+	if gerr != nil {
+		return nil, nerr.Translate(gerr).Addf("failed to get active signal info")
+	}
+
+	// get current state of room
+	state, err := roomstate.Get(ctx, roomID)
 	if err != nil {
-		return nerr.Translate(gerr).Addf("failed to get active input inforamtion in room %s", roomID)
+		return nil, err.Addf("failed to get active signal info")
 	}
 
-	// get current status of room
-	roomState := base.PublicRoom{}
-	stateJob := &StateUpdateJob{}
-	state := stateJob.Run(ctx, eventWrite)
-
-	switch v := state.(type) {
-	case error:
-		return nerr.Translate(v).Addf("failed to get active input information in room %s", roomID)
-	case *nerr.E:
-		return v.Addf("failed to get active input information in room %s", roomID)
-	case base.PublicRoom:
-		roomState = v
-	case *base.PublicRoom:
-		roomState = *v
-	default:
-		nerr.Translate(fmt.Errorf("something went wrong getting current status of room %s: %s", roomID, v)).Addf("failed to get active input information in room %s", roomID)
-	}
-
+	activeMu := sync.Mutex{}
+	active := make(map[string]bool)
 	wg := sync.WaitGroup{}
-	activeMutex := sync.Mutex{}
-	activeMap := make(map[string]bool)
 
-	log.L.Infof("Got room state and built input graph, checking each display for active input")
-	for i := range roomState.Displays {
+	log.L.Infof("Got room state and build input graph, checking each display for active signal")
+
+	for i := range state.Displays {
 		wg.Add(1)
 
 		go func(idx int) {
 			defer wg.Done()
 
-			active := isInputPathActive(roomState.Displays[idx], roomID, graph)
-			deviceID := fmt.Sprintf("%s-%s", roomID, roomState.Displays[idx].Name)
+			deviceID := fmt.Sprintf("%s-%s", roomID, state.Displays[idx].Name)
+			a := isInputPathActive(ctx, state.Displays[idx], roomID, graph, devices)
 
-			activeMutex.Lock()
-			activeMap[deviceID] = active
-			activeMutex.Unlock()
-
-			eventWrite <- events.Event{
-				GeneratingSystem: systemID,
-				Timestamp:        time.Now(),
-				EventTags: []string{
-					events.DetailState,
-				},
-				TargetDevice: events.GenerateBasicDeviceInfo(deviceID),
-				AffectedRoom: events.GenerateBasicRoomInfo(roomID),
-				Key:          "active-signal",
-				Value:        fmt.Sprintf("%v", active),
-			}
+			activeMu.Lock()
+			active[deviceID] = a
+			activeMu.Unlock()
 		}(i)
 	}
-	wg.Wait()
 
-	return activeMap
+	wg.Wait()
+	return active, nil
 }
 
-func isInputPathActive(display base.Display, roomID string, graph inputgraph.InputGraph) bool {
+func isInputPathActive(ctx context.Context, display base.Display, roomID string, graph inputgraph.InputGraph, roomDevices []structs.Device) bool {
 	if len(display.Input) == 0 || len(display.Name) == 0 {
 		log.L.Debugf("Skipping %s because input or name is empty", display.Name)
 		return false
@@ -139,12 +110,12 @@ func isInputPathActive(display base.Display, roomID string, graph inputgraph.Inp
 	for i := len(nodes) - 1; i >= 0; i-- {
 		var src *structs.Device
 
-		// TODO this needs to be more complex for jap (does it?), etc
+		// TODO this needs to be more complex for just add power (does it?), etc
 		if i != 0 {
 			src = &nodes[i-1].Device
 		}
 
-		if !isInputActive(src, &nodes[i].Device) {
+		if !isInputActive(ctx, src, &nodes[i].Device, roomDevices) {
 			log.L.Infof("There *is not* an active input signal from %s to %s", inputID, displayID)
 			return false
 		}
@@ -156,13 +127,14 @@ func isInputPathActive(display base.Display, roomID string, graph inputgraph.Inp
 
 // isInputActive returns true if the port connecting dest -> src is marked as active
 // if src is nil, then it returns true if dest claims there is an active input
-func isInputActive(src *structs.Device, dest *structs.Device) bool {
+func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Device, roomDevices []structs.Device) bool {
 	if dest == nil {
 		log.L.Errorf("destination device passed into isInputActive cannot be null.")
 		return false
 	}
 
 	// TODO maybe cache whether or not a specific input as active for a little while?
+
 	// create a new sub logger
 	l := log.L.Named(dest.ID)
 
@@ -172,11 +144,14 @@ func isInputActive(src *structs.Device, dest *structs.Device) bool {
 		l.Debugf("Checking if I'm sending an active input signal")
 	}
 
-	address := dest.GetCommandByID(activeSignalCommandID).BuildCommandAddress()
-	if len(address) == 0 {
-		// for now, if the command doesn't exist, we are going to assume the input was active
-		l.Debugf("I do not have a %s command. Let's assume I'm sending a signal", activeSignalCommandID)
-		return true
+	if !dest.HasCommand(activeSignalCommandID) {
+		return true // assume that the signal is active if we can't check it
+	}
+
+	address, err := dest.BuildCommandURL(activeSignalCommandID)
+	if err != nil {
+		l.Warnf("unable to check if input is active: %s", err.Error())
+		return false
 	}
 
 	address = strings.Replace(address, ":address", dest.Address, 1)
@@ -199,28 +174,35 @@ func isInputActive(src *structs.Device, dest *structs.Device) bool {
 		address = strings.Replace(address, ":port", portID, 1)
 	}
 
+	req, gerr := http.NewRequest("GET", address, nil)
+	if gerr != nil {
+		l.Warnf("unable to check if input was active: %s", gerr)
+		return false
+	}
+
+	req = req.WithContext(ctx)
 	c := http.Client{
-		Timeout: 20 * time.Second,
+		Timeout: 5 * time.Second,
 	}
 
 	l.Debugf("Sending GET request to: %s", address)
-	resp, err := c.Get(address)
-	if err != nil {
-		l.Warnf("unable to check if input was active: %s", err)
+	resp, gerr := c.Do(req)
+	if gerr != nil {
+		l.Warnf("unable to check if input was active: %s", gerr)
 		return false
 	}
 	defer resp.Body.Close()
 
-	bytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		l.Warnf("unable to check if input was active: %s", err)
+	bytes, gerr := ioutil.ReadAll(resp.Body)
+	if gerr != nil {
+		l.Warnf("unable to check if input was active: %s", gerr)
 		return false
 	}
 
 	var active structs.ActiveSignal
-	err = json.Unmarshal(bytes, &active)
-	if err != nil {
-		l.Warnf("unable to check if input was active: %s. response body: %s", err, bytes)
+	gerr = json.Unmarshal(bytes, &active)
+	if gerr != nil {
+		l.Warnf("unable to check if input was active: %s. response body: %s", gerr, bytes)
 		return false
 	}
 
@@ -235,11 +217,4 @@ func isInputActive(src *structs.Device, dest *structs.Device) bool {
 	}
 
 	return active.Active
-}
-
-func cachedIsInputActive() *bool {
-	return nil
-}
-
-func cacheInputActive() {
 }

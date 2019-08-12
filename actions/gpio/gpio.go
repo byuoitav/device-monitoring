@@ -13,23 +13,18 @@ import (
 	"time"
 
 	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/localsystem"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/platforms/raspi"
 )
-
-// DividerSensorJob .
-type DividerSensorJob struct{}
 
 // Pin .
 type Pin struct {
 	Pin  int  `json:"pin"`
 	Flip bool `json:"flip"`
 
-	Displays string `json:"displays"`
-	Presets  struct {
+	BlueberryPresets string `json:"blueberry_presets"`
+	Presets          struct {
 		Connected    map[string]string `json:"connected"`
 		Disconnected map[string]string `json:"disconnected"`
 	} `json:"presets"`
@@ -52,43 +47,16 @@ type request struct {
 
 var (
 	once    sync.Once
-	pinList []*Pin
+	adaptor *raspi.Adaptor
+	pins    []Pin
 )
 
-// Run .
-func (j *DividerSensorJob) Run(ctx interface{}, eventWrite chan events.Event) interface{} {
-	if ctx != nil {
-		data, err := json.Marshal(ctx)
-		if err != nil {
-			return nerr.Translate(err).Addf("failed to run divider sensor job")
-		}
+// Monitor starts monitoring the signal on a pin
+func (p *Pin) Monitor() {
+	once.Do(func() {
+		adaptor = raspi.NewAdaptor()
+	})
 
-		var pins []Pin
-		err = json.Unmarshal(data, &pins)
-		if err != nil {
-			return nerr.Translate(err).Addf("failed to run divider sensor job")
-		}
-
-		if len(pins) == 0 {
-			return nerr.Createf("empty", "failed to run divider sensor job - no pins configured")
-		}
-
-		once.Do(func() {
-			log.L.Infof("Monitoring divider sensors")
-
-			adaptor := raspi.NewAdaptor()
-
-			for i := range pins {
-				pinList = append(pinList, &pins[i])
-				go pins[i].monitor(adaptor)
-			}
-		})
-	}
-
-	return pinList
-}
-
-func (p *Pin) monitor(adaptor *raspi.Adaptor) {
 	pin := gpio.NewDirectPinDriver(adaptor, strconv.Itoa(p.Pin))
 
 	// get read duration
@@ -271,4 +239,14 @@ func (p Pin) Room() string {
 // BuildingID returns this pi's building id
 func (p Pin) BuildingID() string {
 	return localsystem.MustBuildingID()
+}
+
+// SetPins sets the list of pins
+func SetPins(p []Pin) {
+	pins = p
+}
+
+// GetPins gets the list of pins
+func GetPins() []Pin {
+	return pins
 }

@@ -136,7 +136,7 @@
         <mat-list-item>
           <div class="list-item">
             <p>Devices Reachable</p>
-            <p>{{ pingResult?.successful?.length }}</p>
+            <p>{{ reachable() }}</p>
           </div>
         </mat-list-item>
 
@@ -144,13 +144,14 @@
         <mat-list-item>
           <div class="list-item">
             <p>Devices Unreachable</p>
-            <p>{{ pingResult?.unsuccessful?.length }}</p>
+            <p>{{ unreachable() }}</p>
           </div>
         </mat-list-item>
       </mat-list>
     </mat-card-content>
   </mat-card>
 
+  <!--
   <mat-card class="card">
     <mat-progress-bar
       color="accent"
@@ -168,7 +169,6 @@
             <div class="list-item">
               <p>{{ status?.name }}</p>
 
-              <!-- TODO alphabetize status' list -->
               <div id="status-theme">
                 <mat-icon
                   color="primary"
@@ -189,4 +189,5 @@
       </mat-list>
     </mat-card-content>
   </mat-card>
+  -->
 </div>

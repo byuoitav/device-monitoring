@@ -53,50 +53,29 @@ export class DeviceInfo {
   @JsonProperty("ip", String, true)
   ip: string = undefined;
 
-  @JsonProperty("status", [Status], true)
-  status: Status[] = Array<Status>();
-
   @JsonProperty("dhcp", DHCPInfo, true)
   dhcp: DHCPInfo = undefined;
-
-  @JsonProperty("error", Any, true)
-  error: any = undefined;
-}
-
-@JsonObject("DevicePingResult")
-class DevicePingResult {
-  @JsonProperty("deviceID", String)
-  deviceID: string = undefined;
-
-  @JsonProperty("error", String)
-  error: string = undefined;
-
-  @JsonProperty("packets-received", Number)
-  packetsReceived: number = undefined;
-
-  @JsonProperty("packets-sent", Number)
-  packetsSent: number = undefined;
-
-  @JsonProperty("packet-loss", Number)
-  packetLoss: number = undefined;
-
-  @JsonProperty("ip", String)
-  ip: string = undefined;
-
-  @JsonProperty("address", String)
-  address: string = undefined;
-
-  @JsonProperty("average-round-trip", String)
-  averageRoundTrip: string = undefined;
 }
 
 @JsonObject("PingResult")
 export class PingResult {
-  @JsonProperty("successful", [DevicePingResult], true)
-  successful: DevicePingResult[] = Array<DevicePingResult>();
+  @JsonProperty("error", String, true)
+  error: string = undefined;
 
-  @JsonProperty("unsuccessful", [DevicePingResult], true)
-  unsuccessful: DevicePingResult[] = Array<DevicePingResult>();
+  @JsonProperty("ip", String, true)
+  ip: string = undefined;
+
+  @JsonProperty("packets-sent", Number, true)
+  packetsSent = 0;
+
+  @JsonProperty("packets-received", Number, true)
+  packetsReceived = 0;
+
+  @JsonProperty("packets-lost", Number, true)
+  packetsLost = 0;
+
+  @JsonProperty("average-round-trip", String, true)
+  averageRoundTrip: string = undefined;
 }
 
 @JsonConverter

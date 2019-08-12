@@ -2,3 +2,12 @@
 *.service!.tmpl
 
 db/
+
+development.tar.gz
+testing.tar.gz
+stage.tar.gz
+production.tar.gz
+
+device-monitoring
+files/
+vendor/

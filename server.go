@@ -1,20 +1,24 @@
 package main
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/byuoitav/common"
+	"github.com/byuoitav/device-monitoring/actions"
 	"github.com/byuoitav/device-monitoring/handlers"
-	"github.com/byuoitav/device-monitoring/jobs"
-	"github.com/byuoitav/device-monitoring/provisioning"
-	"github.com/byuoitav/device-monitoring/socket"
+	"github.com/byuoitav/device-monitoring/messenger"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+
+	_ "github.com/byuoitav/device-monitoring/actions/then"
 )
 
 func main() {
-	// start jobs
-	go jobs.StartJobScheduler()
+	go actions.ActionManager().Start(context.TODO())
+	messenger.Get().Register(actions.ActionManager().EventStream)
+
+	// subscribe to something?
 
 	// server
 	port := ":10000"
@@ -40,36 +44,40 @@ func main() {
 	router.GET("/device/id", handlers.GetDeviceID)
 	router.GET("/device/ip", handlers.GetIPAddress)
 	router.GET("/device/network", handlers.IsConnectedToInternet)
-	router.GET("/device/status", handlers.GetStatusInfo)
 	router.GET("/device/dhcp", handlers.GetDHCPState)
 	router.GET("/device/screenshot", handlers.GetScreenshot)
-	router.GET("/device/hardwareinfo", handlers.GetMyHardwareInfo)
-	router.GET("/device/runners", handlers.GetRunnerInfo)
+	router.GET("/device/hardwareinfo", handlers.HardwareInfo)
+	router.PUT("/device/health", handlers.GetServiceHealth)
 
 	// room info endpoints
-	router.GET("/room", handlers.GetRoom)
+	router.GET("/room/ping", handlers.PingRoom)
 	router.GET("/room/state", handlers.RoomState)
 	router.GET("/room/activesignal", handlers.ActiveSignal)
 	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
-	router.GET("/room/ping", handlers.PingStatus)
 	router.GET("/room/viainfo", handlers.ViaInfo)
-
-	// divider endpoints
-	router.GET("/divider/state", handlers.GetDividerState)
-	router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
+	router.GET("/room/health", handlers.RoomHealth)
 
 	// action endpoints
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
 	router.POST("/event", handlers.SendEvent)
 
-	// test mode endpoints
-	// router.GET("/maintenance", handlers.IsInMaintMode)
-	// router.PUT("/maintenance", handlers.ToggleMaintMode)
+	// divider sensors
+	router.GET("/divider/state", handlers.GetDividerState)
+	router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
 
-	// provisioning endpoints
-	router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioning.SocketManager()))
-	router.GET("/provisioning/id", handlers.GetProvisioningID)
+	/*
+		// test mode endpoints
+		// router.GET("/maintenance", handlers.IsInMaintMode)
+		// router.PUT("/maintenance", handlers.ToggleMaintMode)
+
+		// provisioning endpoints
+		router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioning.SocketManager()))
+		router.GET("/provisioning/id", handlers.GetProvisioningID)
+	*/
+
+	router.GET("/actions", actions.ActionManager().Info)
+	router.GET("/actions/trigger/:trigger", actions.ActionManager().Config.ActionsByTrigger)
 
 	server := http.Server{
 		Addr:           port,

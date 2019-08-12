@@ -15,11 +15,11 @@ type ViaData struct {
 }
 
 // ViaInfo .
-func ViaInfo(ctx echo.Context) error {
+func ViaInfo(ectx echo.Context) error {
 	// get all of the via's out of couch
 	devices, err := db.GetDB().GetDevicesByRoomAndType(localsystem.MustRoomID(), "via-connect-pro")
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return ectx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	ret := []ViaData{}
@@ -33,5 +33,5 @@ func ViaInfo(ctx echo.Context) error {
 		ret = append(ret, data)
 	}
 
-	return ctx.JSON(http.StatusOK, ret)
+	return ectx.JSON(http.StatusOK, ret)
 }
