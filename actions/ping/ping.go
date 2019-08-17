@@ -103,7 +103,7 @@ func (p *Pinger) Ping(ctx context.Context, config Config, hosts ...Host) map[str
 		if ip == nil {
 			resultsMu.Lock()
 			results[hosts[i].ID] = &Result{
-				Error: fmt.Sprintf("ip ipv4 address found"),
+				Error: fmt.Sprintf("no ipv4 address found"),
 			}
 			resultsMu.Unlock()
 

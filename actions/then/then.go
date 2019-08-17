@@ -72,8 +72,11 @@ func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr
 		}
 
 		switch {
-		case len(result.Error) > 0 || result.PacketsLost > result.PacketsReceived:
+		case len(result.Error) > 0 || result.PacketsLost == result.PacketsSent:
 			event.Value = "Offline"
+			messenger.Get().SendEvent(event)
+		case result.PacketsLost > result.PacketsSent:
+			event.Value = "Online" // TODO do we want a different value?
 			messenger.Get().SendEvent(event)
 		default:
 			event.Value = "Online"
@@ -177,7 +180,7 @@ func serviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger
 
 	systemID, err := localsystem.SystemID()
 	if err != nil {
-		return err.Addf("unable to get active signal")
+		return err.Addf("unable to check services")
 	}
 	deviceInfo := events.GenerateBasicDeviceInfo(systemID)
 
