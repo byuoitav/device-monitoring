@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/messenger"
 	"github.com/labstack/echo"
 )
 
@@ -17,7 +18,6 @@ func SendEvent(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("unable to send event: %s", err))
 	}
 
-	// TODO fix
-	// jobs.Messenger().SendEvent(event)
+	messenger.Get().SendEvent(event)
 	return ctx.String(http.StatusOK, "success")
 }
