@@ -212,4 +212,24 @@ export class APIService {
       throw new Error("error rebooting via: " + e);
     }
   }
+
+  public async getDividerSensorsStatus(address: string) {
+    try {
+      const data = await this.http
+      .get("http://" + address + ":10000/divider/state").toPromise();
+
+      console.log("data", data);
+
+      for (const [key] of Object.entries(data)) {
+        if (key.includes("disconnected")) {
+          return false;
+        }
+        if (key.includes("connected")) {
+          return true;
+        }
+      }
+    } catch (e) {
+      throw new Error("error getting divider sensors connection status: " + e)
+    }
+  }
 }
