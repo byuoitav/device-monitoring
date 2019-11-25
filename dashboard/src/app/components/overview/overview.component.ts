@@ -19,7 +19,6 @@ export class OverviewComponent implements OnInit {
   constructor(public api: APIService) {}
 
   async ngOnInit() {
-
     this.deviceInfo = await this.api.getDeviceInfo();
     console.log("device info", this.deviceInfo);
 
@@ -27,7 +26,9 @@ export class OverviewComponent implements OnInit {
     console.log("ping result", this.pingResult);
     this.hasDividerSensors = await this.getDividerSensors();
     this.connected();
-    setInterval(()=>{this.connected()}, 2000);
+    setInterval(() => {
+      this.connected();
+    }, 2000);
 
     /*
     this.maintenanceMode = await this.api.getMaintenanceMode();
@@ -77,10 +78,11 @@ export class OverviewComponent implements OnInit {
   }
 
   public async connected() {
-    if (await this.api.getDividerSensorsStatus(this.dividerSensorAddr) == true) {
+    if (
+      (await this.api.getDividerSensorsStatus(this.dividerSensorAddr)) == true
+    ) {
       this.dividerSensorStatus = "Connected";
-    }
-    else {
+    } else {
       this.dividerSensorStatus = "Disconnected";
     }
   }

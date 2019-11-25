@@ -39,7 +39,7 @@ export class ProvisioningComponent implements OnInit {
 
     this.socket.onmessage = message => {
       const data = JSON.parse(message.data);
-      const event = this.jsonConvert.deserialize(data, Event);
+      const event = this.jsonConvert.deserializeObject(data, Event);
 
       this.onEvent(event);
     };
