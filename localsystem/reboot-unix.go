@@ -5,6 +5,7 @@ package localsystem
 import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
+	"golang.org/x/sys/unix"
 )
 
 // Reboot reboots the device.
