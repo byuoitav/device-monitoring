@@ -32,7 +32,14 @@ func main() {
 
 	// static webpages
 	router.Group("/dashboard", middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:   "dashboard",
+		Root:   "dashboard/src",
+		Index:  "index.html",
+		HTML5:  true,
+		Browse: true,
+	}))
+
+	router.Group("", middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:   "dashboard/src",
 		Index:  "index.html",
 		HTML5:  true,
 		Browse: true,
