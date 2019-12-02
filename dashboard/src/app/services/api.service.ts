@@ -9,6 +9,8 @@ import {
   RunnerInfo,
   ViaInfo
 } from "../objects";
+import { MatDialog } from "@angular/material";
+import { RebootComponent } from "../popups/reboot/reboot.component";
 
 @Injectable({
   providedIn: "root"
@@ -19,7 +21,7 @@ export class APIService {
   private jsonConvert: JsonConvert;
   private urlParams: URLSearchParams;
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private dialog: MatDialog) {
     this.jsonConvert = new JsonConvert();
     this.jsonConvert.ignorePrimitiveChecks = false;
 
@@ -51,6 +53,7 @@ export class APIService {
 
   public async reboot() {
     try {
+      this.dialog.open(RebootComponent, {disableClose: true});
       const data = await this.http
         .put("device/reboot", {
           responseType: "text"

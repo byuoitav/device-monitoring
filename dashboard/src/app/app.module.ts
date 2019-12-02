@@ -13,7 +13,9 @@ import {
   MatListModule,
   MatExpansionModule,
   MatIconModule,
-  MatProgressBarModule
+  MatProgressBarModule,
+  MatDialogModule,
+  MatProgressSpinnerModule
 } from "@angular/material";
 import "hammerjs";
 
@@ -25,6 +27,7 @@ import { ReachableDevicesComponent } from "./components/reachable-devices/reacha
 import { APIService } from "./services/api.service";
 import { RunnerInfoComponent } from "./components/runner-info/runner-info.component";
 import { ViaControlComponent } from "./components/via-control/via-control.component";
+import { RebootComponent } from './popups/reboot/reboot.component';
 
 const routes: Routes = [
   {
@@ -66,7 +69,8 @@ const routes: Routes = [
     SoftwareInfoComponent,
     ReachableDevicesComponent,
     RunnerInfoComponent,
-    ViaControlComponent
+    ViaControlComponent,
+    RebootComponent
   ],
   imports: [
     BrowserModule,
@@ -81,6 +85,8 @@ const routes: Routes = [
     MatExpansionModule,
     MatIconModule,
     MatProgressBarModule,
+    MatDialogModule,
+    MatProgressSpinnerModule,
     RouterModule.forRoot(routes)
   ],
   providers: [
@@ -90,6 +96,9 @@ const routes: Routes = [
       provide: APP_BASE_HREF,
       useValue: "/dashboard"
     }
+  ],
+  entryComponents: [
+    RebootComponent
   ],
   bootstrap: [AppComponent]
 })
