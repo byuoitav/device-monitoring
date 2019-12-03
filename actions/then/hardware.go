@@ -279,7 +279,7 @@ type tempLimits struct {
 	WarningThreshold  float64 `json:"warning-threshold"`
 }
 
-func liveTemperatureCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+func liveTemperatureCheck1(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
 	systemID, err := localsystem.SystemID()
 	if err != nil {
 		return err.Addf("unable to get hardware info")
@@ -328,11 +328,129 @@ func liveTemperatureCheck(ctx context.Context, with []byte, log *zap.SugaredLogg
 					event.Data = chip
 					messenger.Get().SendEvent(event)
 				}
-
 			}
-
 		}
 	}
 
 	return nil
+}
+
+func liveTemperatureCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+	//checks every 5 seconds to see if the temp is high
+	ticker1 := time.NewTicker(5 * time.Second)
+	//gives us the temp every 5 minutes
+	ticker2 := time.NewTicker(5 * time.Minute)
+
+	systemID, err := localsystem.SystemID()
+	if err != nil {
+		return err.Addf("unable to get hardware info")
+	}
+
+	deviceInfo := events.GenerateBasicDeviceInfo(systemID)
+	previousTemps := make(map[string]float64)
+
+	var info hardwareinfo.HardwareInfo
+
+	var limits tempLimits
+	er := json.Unmarshal(with, &limits)
+	if er != nil {
+		return nerr.Translate(er)
+	}
+
+	event := events.Event{
+		GeneratingSystem: systemID,
+		EventTags: []string{
+			events.HardwareInfo,
+		},
+		TargetDevice: deviceInfo,
+		AffectedRoom: deviceInfo.BasicRoomInfo,
+	}
+
+	// info.Host, err = localsystem.HostInfo()
+	// if err != nil {
+	// 	return err.Addf("failed to get hardware info")
+	// }
+
+	// if temps, ok := info.Host["temperature"].(map[string]float64); ok {
+	// 	for chip, temp := range temps {
+	// 		previousTemps[chip] = temp
+	// 	}
+	// }
+
+	for {
+		select {
+		case t1 := <-ticker1.C:
+			//check to see if the temp is over the warning or critical threshold
+
+			info.Host, err = localsystem.HostInfo()
+			if err != nil {
+				return err.Addf("failed to get hardware info")
+			}
+
+			if temps, ok := info.Host["temperature"].(map[string]float64); ok {
+				for chip, temp := range temps {
+					oldTemp := previousTemps[chip]
+					if temp > limits.WarningThreshold {
+						if temp > limits.CriticalThreshold {
+							if oldTemp < limits.CriticalThreshold {
+								event.AddToTags(events.DetailState)
+								event.Key = "temp-critical"
+								event.Value = fmt.Sprintf("%v", temp)
+								event.Data = chip
+								event.Timestamp = t1
+								messenger.Get().SendEvent(event)
+							}
+						} else {
+							if oldTemp > limits.CriticalThreshold || oldTemp < limits.WarningThreshold {
+								event.AddToTags(events.DetailState)
+								event.Key = "temp-warning"
+								event.Value = fmt.Sprintf("%v", temp)
+								event.Data = chip
+								event.Timestamp = t1
+								messenger.Get().SendEvent(event)
+							}
+						}
+					}
+					previousTemps[chip] = temp
+				}
+			}
+
+		case t2 := <-ticker2.C:
+			//give us the 5 minute check
+
+			info.Host, err = localsystem.HostInfo()
+			if err != nil {
+				return err.Addf("failed to get hardware info")
+			}
+
+			if temps, ok := info.Host["temperature"].(map[string]float64); ok {
+				for chip, temp := range temps {
+					if temp > limits.WarningThreshold {
+						if temp > limits.CriticalThreshold {
+							event.AddToTags(events.DetailState)
+							event.Key = "temp-critical"
+							event.Value = fmt.Sprintf("%v", temp)
+							event.Data = chip
+							event.Timestamp = t2
+							messenger.Get().SendEvent(event)
+						} else if temp > limits.WarningThreshold {
+							event.AddToTags(events.DetailState)
+							event.Key = "temp-warning"
+							event.Value = fmt.Sprintf("%v", temp)
+							event.Data = chip
+							event.Timestamp = t2
+							messenger.Get().SendEvent(event)
+						} else {
+							event.AddToTags(events.DetailState)
+							event.Key = "temp-normal"
+							event.Value = fmt.Sprintf("%v", temp)
+							event.Data = chip
+							event.Timestamp = t2
+							messenger.Get().SendEvent(event)
+						}
+					}
+				}
+			}
+		}
+	}
 }
