@@ -2,6 +2,7 @@ package then
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -267,6 +268,69 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 
 			event.Value = builder.String()
 			messenger.Get().SendEvent(event)
+		}
+	}
+
+	return nil
+}
+
+type tempLimits struct {
+	CriticalThreshold float64 `json:"critical-threshold"`
+	WarningThreshold  float64 `json:"warning-threshold"`
+}
+
+func liveTemperatureCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+	systemID, err := localsystem.SystemID()
+	if err != nil {
+		return err.Addf("unable to get hardware info")
+	}
+
+	deviceInfo := events.GenerateBasicDeviceInfo(systemID)
+
+	var info hardwareinfo.HardwareInfo
+
+	info.Host, err = localsystem.HostInfo()
+	if err != nil {
+		return err.Addf("failed to get hardware info")
+	}
+
+	var limits tempLimits
+	er := json.Unmarshal(with, &limits)
+	if er != nil {
+		return nerr.Translate(er)
+	}
+
+	// build base event
+	event := events.Event{
+		GeneratingSystem: systemID,
+		Timestamp:        time.Now(),
+		EventTags: []string{
+			events.HardwareInfo,
+		},
+		TargetDevice: deviceInfo,
+		AffectedRoom: deviceInfo.BasicRoomInfo,
+	}
+
+	// send info about chip temp
+	if temps, ok := info.Host["temperature"].(map[string]float64); ok {
+		for chip, temp := range temps {
+			if temp > limits.WarningThreshold {
+				if temp > limits.CriticalThreshold {
+					event.AddToTags(events.DetailState)
+					event.Key = "temp-critical"
+					event.Value = fmt.Sprintf("%v", temp)
+					event.Data = chip
+					messenger.Get().SendEvent(event)
+				} else {
+					event.AddToTags(events.DetailState)
+					event.Key = "temp-warning"
+					event.Value = fmt.Sprintf("%v", temp)
+					event.Data = chip
+					messenger.Get().SendEvent(event)
+				}
+
+			}
+
 		}
 	}
 

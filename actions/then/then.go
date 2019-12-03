@@ -30,6 +30,7 @@ func init() {
 	then.Add("hardware-info", hardwareInfo)
 	then.Add("device-hardware-info", deviceHardwareInfo)
 	then.Add("monitor-dividers", monitorDividerSensors)
+	then.Add("live-temperature-check", liveTemperatureCheck)
 }
 
 func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
