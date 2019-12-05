@@ -366,17 +366,6 @@ func liveTemperatureCheck(ctx context.Context, with []byte, log *zap.SugaredLogg
 		AffectedRoom: deviceInfo.BasicRoomInfo,
 	}
 
-	// info.Host, err = localsystem.HostInfo()
-	// if err != nil {
-	// 	return err.Addf("failed to get hardware info")
-	// }
-
-	// if temps, ok := info.Host["temperature"].(map[string]float64); ok {
-	// 	for chip, temp := range temps {
-	// 		previousTemps[chip] = temp
-	// 	}
-	// }
-
 	for {
 		select {
 		case t1 := <-ticker1.C:

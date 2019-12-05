@@ -28,6 +28,7 @@ import { APIService } from "./services/api.service";
 import { RunnerInfoComponent } from "./components/runner-info/runner-info.component";
 import { ViaControlComponent } from "./components/via-control/via-control.component";
 import { RebootComponent } from './popups/reboot/reboot.component';
+import { DeviceInfoComponent } from './device-info/device-info.component';
 
 const routes: Routes = [
   {
@@ -58,6 +59,10 @@ const routes: Routes = [
   {
     path: "via-control",
     component: ViaControlComponent
+  },
+  {
+    path: "device-info",
+    component: DeviceInfoComponent
   }
 ];
 
@@ -70,7 +75,8 @@ const routes: Routes = [
     ReachableDevicesComponent,
     RunnerInfoComponent,
     ViaControlComponent,
-    RebootComponent
+    RebootComponent,
+    DeviceInfoComponent
   ],
   imports: [
     BrowserModule,

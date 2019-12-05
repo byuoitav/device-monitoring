@@ -98,6 +98,18 @@
         <ng-container *ngIf="wideSidenav()">Via Control</ng-container>
       </button>
 
+      <button
+        mat-flat-button
+        color=""
+        routerLink="/device-info"
+        routerLinkActive="mat-accent"
+        queryParamsHandling="merge"
+      >
+        <mat-icon>info</mat-icon>
+
+        <ng-container *ngIf="wideSidenav()">Device Info</ng-container>
+      </button>
+
       <!-- at the bottom -->
       <button
         mat-flat-button

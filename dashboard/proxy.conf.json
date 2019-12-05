@@ -23,5 +23,11 @@
     "logLevel": "debug",
     "changeOrigin": true,
     "ws": true
+  },
+  "/device/hardwareinfo": {
+    "target": "http://localhost:10000",
+    "secure": false,
+    "logLevel": "debug",
+    "changeOrigin": true
   }
 }

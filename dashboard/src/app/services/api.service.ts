@@ -239,4 +239,16 @@ export class APIService {
       throw new Error("error getting divider sensors connection status: " + e);
     }
   }
+
+  public async getHardwareInfo() {
+    try {
+      const data = await this.http.get("/device/hardwareinfo").toPromise();
+
+      console.log("data", data);
+
+      return data;
+    } catch (e) {
+      throw new Error("error getting hardware info: " + e)
+    }
+  }
 }
