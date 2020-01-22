@@ -57,6 +57,23 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) *ner
 		}
 	}
 
+	// send info about cpu load averages
+	if loadAvg1min, ok := info.CPU["avg1min"].(map[string]float64); ok {
+		tmp := event
+		tmp.AddToTags(events.DetailState)
+		tmp.Key = "cpu-load-average-1-min"
+		tmp.Value = fmt.Sprintf("%v", loadAvg1min)
+		messenger.Get().SendEvent(tmp)
+	}
+
+	if loadAvg5min, ok := info.CPU["avg5min"].(map[string]float64); ok {
+		tmp := event
+		tmp.AddToTags(events.DetailState)
+		tmp.Key = "cpu-load-average-5-min"
+		tmp.Value = fmt.Sprintf("%v", loadAvg5min)
+		messenger.Get().SendEvent(tmp)
+	}
+
 	// send info about memory usage
 	if vMem, ok := info.Memory["virtual"].(*mem.VirtualMemoryStat); ok {
 		tmp := event

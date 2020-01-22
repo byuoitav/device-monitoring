@@ -18,6 +18,7 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/docker"
 	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/process"
 )
@@ -67,6 +68,15 @@ func CPUInfo() (map[string]interface{}, *nerr.E) {
 	if len(avgPercent) == 1 {
 		usage["avg"] = round(avgPercent[0], .01)
 	}
+
+	// get load average metrics
+	loadAvg, err := load.Avg()
+	if err != nil {
+		return info, nerr.Translate(err).Addf("failed to get load avg info")
+	}
+
+	info["avg1min"] = loadAvg.Load1
+	info["avg5min"] = loadAvg.Load5
 
 	return info, nil
 }
