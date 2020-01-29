@@ -9,6 +9,8 @@ import {
   RunnerInfo,
   ViaInfo
 } from "../objects";
+import { MatDialog } from "@angular/material";
+import { RebootComponent } from "../popups/reboot/reboot.component";
 
 @Injectable({
   providedIn: "root"
@@ -19,7 +21,7 @@ export class APIService {
   private jsonConvert: JsonConvert;
   private urlParams: URLSearchParams;
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private dialog: MatDialog) {
     this.jsonConvert = new JsonConvert();
     this.jsonConvert.ignorePrimitiveChecks = false;
 
@@ -51,6 +53,7 @@ export class APIService {
 
   public async reboot() {
     try {
+      this.dialog.open(RebootComponent, {disableClose: true});
       const data = await this.http
         .put("device/reboot", {
           responseType: "text"
@@ -70,11 +73,14 @@ export class APIService {
   public async getDeviceInfo() {
     try {
       const data = await this.http.get("device").toPromise();
-      const deviceInfo = this.jsonConvert.deserialize(data, DeviceInfo);
+      const deviceInfo = this.jsonConvert.deserializeObject(data, DeviceInfo);
 
       return deviceInfo;
     } catch (e) {
-      const deviceInfo = this.jsonConvert.deserialize(e.error, DeviceInfo);
+      const deviceInfo = this.jsonConvert.deserializeObject(
+        e.error,
+        DeviceInfo
+      );
 
       console.error("error getting device info:", e);
       return deviceInfo;
@@ -109,8 +115,8 @@ export class APIService {
 
   public async getSoftwareStati() {
     try {
-      const data = await this.http.get("device/status").toPromise();
-      const stati = this.jsonConvert.deserialize(data, Status);
+      const data: any = await this.http.get("device/status").toPromise();
+      const stati = this.jsonConvert.deserializeObject(data, Status);
 
       return stati;
     } catch (e) {
@@ -138,7 +144,7 @@ export class APIService {
       const result = new Map<string, PingResult>();
       for (const key of Object.keys(data)) {
         if (key && data[key]) {
-          const val = this.jsonConvert.deserialize(data[key], PingResult);
+          const val = this.jsonConvert.deserializeObject(data[key], PingResult);
           result.set(key, val);
         }
       }
@@ -169,8 +175,8 @@ export class APIService {
 
   public async getRunnerInfo() {
     try {
-      const data = await this.http.get("device/runners").toPromise();
-      const info = this.jsonConvert.deserialize(data, RunnerInfo);
+      const data: any = await this.http.get("device/runners").toPromise();
+      const info = this.jsonConvert.deserializeArray(data, RunnerInfo);
 
       return info;
     } catch (e) {
@@ -180,8 +186,8 @@ export class APIService {
 
   public async getViaInfo() {
     try {
-      const data = await this.http.get("room/viainfo").toPromise();
-      const info = this.jsonConvert.deserialize(data, ViaInfo);
+      const data: any = await this.http.get("room/viainfo").toPromise();
+      const info = this.jsonConvert.deserializeArray(data, ViaInfo);
 
       return info;
     } catch (e) {
@@ -210,6 +216,39 @@ export class APIService {
       console.log("data", data);
     } catch (e) {
       throw new Error("error rebooting via: " + e);
+    }
+  }
+
+  public async getDividerSensorsStatus(address: string) {
+    try {
+      const data = await this.http
+        .get("http://" + address + ":10000/divider/state")
+        .toPromise();
+
+      console.log("data", data);
+
+      for (const [key] of Object.entries(data)) {
+        if (key.includes("disconnected")) {
+          return false;
+        }
+        if (key.includes("connected")) {
+          return true;
+        }
+      }
+    } catch (e) {
+      throw new Error("error getting divider sensors connection status: " + e);
+    }
+  }
+
+  public async getHardwareInfo() {
+    try {
+      const data = await this.http.get("/device/hardwareinfo").toPromise();
+
+      console.log("data", data);
+
+      return data;
+    } catch (e) {
+      throw new Error("error getting hardware info: " + e)
     }
   }
 }
