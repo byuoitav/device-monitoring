@@ -58,7 +58,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) *ner
 	}
 
 	// send info about cpu load averages
-	if loadAvg1min, ok := info.CPU["avg1min"].(map[string]float64); ok {
+	if loadAvg1min, ok := info.CPU["avg1min"].(float64); ok {
 		tmp := event
 		tmp.AddToTags(events.DetailState)
 		tmp.Key = "cpu-load-average-1-min"
@@ -66,7 +66,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) *ner
 		messenger.Get().SendEvent(tmp)
 	}
 
-	if loadAvg5min, ok := info.CPU["avg5min"].(map[string]float64); ok {
+	if loadAvg5min, ok := info.CPU["avg5min"].(float64); ok {
 		tmp := event
 		tmp.AddToTags(events.DetailState)
 		tmp.Key = "cpu-load-average-5-min"
