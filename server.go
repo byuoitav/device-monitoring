@@ -30,16 +30,13 @@ func main() {
 		return context.Redirect(http.StatusMovedPermanently, "/dashboard")
 	})
 
+	router.GET("/", func(context echo.Context) error {
+		return context.Redirect(http.StatusMovedPermanently, "/dashboard")
+	})
+
 	// static webpages
 	router.Group("/dashboard", middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:   "dashboard/src",
-		Index:  "index.html",
-		HTML5:  true,
-		Browse: true,
-	}))
-
-	router.Group("", middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:   "dashboard/src",
+		Root:   "dashboard",
 		Index:  "index.html",
 		HTML5:  true,
 		Browse: true,
