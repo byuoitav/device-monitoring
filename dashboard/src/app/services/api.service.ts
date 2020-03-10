@@ -32,7 +32,7 @@ export class APIService {
   }
 
   public switchToUI() {
-    window.location.assign("http://" + window.location.hostname + ":8888/");
+    window.location.assign("http://" + window.location.hostname + "/");
   }
 
   public refresh() {
