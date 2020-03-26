@@ -70,6 +70,9 @@ func main() {
 	router.GET("/divider/state", handlers.GetDividerState)
 	router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
 
+	// flush dns cache
+	router.GET("/dns", handlers.FlushDNS)
+
 	/*
 		// test mode endpoints
 		// router.GET("/maintenance", handlers.IsInMaintMode)
