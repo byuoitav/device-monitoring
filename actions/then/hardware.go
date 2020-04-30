@@ -132,15 +132,6 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) *ner
 		messenger.Get().SendEvent(tmp)
 	}
 
-	// send info about docker containers running -- I get it, it's not hardware but... where else is it going to go?
-	if containers, ok := info.Docker["docker-containers"]; ok {
-		tmp := event
-		tmp.AddToTags(events.DetailState)
-		tmp.Key = "docker-containers"
-		tmp.Value = fmt.Sprintf("%v", containers)
-		messenger.Get().SendEvent(tmp)
-	}
-
 	return nil
 }
 
