@@ -1,10 +1,6 @@
 <div class="card-container">
   <mat-card class="card">
-    <mat-progress-bar
-      color="accent"
-      *ngIf="deviceInfo == null"
-      mode="query"
-    ></mat-progress-bar>
+    <mat-progress-bar color="accent" *ngIf="deviceInfo == null" mode="query"></mat-progress-bar>
     <mat-card-header>
       <mat-card-title>System Info</mat-card-title>
     </mat-card-header>
@@ -40,12 +36,8 @@
             <p>Internet Connectivity</p>
 
             <div id="status-theme">
-              <mat-icon color="primary" *ngIf="deviceInfo?.internetConnectivity"
-                >wifi_off</mat-icon
-              >
-              <mat-icon color="warn" *ngIf="!deviceInfo?.internetConnectivity"
-                >wifi</mat-icon
-              >
+              <mat-icon color="primary" *ngIf="deviceInfo?.internetConnectivity">wifi_off</mat-icon>
+              <mat-icon color="warn" *ngIf="!deviceInfo?.internetConnectivity">wifi</mat-icon>
             </div>
           </div>
         </mat-list-item>
@@ -56,25 +48,15 @@
             <p>DHCP Enabled</p>
 
             <div id="status-theme">
-              <mat-icon
-                color="warn"
-                *ngIf="!isDefined(deviceInfo?.dhcp?.enabled)"
-                >help_outline</mat-icon
-              >
-              <mat-icon
-                *ngIf="
+              <mat-icon color="warn" *ngIf="!isDefined(deviceInfo?.dhcp?.enabled)">help_outline</mat-icon>
+              <mat-icon *ngIf="
                   isDefined(deviceInfo?.dhcp?.enabled) &&
                   !deviceInfo?.dhcp?.enabled
-                "
-                >highlight_off</mat-icon
-              >
-              <mat-icon
-                *ngIf="
+                ">highlight_off</mat-icon>
+              <mat-icon *ngIf="
                   isDefined(deviceInfo?.dhcp?.enabled) &&
                   deviceInfo?.dhcp?.enabled
-                "
-                >check_circle_outline</mat-icon
-              >
+                ">check_circle_outline</mat-icon>
             </div>
           </div>
         </mat-list-item>
@@ -95,7 +77,7 @@
         <mat-icon>arrow_back</mat-icon>
         Back To UI
       </button>
-      <!-->
+      <!--
       <button
         mat-raised-button
         color="primary"
@@ -105,15 +87,14 @@
         {{ maintenanceMode ? "Exit" : "Enter" }} Maintenance
       </button>
       -->
+      <button mat-raised-button color="accent" (click)="api.flushDNS()">
+        Flush DNS
+      </button>
       <button mat-raised-button color="warn" (click)="api.reboot()">
         <mat-icon>power_settings_new</mat-icon>
         Reboot
       </button>
-      <button
-        mat-raised-button
-        color="accent"
-        *ngIf="deviceInfo?.dhcp?.toggleable"
-      >
+      <button mat-raised-button color="accent" *ngIf="deviceInfo?.dhcp?.toggleable">
         <mat-icon *ngIf="!deviceInfo?.dhcp?.enabled">lock_open</mat-icon>
         <mat-icon *ngIf="deviceInfo?.dhcp?.enabled">lock</mat-icon>
         Turn DHCP {{ deviceInfo?.dhcp?.enabled ? "Off" : "On" }}
@@ -122,11 +103,7 @@
   </mat-card>
 
   <mat-card class="card">
-    <mat-progress-bar
-      color="accent"
-      *ngIf="pingResult == null"
-      mode="query"
-    ></mat-progress-bar>
+    <mat-progress-bar color="accent" *ngIf="pingResult == null" mode="query"></mat-progress-bar>
     <mat-card-header>
       <mat-card-title>Room Status</mat-card-title>
     </mat-card-header>

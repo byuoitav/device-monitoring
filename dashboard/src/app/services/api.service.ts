@@ -53,7 +53,7 @@ export class APIService {
 
   public async reboot() {
     try {
-      this.dialog.open(RebootComponent, {disableClose: true});
+      this.dialog.open(RebootComponent, { disableClose: true });
       const data = await this.http
         .put("device/reboot", {
           responseType: "text"
@@ -250,5 +250,15 @@ export class APIService {
     } catch (e) {
       throw new Error("error getting hardware info: " + e)
     }
+  }
+
+  public async flushDNS() {
+    this.http.get("/dns").subscribe((data: any) => {
+      if (data == "success") {
+        console.log("successfully flushed the dns cache");
+      } else {
+        console.log("failed to flush the dns cache");
+      }
+    });
   }
 }
