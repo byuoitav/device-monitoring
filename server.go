@@ -109,7 +109,7 @@ func redirectHandler(ctx echo.Context) error {
 	}
 
 	if uiURL == "" {
-		return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+hostname+".byu.edu")
+		return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+hostname+"/")
 	}
 	return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+uiURL)
 }
