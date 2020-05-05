@@ -1,6 +1,7 @@
 package localsystem
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/docker"
@@ -203,6 +206,21 @@ func DockerInfo() (map[string]interface{}, *nerr.E) {
 	}
 
 	info["stats"] = stats
+
+	//add section getting the number of running docker containers
+	ctx := context.Background()
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return info, nerr.Translate(err).Addf("failed to get docker info")
+	}
+	cli.NegotiateAPIVersion(ctx)
+
+	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	if err != nil {
+		return info, nerr.Translate(err).Addf("failed to get docker info")
+	}
+
+	info["docker-containers"] = len(containers)
 
 	return info, nil
 }
