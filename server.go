@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/byuoitav/common"
 	"github.com/byuoitav/device-monitoring/actions"
@@ -10,14 +11,19 @@ import (
 	"github.com/byuoitav/device-monitoring/messenger"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/spf13/pflag"
 
 	_ "github.com/byuoitav/device-monitoring/actions/then"
 )
+
+var uiURL string
 
 func main() {
 	go actions.ActionManager().Start(context.TODO())
 	messenger.Get().Register(actions.ActionManager().EventStream)
 
+	pflag.StringVar(&uiURL, "ui-url", "", "url to redirect to the ui")
+	pflag.Parse()
 	// subscribe to something?
 
 	// server
@@ -73,6 +79,8 @@ func main() {
 	// flush dns cache
 	router.GET("/dns", handlers.FlushDNS)
 
+	router.GET("/ui", redirectHandler)
+
 	/*
 		// test mode endpoints
 		// router.GET("/maintenance", handlers.IsInMaintMode)
@@ -91,4 +99,17 @@ func main() {
 		MaxHeaderBytes: 1024 * 10,
 	}
 	router.StartServer(&server)
+}
+
+func redirectHandler(ctx echo.Context) error {
+	if uiURL != "" {
+		return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+uiURL)
+	}
+
+	hostname := strings.Split(ctx.Request().Host, ":")
+	if len(hostname) == 0 {
+		return ctx.Redirect(http.StatusTemporaryRedirect, "/dashboard")
+	}
+
+	return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+hostname[0]+"/")
 }
