@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"os"
+	"strings"
 
 	"github.com/byuoitav/common"
 	"github.com/byuoitav/device-monitoring/actions"
@@ -103,13 +102,10 @@ func main() {
 }
 
 func redirectHandler(ctx echo.Context) error {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return fmt.Errorf("error getting hostname: %v", err)
-	}
+	hostname := strings.Split(ctx.Request().Host, ":")
 
-	if uiURL == "" {
-		return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+hostname+"/")
+	if uiURL != "" {
+		return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+uiURL)
 	}
-	return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+uiURL)
+	return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+hostname[0]+"/")
 }

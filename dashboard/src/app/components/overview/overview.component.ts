@@ -86,8 +86,4 @@ export class OverviewComponent implements OnInit {
       this.dividerSensorStatus = "Disconnected";
     }
   }
-
-  public toUI() {
-    window.location.pathname = '/ui'
-  }
 }
