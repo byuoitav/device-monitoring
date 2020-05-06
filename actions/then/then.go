@@ -10,6 +10,7 @@ import (
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/actions/activesignal"
+	"github.com/byuoitav/device-monitoring/actions/browser"
 	"github.com/byuoitav/device-monitoring/actions/gpio"
 	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/actions/ping"
@@ -26,6 +27,7 @@ func init() {
 	then.Add("device-health-check", deviceHealthCheck)
 	then.Add("service-health-check", serviceHealthCheck)
 	then.Add("state-update", stateUpdate)
+	then.Add("websocket-browser-check", websocketBrowserCheck)
 
 	then.Add("hardware-info", hardwareInfo)
 	then.Add("device-hardware-info", deviceHardwareInfo)
@@ -332,5 +334,24 @@ func monitorDividerSensors(ctx context.Context, with []byte, log *zap.SugaredLog
 		}
 	}
 
+	return nil
+}
+
+func websocketBrowserCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+	// get the 'with'
+	var configs []browser.ServiceConfig
+	err := json.Unmarshal(with, &configs)
+	if err != nil {
+		return nerr.Translate(err).Addf("failed to check for websocket errors")
+	}
+
+	// do the websocket check
+	restarted, err := browser.CheckWebSocketCount(ctx, configs)
+	if err != nil {
+		return nerr.Translate(err).Addf("failed to check for websocket errors")
+	}
+	if restarted {
+		//send an event
+	}
 	return nil
 }
