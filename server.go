@@ -102,10 +102,14 @@ func main() {
 }
 
 func redirectHandler(ctx echo.Context) error {
-	hostname := strings.Split(ctx.Request().Host, ":")
-
 	if uiURL != "" {
 		return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+uiURL)
 	}
+
+	hostname := strings.Split(ctx.Request().Host, ":")
+	if len(hostname) == 0 {
+		return ctx.Redirect(http.StatusTemporaryRedirect, "/dashboard")
+	}
+
 	return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+hostname[0]+"/")
 }
