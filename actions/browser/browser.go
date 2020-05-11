@@ -3,7 +3,11 @@ package browser
 import (
 	"bufio"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -18,16 +22,59 @@ type ServiceConfig struct {
 	Body   interface{} `json:"body,omitempty"`
 }
 
+type socketResponse struct {
+	NumSockets uint `json:"ClientCount"`
+}
+
 const configPath = "/home/pi/.i3/config"
 
 // CheckWebSocketCount checks the web socket count and restarts the browser if the count is 0
 func CheckWebSocketCount(ctx context.Context, configs []ServiceConfig) (bool, error) {
-	// talk to the provided service and get websocket status
-	// if count is 0
-	// do the chrome restart
-	// else do nothing
+	for _, config := range configs {
+		if config.Method == "" {
+			config.Method = "GET"
+		}
+		resp, err := makeRequest(config.Method, config.URL)
+		if err != nil {
+			return false, err
+		}
 
+		if resp.NumSockets == 0 {
+			err = restartBrowser()
+			return true, err
+		}
+	}
 	return false, nil
+}
+
+func makeRequest(method, url string) (*socketResponse, error) {
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("bad response code - %v: %s", resp.StatusCode, b)
+	}
+
+	var responseBody socketResponse
+	err = json.Unmarshal(b, &responseBody)
+	if err != nil {
+		return nil, err
+	}
+
+	return &responseBody, nil
 }
 
 func restartBrowser() error {
@@ -88,7 +135,6 @@ func readLastLine(r *bufio.Reader) (string, error) {
 			lastLine = line
 		}
 		line, err = r.ReadString('\n')
-		// fmt.Printf("line - %s\n", line)
 	}
 	if err != nil && err != io.EOF {
 		return "", err

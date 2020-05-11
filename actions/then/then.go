@@ -350,8 +350,22 @@ func websocketBrowserCheck(ctx context.Context, with []byte, log *zap.SugaredLog
 	if err != nil {
 		return nerr.Translate(err).Addf("failed to check for websocket errors")
 	}
+
 	if restarted {
 		//send an event
+		id := localsystem.MustSystemID()
+		deviceInfo := events.GenerateBasicDeviceInfo(id)
+		roomInfo := events.GenerateBasicRoomInfo(deviceInfo.RoomID)
+		var event events.Event
+		event.GeneratingSystem = id
+		event.Timestamp = time.Now()
+		event.EventTags = []string{events.DetailState}
+		event.TargetDevice = deviceInfo
+		event.AffectedRoom = roomInfo
+		event.Key = "chrome-restarted"
+		event.Value = "true"
+		messenger.Get().SendEvent(event)
 	}
+
 	return nil
 }
