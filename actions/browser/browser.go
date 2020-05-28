@@ -18,7 +18,7 @@ import (
 type ServiceConfig struct {
 	Name   string      `json:"name"`
 	URL    string      `json:"url"`
-	Method string      `json:"method"`
+	Method string      `json:"method,omitempty"`
 	Body   interface{} `json:"body,omitempty"`
 }
 
@@ -79,9 +79,9 @@ func makeRequest(method, url string) (*socketResponse, error) {
 
 func restartBrowser() error {
 	err := killChromium()
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
 	//find i3 config file
 	file, err := os.Open(configPath)
@@ -107,10 +107,14 @@ func restartBrowser() error {
 	for i, tok := range tokens {
 		tokens[i] = strings.TrimPrefix(tok, " ")
 	}
-	args := tokens[1:]
+
+	command := []string{"sudo", "-H", "-u", "pi"}
+	command = append(command, tokens...)
+
+	args := command[1:]
 
 	//run the last line as a bash command with exec
-	cmd := exec.Command(tokens[0], args...)
+	cmd := exec.Command(command[0], args...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "DISPLAY=:0")
 

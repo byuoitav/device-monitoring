@@ -338,21 +338,18 @@ func monitorDividerSensors(ctx context.Context, with []byte, log *zap.SugaredLog
 }
 
 func websocketBrowserCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
-	// get the 'with'
 	var configs []browser.ServiceConfig
 	err := json.Unmarshal(with, &configs)
 	if err != nil {
 		return nerr.Translate(err).Addf("failed to check for websocket errors")
 	}
 
-	// do the websocket check
 	restarted, err := browser.CheckWebSocketCount(ctx, configs)
 	if err != nil {
 		return nerr.Translate(err).Addf("failed to check for websocket errors")
 	}
 
 	if restarted {
-		//send an event
 		id := localsystem.MustSystemID()
 		deviceInfo := events.GenerateBasicDeviceInfo(id)
 		roomInfo := events.GenerateBasicRoomInfo(deviceInfo.RoomID)
