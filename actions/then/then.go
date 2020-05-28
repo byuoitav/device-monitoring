@@ -10,6 +10,7 @@ import (
 	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/actions/activesignal"
+	"github.com/byuoitav/device-monitoring/actions/browser"
 	"github.com/byuoitav/device-monitoring/actions/gpio"
 	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/actions/ping"
@@ -26,6 +27,7 @@ func init() {
 	then.Add("device-health-check", deviceHealthCheck)
 	then.Add("service-health-check", serviceHealthCheck)
 	then.Add("state-update", stateUpdate)
+	then.Add("websocket-browser-check", websocketBrowserCheck)
 
 	then.Add("hardware-info", hardwareInfo)
 	then.Add("device-hardware-info", deviceHardwareInfo)
@@ -330,6 +332,36 @@ func monitorDividerSensors(ctx context.Context, with []byte, log *zap.SugaredLog
 		for i := range pins {
 			go pins[i].Monitor()
 		}
+	}
+
+	return nil
+}
+
+func websocketBrowserCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+	var configs []browser.ServiceConfig
+	err := json.Unmarshal(with, &configs)
+	if err != nil {
+		return nerr.Translate(err).Addf("failed to check for websocket errors")
+	}
+
+	restarted, err := browser.CheckWebSocketCount(ctx, configs)
+	if err != nil {
+		return nerr.Translate(err).Addf("failed to check for websocket errors")
+	}
+
+	if restarted {
+		id := localsystem.MustSystemID()
+		deviceInfo := events.GenerateBasicDeviceInfo(id)
+		roomInfo := events.GenerateBasicRoomInfo(deviceInfo.RoomID)
+		var event events.Event
+		event.GeneratingSystem = id
+		event.Timestamp = time.Now()
+		event.EventTags = []string{events.DetailState}
+		event.TargetDevice = deviceInfo
+		event.AffectedRoom = roomInfo
+		event.Key = "chrome-restarted"
+		event.Value = "true"
+		messenger.Get().SendEvent(event)
 	}
 
 	return nil
