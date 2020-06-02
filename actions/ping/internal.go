@@ -96,9 +96,15 @@ func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 	}
 
 	// calculate info in result
-	avgrtt /= time.Duration(result.PacketsSent)
-	if avgrtt != 0 {
-		result.AverageRoundTrip = avgrtt.String()
+	if len(result.PacketsSent) != 0 {
+		avgrtt /= time.Duration(result.PacketsSent)
+		if avgrtt != 0 {
+			result.AverageRoundTrip = avgrtt.String()
+		}
+	} else {
+		if result.Error == "" {
+			result.Error = "no packets were sent"
+		}
 	}
 
 	return result
