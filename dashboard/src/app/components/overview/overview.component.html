@@ -99,6 +99,18 @@
         <mat-icon *ngIf="deviceInfo?.dhcp?.enabled">lock</mat-icon>
         Turn DHCP {{ deviceInfo?.dhcp?.enabled ? "Off" : "On" }}
       </button>
+
+      <!--Add ReSync DB (Swab) button-->
+      <button mat-raised-button color="accent" (click)="api.reSyncDB()">
+        <mat-icon>sync</mat-icon>
+        ReSync
+      </button>
+
+      <!--Add ReFresh (Float) Containers button-->
+      <button mat-raised-button color="accent" (click)="api.refreshContainers()">
+        <mat-icon>refresh</mat-icon>
+        Refresh Containers
+      </button>
     </mat-card-actions>
   </mat-card>
 

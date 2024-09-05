@@ -94,6 +94,12 @@ func main() {
 	router.GET("/actions", actions.ActionManager().Info)
 	router.GET("/actions/trigger/:trigger", actions.ActionManager().Config.ActionsByTrigger)
 
+	// reSyncDB (old SWAB)
+	router.GET("/resyncDB", handlers.ResyncDB)
+
+	// refreshContainers (old refloat)
+	router.GET("/refreshContainers", handlers.RefreshContainers)
+
 	server := http.Server{
 		Addr:           port,
 		MaxHeaderBytes: 1024 * 10,

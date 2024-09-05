@@ -252,12 +252,25 @@ export class APIService {
     }
   }
 
-  public async flushDNS() {
-    this.http.get("/dns").subscribe((data: any) => {
+
+  // reSyncDB (Swab)
+  public async reSyncDB() {
+    this.http.get("/resyncDB").subscribe((data: any) => {
       if (data == "success") {
-        console.log("successfully flushed the dns cache");
+        console.log("successfully resynced the database");
       } else {
-        console.log("failed to flush the dns cache");
+        console.log("failed to resync the database");
+      }
+    });
+  }
+
+  // refreshContainers (Float)
+  public async refreshContainers() {
+    this.http.get("/refreshContainers").subscribe((data: any) => {
+      if (data == "success") {
+        console.log("successfully refreshed the containers");
+      } else {
+        console.log("failed to refresh the containers");
       }
     });
   }

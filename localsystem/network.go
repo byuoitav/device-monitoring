@@ -2,7 +2,6 @@ package localsystem
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -72,10 +71,10 @@ func IsConnectedToInternet() bool {
 	return true
 }
 
-// UsingDHCP returns true if the device is using DHCP, and false if it has a static ip set.
+// UsingDHCP returns true if the device is using DHCP, and false if it has a static ip set.tenidno
 func UsingDHCP() (bool, *nerr.E) {
 	// read dhcpcd.conf file
-	contents, err := ioutil.ReadFile(dhcpFile)
+	contents, err := os.ReadFile(dhcpFile)
 	if err != nil {
 		return false, nerr.Translate(err).Addf("unable to read %s", dhcpFile)
 	}
