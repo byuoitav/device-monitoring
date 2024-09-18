@@ -266,7 +266,7 @@ export class APIService {
 
   // refreshContainers (Float)
   public async refreshContainers() {
-    this.http.get("/refreshContainers").subscribe((data: any) => {
+    this.http.get("/refreshContainers").subscribe((data: any) => { 
       if (data == "success") {
         console.log("successfully refreshed the containers");
       } else {
