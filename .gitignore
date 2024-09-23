@@ -11,3 +11,7 @@ production.tar.gz
 device-monitoring
 files/
 vendor/
+
+# ignore .angular directory
+.angular/
+.angular/cache/
