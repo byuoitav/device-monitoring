@@ -10,7 +10,7 @@ import { environment } from "./environments/environment";
     const i = document.createElement("iframe");
     i.style.display = "none";
     document.body.appendChild(i);
-    (<any>window).console = i.contentWindow.console;
+    (<any>window).console = i.contentWindow;
 
     console.log("Logging enabled.");
   },

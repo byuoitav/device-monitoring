@@ -1,9 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { APIService } from '../services/api.service';
 import { DeviceInfo } from '../objects';
-import { listLazyRoutes } from '@angular/compiler/src/aot/lazy_routes';
-import { ngDevModeResetPerfCounters } from '@angular/core/src/render3/ng_dev_mode';
-import { THIS_EXPR } from '@angular/compiler/src/output/output_ast';
 
 @Component({
   selector: 'device-info',

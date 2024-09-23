@@ -1,3 +1,12 @@
 /* You can add global styles to this file, and also import other style files */
 
-@import './app/themes.scss'
+@import '~material-design-icons/iconfont/material-icons.css';
+@import './app/themes.scss';
+
+@import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600');
+
+html {
+    user-select: none;
+    font-family: 'Source Sans Pro', sans-serif;
+    font-size: 16px;
+}

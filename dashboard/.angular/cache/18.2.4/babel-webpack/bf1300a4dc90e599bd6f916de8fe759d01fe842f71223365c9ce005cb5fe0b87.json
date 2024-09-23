@@ -1,0 +1,1 @@
+{"ast":null,"code":"/**\n * Virtual any type for the property decorator.\n */\nvar Any = /** @class */function () {\n  function Any() {}\n  return Any;\n}();\nexport { Any };\n//# sourceMappingURL=any.js.map","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

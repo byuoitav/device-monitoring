@@ -9,7 +9,7 @@ import {
   RunnerInfo,
   ViaInfo
 } from "../objects";
-import { MatDialog } from "@angular/material";
+import { MatDialog } from "@angular/material/dialog";
 import { RebootComponent } from "../popups/reboot/reboot.component";
 
 @Injectable({
@@ -36,7 +36,7 @@ export class APIService {
   }
 
   public refresh() {
-    window.location.reload(true);
+    window.location.reload();
   }
 
   public switchTheme(name: string) {
@@ -252,6 +252,15 @@ export class APIService {
     }
   }
 
+  public async flushDNS() {
+    this.http.get("/dns").subscribe((data: any) => {
+      if (data == "success") {
+        console.log("successfully flushed the dns cache");
+      } else {
+        console.log("failed to flush the dns cache");
+      }
+    });
+  }
 
   // reSyncDB (Swab)
   public async reSyncDB() {
