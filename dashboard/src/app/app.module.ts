@@ -30,6 +30,8 @@ import { ViaControlComponent } from "./components/via-control/via-control.compon
 import { RebootComponent } from './popups/reboot/reboot.component';
 import { DeviceInfoComponent } from './device-info/device-info.component';
 
+import { AlertModule } from "./_alert/alert.module";
+
 const routes: Routes = [
   {
     path: "",
@@ -93,7 +95,8 @@ const routes: Routes = [
     MatProgressBarModule,
     MatDialogModule,
     MatProgressSpinnerModule,
-    RouterModule.forRoot(routes)
+    RouterModule.forRoot(routes),
+    AlertModule
   ],
   providers: [
     APIService,
