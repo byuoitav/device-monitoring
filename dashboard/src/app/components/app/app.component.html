@@ -1,4 +1,9 @@
 <div class="base" [ngClass]="api?.theme + '-theme'">
+
+  <div class="card-body text-center">
+    <alert></alert>
+  </div>
+
   <mat-toolbar color="primary">
     <button mat-button style="padding: 0" (click)="api.refresh()">
       <mat-icon style="margin-right: .35em">refresh</mat-icon>

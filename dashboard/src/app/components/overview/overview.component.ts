@@ -2,6 +2,7 @@ import { Component, OnInit } from "@angular/core";
 
 import { APIService } from "../../services/api.service";
 import { DeviceInfo, PingResult } from "../../objects";
+import { AlertService } from "../../_alert";
 
 @Component({
   selector: "overview",
@@ -16,7 +17,12 @@ export class OverviewComponent implements OnInit {
   public dividerSensorAddr: string;
   // public maintenanceMode: boolean;
 
-  constructor(public api: APIService) {}
+  options = {
+    autoClose: true,
+    keepAfterRouteChange: true 
+  };
+
+  constructor(public api: APIService, public alertService: AlertService) {}
 
   async ngOnInit() {
     this.deviceInfo = await this.api.getDeviceInfo();

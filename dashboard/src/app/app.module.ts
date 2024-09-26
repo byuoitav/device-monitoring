@@ -78,7 +78,7 @@ const routes: Routes = [
     RunnerInfoComponent,
     ViaControlComponent,
     RebootComponent,
-    DeviceInfoComponent
+    DeviceInfoComponent,
   ],
   imports: [
     BrowserModule,
