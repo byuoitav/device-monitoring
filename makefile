@@ -92,7 +92,7 @@ ifeq "$(BRANCH)" "development"
 	$(eval BRANCH=master)
 endif
 
-### deps
+### depsd
 $(NAME):
 	$(MAKE) build
 

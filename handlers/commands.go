@@ -21,7 +21,7 @@ func ResyncDB(ctx echo.Context) error {
 	}
 
 	// start the db replication
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s:7012/replication/start", piHostname), nil)
+	req, err := http.NewRequestWithContext(ctx.Request().Context(), http.MethodGet, fmt.Sprintf("http://%s:7012/replication/start", piHostname), nil)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Errorf("failed to create replication request: %w", err).Error())
 	}
@@ -44,7 +44,7 @@ func ResyncDB(ctx echo.Context) error {
 	}
 
 	// refresh the ui
-	req, err = http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("http://%s:8888/refresh", piHostname), nil)
+	req, err = http.NewRequestWithContext(ctx.Request().Context(), http.MethodPut, fmt.Sprintf("http://%s:8888/refresh", piHostname), nil)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Errorf("failed to create refresh ui request: %w", err).Error())
 	}
@@ -75,10 +75,10 @@ func RefreshContainers(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Errorf("failed to get hostname: %w", err).Error())
 	}
 
-	ctx, cancel := context.WithTimeout(ctx.Request().Context(), 30*time.Second)
+	newCtx, cancel := context.WithTimeout(ctx.Request().Context(), 30*time.Second)
 	defer cancel()
 
-	req, err = http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("https://api.byu.edu/domains/av/flight-deck/v2/refloat/%v", piHostname), nil)
+	req, err = http.NewRequestWithContext(newCtx, http.MethodPost, fmt.Sprintf("https://api.byu.edu/domains/av/flight-deck/v2/refloat/%v", piHostname), nil)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Errorf("failed to create refloat request: %w", err).Error())
 	}

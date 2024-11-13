@@ -3,7 +3,7 @@ package hardwareinfo
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -94,7 +94,7 @@ func getHardwareInfo(ctx context.Context, device structs.Device) structs.Hardwar
 	}
 	defer resp.Body.Close()
 
-	bytes, gerr := ioutil.ReadAll(resp.Body)
+	bytes, gerr := io.ReadAll(resp.Body)
 	if gerr != nil {
 		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, gerr)
 		return info

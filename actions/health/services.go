@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 )
@@ -86,7 +86,7 @@ func checkService(ctx context.Context, check ServiceCheckConfig) ServiceCheckRes
 
 	sresp.StatusCode = resp.StatusCode
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		sresp.Error = fmt.Sprintf("unable to read response body: %s", err)
 		return sresp

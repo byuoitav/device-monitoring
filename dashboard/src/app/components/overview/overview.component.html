@@ -101,16 +101,19 @@
       </button>
 
       <!--Add ReSync DB (Swab) button-->
-      <button mat-raised-button color="accent" (click)="api.reSyncDB()" (click)="alertService.success('Successfully ReSync DB!', options)">
+      <button mat-raised-button color="accent" (click)="api.reSyncDB()"
+      (click)="alertService.success('Successfully ReSync DB!', options)">
         <mat-icon>sync</mat-icon>
         ReSync
       </button>
 
       <!--Add ReFresh (Float) Containers button-->
-      <button mat-raised-button color="accent" (click)="api.refreshContainers()" (click)="alertService.success('Successfully Refreshed Containers', options)">
+      <button mat-raised-button color="accent" (click)="api.refreshContainers()"
+      (click)="alertService.success('Successfully Refreshed Containers', options)">
         <mat-icon>refresh</mat-icon>
         Refresh Containers
       </button>
+      
     </mat-card-actions>
   </mat-card>
 

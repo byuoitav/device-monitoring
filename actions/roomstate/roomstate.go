@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -38,7 +38,7 @@ func Get(ctx context.Context, roomID string) (base.PublicRoom, *nerr.E) {
 	defer resp.Body.Close()
 
 	// read the body
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return state, nerr.Translate(err).Addf("failed to read AV-API response: %v", err)
 	}

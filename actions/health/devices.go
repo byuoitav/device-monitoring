@@ -3,7 +3,7 @@ package health
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -85,7 +85,7 @@ func isDeviceAPIHealthy(ctx context.Context, device structs.Device) string {
 	}
 	defer resp.Body.Close()
 
-	bytes, gerr := ioutil.ReadAll(resp.Body)
+	bytes, gerr := io.ReadAll(resp.Body)
 	if gerr != nil {
 		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}

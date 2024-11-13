@@ -3,7 +3,6 @@ package localsystem
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net"
 	"os"
@@ -132,13 +131,13 @@ func HostInfo() (map[string]interface{}, *nerr.E) {
 	filepath.Walk(temperatureRootPath, func(path string, info os.FileInfo, err error) error {
 		if info.Mode()&os.ModeSymlink == os.ModeSymlink && strings.Contains(path, "thermal_") {
 			// get type
-			ttype, err := ioutil.ReadFile(path + "/type")
+			ttype, err := os.ReadFile(path + "/type")
 			if err != nil {
 				return err
 			}
 
 			// get temperature
-			ttemp, err := ioutil.ReadFile(path + "/temp")
+			ttemp, err := os.ReadFile(path + "/temp")
 			if err != nil {
 				return err
 			}
@@ -209,13 +208,15 @@ func DockerInfo() (map[string]interface{}, *nerr.E) {
 
 	//add section getting the number of running docker containers
 	ctx := context.Background()
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return info, nerr.Translate(err).Addf("failed to get docker info")
 	}
-	cli.NegotiateAPIVersion(ctx)
 
-	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	containerList := types.ContainerListOptions{} // reset the container list
+
+	cli.NegotiateAPIVersion(ctx)
+	containers, err := cli.ContainerList(context.Background(), containerList)
 	if err != nil {
 		return info, nerr.Translate(err).Addf("failed to get docker info")
 	}
