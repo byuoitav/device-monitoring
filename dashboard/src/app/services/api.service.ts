@@ -11,6 +11,7 @@ import {
 } from "../objects";
 import { MatDialog } from "@angular/material/dialog";
 import { RebootComponent } from "../popups/reboot/reboot.component";
+import { firstValueFrom } from "rxjs";
 
 @Injectable({
   providedIn: "root"
@@ -54,11 +55,9 @@ export class APIService {
   public async reboot() {
     try {
       this.dialog.open(RebootComponent, { disableClose: true });
-      const data = await this.http
-        .put("device/reboot", {
-          responseType: "text"
-        })
-        .toPromise();
+      await firstValueFrom(this.http.put("device/reboot", {
+        responseType: "text"
+      }));
     } catch (e) {
       // bug where responseType doesn't actually work
       if (e.status === 200) {
@@ -72,7 +71,7 @@ export class APIService {
 
   public async getDeviceInfo() {
     try {
-      const data = await this.http.get("device").toPromise();
+      const data = await firstValueFrom(this.http.get("device"));
       const deviceInfo = this.jsonConvert.deserializeObject(data, DeviceInfo);
 
       return deviceInfo;
@@ -126,9 +125,7 @@ export class APIService {
 
   public async getDeviceID() {
     try {
-      const data = await this.http
-        .get("device/id", { responseType: "text" })
-        .toPromise();
+      const data = await firstValueFrom(this.http.get("device/id", { responseType: "text" }));
 
       return data;
     } catch (e) {
@@ -138,7 +135,7 @@ export class APIService {
 
   public async getRoomPing() {
     try {
-      const data = await this.http.get("room/ping").toPromise();
+      const data = await firstValueFrom(this.http.get("room/ping"));
 
       // build the map
       const result = new Map<string, PingResult>();
@@ -157,7 +154,7 @@ export class APIService {
 
   public async getRoomHealth() {
     try {
-      const data = await this.http.get("room/health").toPromise();
+      const data = await firstValueFrom(this.http.get("room/health"));
 
       // build the map
       const result = new Map<string, string>();
@@ -175,7 +172,7 @@ export class APIService {
 
   public async getRunnerInfo() {
     try {
-      const data: any = await this.http.get("device/runners").toPromise();
+      const data: any = await firstValueFrom(this.http.get("device/runners"));
       const info = this.jsonConvert.deserializeArray(data, RunnerInfo);
 
       return info;
@@ -186,7 +183,7 @@ export class APIService {
 
   public async getViaInfo() {
     try {
-      const data: any = await this.http.get("room/viainfo").toPromise();
+      const data: any = await firstValueFrom(this.http.get("room/viainfo"));
       const info = this.jsonConvert.deserializeArray(data, ViaInfo);
 
       return info;
@@ -197,9 +194,8 @@ export class APIService {
 
   public async resetVia(address: string) {
     try {
-      const data = await this.http
-        .get("http://" + location.hostname + ":8014/via/" + address + "/reset")
-        .toPromise();
+      const data = await firstValueFrom(this.http
+        .get("http://" + location.hostname + ":8014/via/" + address + "/reset"));
 
       console.log("data", data);
     } catch (e) {
@@ -209,9 +205,8 @@ export class APIService {
 
   public async rebootVia(address: string) {
     try {
-      const data = await this.http
-        .get("http://" + location.hostname + ":8014/via/" + address + "/reboot")
-        .toPromise();
+      const data = await firstValueFrom(this.http
+        .get("http://" + location.hostname + ":8014/via/" + address + "/reboot"));
 
       console.log("data", data);
     } catch (e) {
@@ -221,9 +216,8 @@ export class APIService {
 
   public async getDividerSensorsStatus(address: string) {
     try {
-      const data = await this.http
-        .get("http://" + address + ":10000/divider/state")
-        .toPromise();
+      const data = await firstValueFrom(this.http
+        .get("http://" + address + ":10000/divider/state"));
 
       console.log("data", data);
 
@@ -242,7 +236,7 @@ export class APIService {
 
   public async getHardwareInfo() {
     try {
-      const data = await this.http.get("/device/hardwareinfo").toPromise();
+      const data = await firstValueFrom(this.http.get("/device/hardwareinfo"));
 
       console.log("data", data);
 
