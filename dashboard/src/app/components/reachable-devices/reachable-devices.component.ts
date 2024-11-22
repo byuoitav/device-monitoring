@@ -4,9 +4,10 @@ import { APIService } from "../../services/api.service";
 import { PingResult } from "../../objects";
 
 @Component({
-  selector: "reachable-devices",
-  templateUrl: "./reachable-devices.component.html",
-  styleUrls: ["./reachable-devices.component.scss"]
+    selector: "reachable-devices",
+    templateUrl: "./reachable-devices.component.html",
+    styleUrls: ["./reachable-devices.component.scss"],
+    standalone: false
 })
 export class ReachableDevicesComponent implements OnInit {
   public pingResult: Map<string, PingResult>;

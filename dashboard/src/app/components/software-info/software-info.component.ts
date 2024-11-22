@@ -4,9 +4,10 @@ import { APIService } from "../../services/api.service";
 import { Status } from "../../objects";
 
 @Component({
-  selector: "software-info",
-  templateUrl: "./software-info.component.html",
-  styleUrls: ["./software-info.component.scss"]
+    selector: "software-info",
+    templateUrl: "./software-info.component.html",
+    styleUrls: ["./software-info.component.scss"],
+    standalone: false
 })
 export class SoftwareInfoComponent implements OnInit {
   public stati: Status;

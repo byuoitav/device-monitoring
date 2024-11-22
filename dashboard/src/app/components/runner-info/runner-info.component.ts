@@ -4,9 +4,10 @@ import { APIService } from "../../services/api.service";
 import { RunnerInfo } from "../../objects";
 
 @Component({
-  selector: "runner-info",
-  templateUrl: "./runner-info.component.html",
-  styleUrls: ["./runner-info.component.scss"]
+    selector: "runner-info",
+    templateUrl: "./runner-info.component.html",
+    styleUrls: ["./runner-info.component.scss"],
+    standalone: false
 })
 export class RunnerInfoComponent implements OnInit {
   public infos: RunnerInfo[];

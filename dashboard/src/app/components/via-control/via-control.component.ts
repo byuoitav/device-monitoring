@@ -4,9 +4,10 @@ import { APIService } from "../../services/api.service";
 import { ViaInfo } from "../../objects";
 
 @Component({
-  selector: "via-control",
-  templateUrl: "./via-control.component.html",
-  styleUrls: ["./via-control.component.scss"]
+    selector: "via-control",
+    templateUrl: "./via-control.component.html",
+    styleUrls: ["./via-control.component.scss"],
+    standalone: false
 })
 export class ViaControlComponent implements OnInit {
   public viainfo: ViaInfo[] = [];

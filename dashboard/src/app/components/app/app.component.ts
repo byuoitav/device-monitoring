@@ -3,9 +3,10 @@ import { Component, OnInit } from "@angular/core";
 import { APIService } from "../../services/api.service";
 
 @Component({
-  selector: "dashboard",
-  templateUrl: "./app.component.html",
-  styleUrls: ["./app.component.scss"]
+    selector: "dashboard",
+    templateUrl: "./app.component.html",
+    styleUrls: ["./app.component.scss"],
+    standalone: false
 })
 export class AppComponent implements OnInit {
   public id: string;

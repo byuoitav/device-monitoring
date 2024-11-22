@@ -5,9 +5,10 @@ import { DeviceInfo, PingResult } from "../../objects";
 import { AlertService } from "../../_alert";
 
 @Component({
-  selector: "overview",
-  templateUrl: "./overview.component.html",
-  styleUrls: ["./overview.component.scss"]
+    selector: "overview",
+    templateUrl: "./overview.component.html",
+    styleUrls: ["./overview.component.scss"],
+    standalone: false
 })
 export class OverviewComponent implements OnInit {
   public hasDividerSensors: boolean;

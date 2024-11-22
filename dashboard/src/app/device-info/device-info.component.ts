@@ -3,9 +3,10 @@ import { APIService } from '../services/api.service';
 import { DeviceInfo } from '../objects';
 
 @Component({
-  selector: 'device-info',
-  templateUrl: './device-info.component.html',
-  styleUrls: ['./device-info.component.scss']
+    selector: 'device-info',
+    templateUrl: './device-info.component.html',
+    styleUrls: ['./device-info.component.scss'],
+    standalone: false
 })
 export class DeviceInfoComponent implements OnInit {
 

@@ -11,9 +11,10 @@ import {
 } from "json2typescript";
 
 @Component({
-  selector: "provisioning",
-  templateUrl: "./provisioning.component.html",
-  styleUrls: ["./provisioning.component.scss"]
+    selector: "provisioning",
+    templateUrl: "./provisioning.component.html",
+    styleUrls: ["./provisioning.component.scss"],
+    standalone: false
 })
 export class ProvisioningComponent implements OnInit {
   public socket: WebSocket;
