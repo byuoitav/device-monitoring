@@ -30,11 +30,12 @@ export class OverviewComponent implements OnInit {
 
     this.pingResult = await this.api.getRoomPing();
     console.log("ping result", this.pingResult);
-    this.hasDividerSensors = await this.getDividerSensors();
-    this.connected();
-    setInterval(() => {
+    this.hasDividerSensors = this.getDividerSensors();
+    console.log("hasDividerSensors", this.hasDividerSensors);
+    if (this.hasDividerSensors) {
       this.connected();
-    }, 2000);
+      console.log("dividerSensorStatus", this.dividerSensorStatus);
+    }
 
     /*
     this.maintenanceMode = await this.api.getMaintenanceMode();
@@ -75,6 +76,7 @@ export class OverviewComponent implements OnInit {
 
   public getDividerSensors() {
     for (const k of Array.from(this.pingResult.keys())) {
+      console.log("k value from overview component is: ", k); 
       if (k.includes("DS1")) {
         this.dividerSensorAddr = k + ".byu.edu";
         return true;

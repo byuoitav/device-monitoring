@@ -31,6 +31,7 @@ import { RebootComponent } from './popups/reboot/reboot.component';
 import { DeviceInfoComponent } from './device-info/device-info.component';
 
 import { AlertModule } from "./_alert/alert.module";
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 const routes: Routes = [
   {
@@ -104,7 +105,8 @@ const routes: Routes = [
       // set the base route for the router
       provide: APP_BASE_HREF,
       useValue: "/dashboard"
-    }
+    },
+    provideAnimationsAsync()
   ],
 
   bootstrap: [AppComponent]

@@ -4,14 +4,14 @@ import { platformBrowserDynamic } from "@angular/platform-browser-dynamic";
 import { AppModule } from "./app/app.module";
 import { environment } from "./environments/environment";
 
-(<any>window).log = {
+(window as any).log = {
   enable: () => {
     // create iframe, steal its console
-    const i = document.createElement("iframe");
+    const i = Document.prototype.createElement.call(document, "iframe");
     i.style.display = "none";
     document.body.appendChild(i);
-    (<any>window).console = i.contentWindow;
-
+    (window as any).console = i.contentWindow.console;
+    
     console.log("Logging enabled.");
   },
   disable: () => {
