@@ -1,7 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
-
+@use './app/themes.scss' as themes;
 @import 'material-design-icons/iconfont/material-icons.css';
-@import './app/themes.scss';
+
 
 @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600');
 

@@ -1,27 +1,51 @@
-@import '@angular/material/theming';
+@use '@angular/material' as mat;
+// If the above doesn't work, use these instead:
+// @use '@angular/material/core/theming/palette' as mat-palette;
+// @use '@angular/material/core/theming/theming' as mat-theming;
 
-@include mat-core();
+@include mat.core();
 
-// default (light) theme
-$default-primary: mat-palette($mat-blue, 800, 600, 900);
-$default-accent: mat-palette($mat-blue-grey);
-$default-warn: mat-palette($mat-pink);
+// Default (light) theme
+$default-primary: mat.define-palette(mat.$indigo-palette);
+$default-accent: mat.define-palette(mat.$blue-grey-palette);
+$default-warn: mat.define-palette(mat.$pink-palette);
 
-$default: mat-light-theme($default-primary, $default-accent, $default-warn);
-@include angular-material-theme($default);
+$default-theme: mat.define-light-theme((
+  color: (
+    primary: $default-primary,
+    accent: $default-accent,
+    warn: $default-warn,
+  )
+));
 
-// theme for status (success/warning/error) colors
-$status-primary: mat-palette($mat-green);
-$status-accent: mat-palette($mat-yellow);
-$status-warn: mat-palette($mat-red);
+@include mat.all-component-themes($default-theme);
 
-$status: mat-light-theme($status-primary, $status-accent, $status-warn);
+// Theme for status (success/warning/error) colors
+$status-primary: mat.define-palette(mat.$green-palette);
+$status-accent: mat.define-palette(mat.$yellow-palette);
+$status-warn: mat.define-palette(mat.$red-palette);
+
+$status-theme: mat.define-light-theme((
+  color: (
+    primary: $status-primary,
+    accent: $status-accent,
+    warn: $status-warn,
+  )
+));
+
 #status-theme {
-  @include angular-material-theme($status);
+  @include mat.all-component-colors($status-theme);
 }
 
-// dark theme :)
-$dark: mat-dark-theme($default-primary, $default-accent, $default-warn);
+// Dark theme
+$dark-theme: mat.define-dark-theme((
+  color: (
+    primary: $default-primary,
+    accent: $default-accent,
+    warn: $default-warn,
+  )
+));
+
 .dark-theme {
-  @include angular-material-theme($dark);
+  @include mat.all-component-themes($dark-theme);
 }
