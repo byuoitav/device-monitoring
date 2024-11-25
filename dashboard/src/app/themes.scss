@@ -1,30 +1,33 @@
 @use '@angular/material' as mat;
-// If the above doesn't work, use these instead:
-// @use '@angular/material/core/theming/palette' as mat-palette;
-// @use '@angular/material/core/theming/theming' as mat-theming;
 
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
 @include mat.core();
 
-// Default (light) theme
-$default-primary: mat.define-palette(mat.$indigo-palette);
+// Define color palettes
+$default-primary: mat.define-palette(mat.$blue-palette, 800, 600, 900);
 $default-accent: mat.define-palette(mat.$blue-grey-palette);
 $default-warn: mat.define-palette(mat.$pink-palette);
 
+$status-primary: mat.define-palette(mat.$green-palette);
+$status-accent: mat.define-palette(mat.$orange-palette);
+$status-warn: mat.define-palette(mat.$red-palette);
+
+// Define the default theme
 $default-theme: mat.define-light-theme((
   color: (
     primary: $default-primary,
     accent: $default-accent,
     warn: $default-warn,
-  )
+  ),
+  typography: mat.define-typography-config(),
+  density: 0,
 ));
 
+// Apply the default theme
 @include mat.all-component-themes($default-theme);
 
-// Theme for status (success/warning/error) colors
-$status-primary: mat.define-palette(mat.$green-palette);
-$status-accent: mat.define-palette(mat.$yellow-palette);
-$status-warn: mat.define-palette(mat.$red-palette);
-
+// Define the status theme
 $status-theme: mat.define-light-theme((
   color: (
     primary: $status-primary,
@@ -33,11 +36,12 @@ $status-theme: mat.define-light-theme((
   )
 ));
 
+// Apply the status theme to a specific selector
 #status-theme {
   @include mat.all-component-colors($status-theme);
 }
 
-// Dark theme
+// Define the dark theme
 $dark-theme: mat.define-dark-theme((
   color: (
     primary: $default-primary,
@@ -46,6 +50,7 @@ $dark-theme: mat.define-dark-theme((
   )
 ));
 
+// Apply the dark theme to a specific selector
 .dark-theme {
   @include mat.all-component-themes($dark-theme);
 }
