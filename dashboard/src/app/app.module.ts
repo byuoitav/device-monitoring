@@ -25,8 +25,7 @@ import { ProvisioningComponent } from "./components/provisioning/provisioning.co
 import { SoftwareInfoComponent } from "./components/software-info/software-info.component";
 import { ReachableDevicesComponent } from "./components/reachable-devices/reachable-devices.component";
 import { APIService } from "./services/api.service";
-import { RunnerInfoComponent } from "./components/runner-info/runner-info.component";
-import { ViaControlComponent } from "./components/via-control/via-control.component";
+import { RunnerInfoComponent } from "./components/runner-info/runner-info.component";;
 import { RebootComponent } from './popups/reboot/reboot.component';
 import { DeviceInfoComponent } from './device-info/device-info.component';
 
@@ -60,10 +59,6 @@ const routes: Routes = [
     component: RunnerInfoComponent
   },
   {
-    path: "via-control",
-    component: ViaControlComponent
-  },
-  {
     path: "device-info",
     component: DeviceInfoComponent
   }
@@ -77,7 +72,6 @@ const routes: Routes = [
     SoftwareInfoComponent,
     ReachableDevicesComponent,
     RunnerInfoComponent,
-    ViaControlComponent,
     RebootComponent,
     DeviceInfoComponent,
   ],

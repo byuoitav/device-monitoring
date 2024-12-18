@@ -1,13 +1,19 @@
 @use '@angular/material' as mat;
 
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+@include mat.core();
+
+// Define color palettes
 $default-primary: mat.m2-define-palette(mat.$m2-blue-palette, 800, 600, 900);
-$default-accent: mat.m2-define-palette(mat.$m2-blue-palette, 400, 300, 500);
+$default-accent: mat.m2-define-palette(mat.$m2-blue-grey-palette);
 $default-warn: mat.m2-define-palette(mat.$m2-pink-palette);
 
 $status-primary: mat.m2-define-palette(mat.$m2-green-palette);
 $status-accent: mat.m2-define-palette(mat.$m2-yellow-palette);
 $status-warn: mat.m2-define-palette(mat.$m2-red-palette);
 
+// Define the default theme
 $default-theme: mat.m2-define-light-theme((
   color: (
     primary: $default-primary,
@@ -18,39 +24,33 @@ $default-theme: mat.m2-define-light-theme((
   density: 0,
 ));
 
+// Apply the default theme
+@include mat.all-component-themes($default-theme);
+
+// Define the status theme
 $status-theme: mat.m2-define-light-theme((
   color: (
     primary: $status-primary,
     accent: $status-accent,
     warn: $status-warn,
-  ),
-  typography: mat.m2-define-typography-config(),
-  density: 0,
+  )
 ));
 
+// Apply the status theme to a specific selector
+#status-theme {
+  @include mat.all-component-themes($status-theme);
+}
+
+// Define the dark theme
 $dark-theme: mat.m2-define-dark-theme((
   color: (
     primary: $default-primary,
     accent: $default-accent,
     warn: $default-warn,
-  ),
-  typography: mat.m2-define-typography-config(),
-  density: 0,
+  )
 ));
 
-// Apply light theme by default
-@include mat.all-component-themes($default-theme);
-
-// Apply dark theme when the class 'dark-theme' is added to the body
+// Apply the dark theme to a specific selector
 .dark-theme {
   @include mat.all-component-themes($dark-theme);
-}
-
-// Apply status theme when to a specific selector
-#status-theme {
-  @include mat.all-component-themes($status-theme);
-}
-
-body {
-  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
 }
