@@ -6,8 +6,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"golang.org/x/crypto/ssh"
 )
@@ -20,8 +22,14 @@ func ResyncDB(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Errorf("failed to get hostname: %w", err).Error())
 	}
 
+	// build localhost
+	localhost := fmt.Sprintf("http://%s.byu.edu", piHostname)
+
+	//build the replication request url
+	rplUrl := fmt.Sprintf("%s:7012/replication/start", localhost)
+
 	// start the db replication
-	req, err := http.NewRequestWithContext(ctx.Request().Context(), http.MethodGet, fmt.Sprintf("http://%s:7012/replication/start", piHostname), nil)
+	req, err := http.NewRequestWithContext(ctx.Request().Context(), http.MethodPost, rplUrl, nil)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Errorf("failed to create replication request: %w", err).Error())
 	}
@@ -43,8 +51,10 @@ func ResyncDB(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, "context cancelled")
 	}
 
+	// refresh ui url
+	uiUrl := fmt.Sprintf("%s:8888/refresh", localhost)
 	// refresh the ui
-	req, err = http.NewRequestWithContext(ctx.Request().Context(), http.MethodPut, fmt.Sprintf("http://%s:8888/refresh", piHostname), nil)
+	req, err = http.NewRequestWithContext(ctx.Request().Context(), http.MethodPost, uiUrl, nil)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Errorf("failed to create refresh ui request: %w", err).Error())
 	}
@@ -59,7 +69,14 @@ func ResyncDB(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Errorf("failed to refresh ui: %s", resp.Status).Error())
 	}
 
-	// restart the device monitoring service (dmm)
+	// restart the device monitoring service (dmm) with systemctl
+	cmd := exec.Command("sudo", "systemctl", "restart", "device-monitoring.service")
+	output, err := cmd.Output()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, fmt.Errorf("failed to restart device-monitoring.service: %w", err).Error())
+	}
+
+	color.Green("Resynced DB: %s", string(output))
 
 	return ctx.String(http.StatusOK, "Resyncing DB")
 }

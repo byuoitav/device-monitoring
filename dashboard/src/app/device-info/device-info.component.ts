@@ -10,7 +10,7 @@ import { DeviceInfo } from '../objects';
 })
 export class DeviceInfoComponent implements OnInit {
 
-  public hardwareInfo
+  public hardwareInfo;
   public hostList = {};
   public memoryList = {};
   public CPUList = {};
