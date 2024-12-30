@@ -263,7 +263,6 @@ export class APIService {
     });
   }
 
-
   // reSyncDB (Swab)
   public async reSyncDB() {
     this.http.get("/resyncDB").subscribe((data: any) => {
