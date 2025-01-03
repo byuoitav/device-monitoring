@@ -256,9 +256,9 @@ export class APIService {
   public async flushDNS() {
     this.http.get("/dns").subscribe((data: any) => {
       if (data == "success") {
-        console.log("successfully flushed the dns cache");
+        console.log("%c successfully flushed the dns cache", "color: green; font-size: 20px");
       } else {
-        console.log("failed to flush the dns cache");
+        console.log("%c failed to flush the dns cache", "color: red; font-size: 20px");
       }
     });
   }
@@ -267,9 +267,9 @@ export class APIService {
   public async reSyncDB() {
     this.http.get("/resyncDB").subscribe((data: any) => {
       if (data == "success") {
-        console.log("successfully resynced the database");
+        console.log("%c successfully resynced the database", "color: green; font-size: 20px");
       } else {
-        console.log("failed to resync the database");
+        console.log("%c failed to resync the database", "color: red; font-size: 20px");
       }
     });
   }
@@ -278,9 +278,9 @@ export class APIService {
   public async refreshContainers() {
     this.http.get("/refreshContainers").subscribe((data: any) => { 
       if (data == "success") {
-        console.log("successfully refreshed the containers");
+        console.log("%c successfully refreshed the containers", "color: green; font-size: 20px");
       } else {
-        console.log("failed to refresh the containers");
+        console.log("%c failed to refresh the containers", "color: red; font-size: 20px");
       }
     });
   }
