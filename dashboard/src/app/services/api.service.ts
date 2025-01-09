@@ -280,7 +280,7 @@ export class APIService {
       if (data == "success") {
         console.log("%c successfully refreshed the containers", "color: green; font-size: 20px");
       } else {
-        console.log("%c failed to refresh the containers", "color: red; font-size: 20px");
+        console.log("failed to refresh the containers");
       }
     });
   }
