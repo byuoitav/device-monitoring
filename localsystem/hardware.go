@@ -14,7 +14,7 @@ import (
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
@@ -213,7 +213,7 @@ func DockerInfo() (map[string]interface{}, *nerr.E) {
 		return info, nerr.Translate(err).Addf("failed to get docker info")
 	}
 
-	containerList := types.ContainerListOptions{} // reset the container list
+	containerList := container.ListOptions{} // reset the container list
 
 	cli.NegotiateAPIVersion(ctx)
 	containers, err := cli.ContainerList(context.Background(), containerList)

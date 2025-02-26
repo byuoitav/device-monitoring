@@ -1,5 +1,6 @@
 package gpio
 
+/*
 import (
 	"bytes"
 	"encoding/json"
@@ -192,7 +193,7 @@ func (p *Pin) fillTemplate(source string) (string, error) {
 	return buf.String(), nil
 }
 
-/* functions for to use in templates */
+//functions for to use in templates
 
 // Time returns the current time
 func (p Pin) Time() string {
@@ -250,3 +251,4 @@ func SetPins(p []Pin) {
 func GetPins() []Pin {
 	return pins
 }
+*/
