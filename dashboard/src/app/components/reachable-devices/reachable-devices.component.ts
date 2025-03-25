@@ -12,6 +12,7 @@ import { PingResult } from "../../objects";
 export class ReachableDevicesComponent implements OnInit {
   public pingResult: Map<string, PingResult>;
   public roomHealth: Map<string, string>;
+  public processedPingResult: Array<{key: string, value: PingResult}>;
 
   constructor(private api: APIService) {}
 
@@ -21,5 +22,26 @@ export class ReachableDevicesComponent implements OnInit {
 
     this.roomHealth = await this.api.getRoomHealth();
     console.log("room health:", this.roomHealth);
+
+    this.processPingResult();
+    console.log("processed ping result:", this.processedPingResult);
+  }
+
+  processPingResult() {
+    const ipMap = new Map<string, PingResult>();
+    this.processedPingResult = [];
+
+    this.pingResult.forEach((value, key) => {
+      const ip = value.ip;
+      if (ip && ipMap.has(ip)){
+        // if ip already exists, use the ping value 
+        const existingValue = ipMap.get(ip);
+        if (existingValue) {
+          existingValue.packetsLost += value.packetsLost;
+          existingValue.packetsReceived += value.packetsReceived;
+        }
+      }
+    })
+    
   }
 }
