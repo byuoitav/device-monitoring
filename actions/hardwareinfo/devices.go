@@ -3,106 +3,127 @@ package hardwareinfo
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/byuoitav/common/db"
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/structs"
+	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/localsystem"
+	"github.com/byuoitav/device-monitoring/model"
 )
 
 const (
 	hardwareInfoCommandID = "HardwareInfo"
 )
 
-// RoomDevicesInfo .
-func RoomDevicesInfo(ctx context.Context) (map[string]structs.HardwareInfo, *nerr.E) {
-	info := make(map[string]structs.HardwareInfo)
-
+// RoomDevicesInfo queries every non‑Pi device in the room for its hardware info.
+// Returns a map of deviceID -> HardwareInfo, or an error if the room lookup or DB call fails.
+func RoomDevicesInfo(ctx context.Context) (map[string]model.HardwareInfo, error) {
+	// get the current room ID
 	roomID, err := localsystem.RoomID()
 	if err != nil {
-		return info, err.Addf("failed to get hardware info about devices in room")
+		return nil, fmt.Errorf("failed to get room ID: %w", err)
 	}
 
-	log.L.Infof("Getting hardware info about devices in room")
+	slog.Info("Getting hardware info for devices in room", slog.String("room_id", roomID))
 
-	devices, gerr := db.GetDB().GetDevicesByRoom(roomID)
-	if gerr != nil {
-		return info, nerr.Translate(gerr).Addf("failed to get hardware info about devices in %s", roomID)
+	// fetch devices
+	devices, err := couchdb.GetDevicesByRoom(ctx, roomID)
+	//devices, err := db.GetDB().GetDevicesByRoom(roomID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list devices in room %q: %w", roomID, err)
 	}
 
-	wg := sync.WaitGroup{}
-	mu := sync.Mutex{}
+	// concurrently collect each device’s hardware info
+	infoMap := make(map[string]model.HardwareInfo, len(devices))
+	var mu sync.Mutex
+	var wg sync.WaitGroup
 
-	for i := range devices {
-		// skip the pi's
-		if devices[i].Type.ID == "Pi3" ||
-			devices[i].Address == "0.0.0.0" ||
-			len(devices[i].Address) == 0 ||
-			!devices[i].HasCommand(hardwareInfoCommandID) {
+	for _, dev := range devices {
+		// skip Pis, zero‑address, or devices without the command
+		if dev.Type.ID == "Pi3" ||
+			dev.Address == "" ||
+			dev.Address == "0.0.0.0" ||
+			!dev.HasCommand(hardwareInfoCommandID) {
 			continue
 		}
 
 		wg.Add(1)
-
-		go func(idx int) {
+		go func(d model.Device) {
 			defer wg.Done()
-
-			i := getHardwareInfo(ctx, devices[idx])
+			hw := getHardwareInfo(ctx, d)
 
 			mu.Lock()
-			info[devices[idx].ID] = i
+			infoMap[d.ID] = hw
 			mu.Unlock()
-		}(i)
+		}(dev)
 	}
 
 	wg.Wait()
-	return info, nil
+	return infoMap, nil
 }
 
-func getHardwareInfo(ctx context.Context, device structs.Device) structs.HardwareInfo {
-	var info structs.HardwareInfo
+// getHardwareInfo invokes the HardwareInfo command on a single device.
+// Logs warnings on error and returns an empty HardwareInfo on failure.
+func getHardwareInfo(ctx context.Context, device model.Device) model.HardwareInfo {
+	var info model.HardwareInfo
 
-	address, err := device.BuildCommandURL(hardwareInfoCommandID)
+	var err error
+	// build command URL
+	url, err := device.BuildCommandURL(hardwareInfoCommandID)
 	if err != nil {
-		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, err.Error())
+		slog.Warn("failed to build hardware info URL",
+			slog.String("device", device.ID),
+			slog.Any("error", err),
+		)
+		return info
+	}
+	url = strings.Replace(url, ":address", device.Address, 1)
+
+	// execute the command
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		slog.Warn("failed to create hardware info request",
+			slog.String("device", device.ID),
+			slog.String("error", err.Error()),
+		)
 		return info
 	}
 
-	address = strings.Replace(address, ":address", device.Address, 1)
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		slog.Warn("hardware info request failed",
+			slog.String("device", device.ID),
+			slog.String("error", fmt.Sprintf("%v", err)),
+		)
+		return info
+	}
+	defer func() {
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
 
-	req, gerr := http.NewRequest("GET", address, nil)
-	if gerr != nil {
-		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, gerr)
+	// read and parse
+	body, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		slog.Warn("failed to read hardware info response",
+			slog.String("device", device.ID),
+			slog.Any("error", readErr),
+		)
 		return info
 	}
 
-	req = req.WithContext(ctx)
-	c := http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	resp, gerr := c.Do(req)
-	if gerr != nil {
-		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, gerr)
-		return info
-	}
-	defer resp.Body.Close()
-
-	bytes, gerr := io.ReadAll(resp.Body)
-	if gerr != nil {
-		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, gerr)
-		return info
-	}
-
-	gerr = json.Unmarshal(bytes, &info)
-	if gerr != nil {
-		log.L.Warnf("unable to get hardware info for %s: %s", device.ID, gerr)
+	if err := json.Unmarshal(body, &info); err != nil {
+		slog.Warn("failed to unmarshal hardware info JSON",
+			slog.String("device", device.ID),
+			slog.Any("error", err),
+		)
 		return info
 	}
 

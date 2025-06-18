@@ -3,7 +3,7 @@ package provisioning
 import (
 	"sync"
 
-	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/model"
 	"github.com/byuoitav/device-monitoring/socket"
 )
 
@@ -27,8 +27,8 @@ func SocketManager() *socket.Manager {
 type eventHandler struct {
 }
 
-func (e *eventHandler) OnClientConnect(sendToClient chan events.Event) {
+func (e *eventHandler) OnClientConnect(sendToClient chan model.Event) {
 }
 
-func (e *eventHandler) OnEventReceived(event events.Event, sendToAll chan events.Event) {
+func (e *eventHandler) OnEventReceived(event model.Event, sendToAll chan model.Event) {
 }

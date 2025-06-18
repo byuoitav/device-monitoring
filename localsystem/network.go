@@ -2,14 +2,13 @@ package localsystem
 
 import (
 	"fmt"
+	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
-
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
 )
 
 const (
@@ -17,119 +16,114 @@ const (
 )
 
 // Hostname returns the hostname of the device
-func Hostname() (string, *nerr.E) {
-	hostname, err := os.Hostname()
+func Hostname() (string, error) {
+	h, err := os.Hostname()
 	if err != nil {
-		return "", nerr.Translate(err).Addf("failed to get hostname.")
+		return "", fmt.Errorf("failed to get hostname: %w", err)
 	}
-
-	return hostname, nil
+	return h, nil
 }
 
 // MustHostname returns the hostname of the device, and panics if it fails
 func MustHostname() string {
-	hostname, err := Hostname()
+	h, err := Hostname()
 	if err != nil {
-		log.L.Fatalf("failed to get hostname: %s", err.Error())
+		log.Fatalf("failed to get hostname: %v", err)
 	}
-
-	return hostname
+	return h
 }
 
 // IPAddress gets the public ip address of the device
-func IPAddress() (net.IP, *nerr.E) {
-	var ip net.IP
+func IPAddress() (net.IP, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return nil, nerr.Translate(err).Addf("failed to get ip address of device")
+		return nil, fmt.Errorf("failed to list network interfaces: %w", err)
 	}
 
-	for _, address := range addrs {
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && strings.Contains(address.String(), "/24") {
-			ip, _, err = net.ParseCIDR(address.String())
-			if err != nil {
-				return nil, nerr.Translate(err).Addf("failed to get ip address of device")
+	var ip net.IP
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok &&
+			!ipnet.IP.IsLoopback() &&
+			strings.Contains(addr.String(), "/24") {
+
+			parsed, _, perr := net.ParseCIDR(addr.String())
+			if perr != nil {
+				return nil, fmt.Errorf("failed to parse IP %q: %w", addr.String(), perr)
 			}
+			ip = parsed
+			break
 		}
 	}
 
 	if ip == nil {
-		return nil, nerr.Create("failed to get ip address of device", "string")
+		return nil, fmt.Errorf("no non‑loopback /24 IP address found")
 	}
 
-	log.L.Infof("My IP address is %v", ip.String())
+	slog.Info("My IP address", slog.String("ip", ip.String()))
 	return ip, nil
 }
 
 // IsConnectedToInternet returns true if the device can reach google's servers.
 func IsConnectedToInternet() bool {
-	_, err := net.Dial("tcp", "google.com:80")
+	conn, err := net.Dial("tcp", "google.com:80")
 	if err != nil {
 		return false
 	}
-
+	_ = conn.Close()
 	return true
 }
 
 // UsingDHCP returns true if the device is using DHCP, and false if it has a static ip set.tenidno
-func UsingDHCP() (bool, *nerr.E) {
+func UsingDHCP() (bool, error) {
 	// read dhcpcd.conf file
 	contents, err := os.ReadFile(dhcpFile)
 	if err != nil {
-		return false, nerr.Translate(err).Addf("unable to read %s", dhcpFile)
+		return false, fmt.Errorf("unable to read %s: %w", dhcpFile, err)
 	}
 
-	reg := regexp.MustCompile(`(?m)^static ip_address`)
-	matches := reg.Match(contents)
-
-	return !matches, nil
+	staticRE := regexp.MustCompile(`(?m)^static ip_address`)
+	if staticRE.Match(contents) {
+		return false, nil
+	}
+	return true, nil
 }
 
 // ToggleDHCP turns dhcp on/off by swapping dhcpcd.conf with dhcpcd.conf.other, a file we created when the pi was setup.
-func ToggleDHCP() *nerr.E {
+func ToggleDHCP() error {
 	// validate the necessary files exist
 	if err := CanToggleDHCP(); err != nil {
 		return err
 	}
 
-	tmpFile := fmt.Sprintf("%s.tmp", dhcpFile)
-	otherFile := fmt.Sprintf("%s.other", dhcpFile)
+	tmp := dhcpFile + ".tmp"
+	other := dhcpFile + ".other"
 
-	// swap the files
-	err := os.Rename(dhcpFile, tmpFile)
-	if err != nil {
-		return nerr.Translate(err)
+	if err := os.Rename(dhcpFile, tmp); err != nil {
+		return fmt.Errorf("rename %s→%s: %w", dhcpFile, tmp, err)
+	}
+	if err := os.Rename(other, dhcpFile); err != nil {
+		return fmt.Errorf("rename %s→%s: %w", other, dhcpFile, err)
+	}
+	if err := os.Rename(tmp, other); err != nil {
+		return fmt.Errorf("rename %s→%s: %w", tmp, other, err)
 	}
 
-	err = os.Rename(otherFile, dhcpFile)
+	// restart dhcpcd
+	out, err := exec.Command("sh", "-c", "sudo systemctl restart dhcpcd").CombinedOutput()
 	if err != nil {
-		return nerr.Translate(err)
+		return fmt.Errorf("failed to restart dhcpcd: %w — %s", err, strings.TrimSpace(string(out)))
 	}
-
-	err = os.Rename(tmpFile, otherFile)
-	if err != nil {
-		return nerr.Translate(err)
-	}
-
-	// restart dhcp service
-	_, err = exec.Command("sh", "-c", "sudo systemctl restart dhcpcd").Output()
-	if err != nil {
-		return nerr.Translate(err).Addf("unable to restart dhcpcd service")
-	}
-
 	return nil
 }
 
 // CanToggleDHCP returns nil if you can toggle DHCP, or an error if you can't
-func CanToggleDHCP() *nerr.E {
-	otherFile := fmt.Sprintf("%s.other", dhcpFile)
-
+func CanToggleDHCP() error {
 	if _, err := os.Stat(dhcpFile); os.IsNotExist(err) {
-		return nerr.Translate(err).Addf("can't toggle dhcp because there is no %s file", dhcpFile)
+		return fmt.Errorf("%s does not exist; cannot toggle DHCP", dhcpFile)
 	}
-	if _, err := os.Stat(otherFile); os.IsNotExist(err) {
-		return nerr.Translate(err).Addf("can't toggle dhcp because there is no %s.other file", dhcpFile)
+	other := dhcpFile + ".other"
+	if _, err := os.Stat(other); os.IsNotExist(err) {
+		return fmt.Errorf("%s does not exist; cannot toggle DHCP", other)
 	}
-
 	return nil
 }

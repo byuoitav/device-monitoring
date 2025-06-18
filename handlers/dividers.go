@@ -5,34 +5,35 @@ import (
 	"net/http"
 
 	"github.com/byuoitav/device-monitoring/actions/gpio"
-	"github.com/labstack/echo"
+	"github.com/gin-gonic/gin"
 )
 
 // GetDividerState returns the state of the dividers
-func GetDividerState(ctx echo.Context) error {
-	v := gpio.GetPins()
+func GetDividerState(c *gin.Context) {
+	pins := gpio.GetPins()
 
 	resp := make(map[string][]string)
-	for i := range v {
-		if v[i].Connected {
-			resp["connected"] = append(resp["connected"], v[i].BlueberryPresets)
+	for _, p := range pins {
+		if p.Connected {
+			resp["connected"] = append(resp["connected"], p.BlueberryPresets)
 		} else {
-			resp["disconnected"] = append(resp["disconnected"], v[i].BlueberryPresets)
+			resp["disconnected"] = append(resp["disconnected"], p.BlueberryPresets)
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, resp)
 }
 
 // PresetForHostname returns the preset that a specific hostname should be on
-func PresetForHostname(ctx echo.Context) error {
-	hostname := ctx.Param("hostname")
+func PresetForHostname(c *gin.Context) {
+	hostname := c.Param("hostname")
 
-	v := gpio.GetPins()
+	pins := gpio.GetPins()
 
-	if len(v) == 0 || len(v) > 1 {
-		return ctx.String(http.StatusBadRequest, fmt.Sprintf("not supported in this room"))
+	if len(pins) != 1 {
+		c.String(http.StatusBadRequest, fmt.Sprintf("not supported in this room"))
+		return
 	}
-
-	return ctx.String(http.StatusOK, v[0].CurrentPreset(hostname))
+	preset := pins[0].CurrentPreset(hostname)
+	c.String(http.StatusOK, preset)
 }

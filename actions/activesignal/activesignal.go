@@ -5,18 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/byuoitav/av-api/base"
-	"github.com/byuoitav/common/db"
 	"github.com/byuoitav/common/inputgraph"
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/device-monitoring/actions/roomstate"
+	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
@@ -25,35 +24,35 @@ const (
 )
 
 // GetMap .
-func GetMap(ctx context.Context) (map[string]bool, *nerr.E) {
-	log.L.Infof("Getting active signal map")
+func GetMap(ctx context.Context) (map[string]bool, error) {
+	slog.Info("Getting active signal map")
 
 	roomID, err := localsystem.RoomID()
 	if err != nil {
-		return nil, err.Addf("failed to get active signal info")
+		return nil, fmt.Errorf("failed to get active signal info: %w could not get room ID", err)
 	}
 
-	devices, gerr := db.GetDB().GetDevicesByRoom(roomID)
+	devices, gerr := couchdb.GetDevicesByRoom(ctx, roomID)
 	if gerr != nil {
-		return nil, nerr.Translate(gerr).Addf("failed to get active signal info")
+		return nil, fmt.Errorf("failed to get active signal info: %w could not get devices in room", gerr)
 	}
 
 	graph, gerr := inputgraph.BuildGraph(devices, "video")
 	if gerr != nil {
-		return nil, nerr.Translate(gerr).Addf("failed to get active signal info")
+		return nil, fmt.Errorf("failed to get active signal info: %w could not build input graph", gerr)
 	}
 
 	// get current state of room
 	state, err := roomstate.Get(ctx, roomID)
 	if err != nil {
-		return nil, err.Addf("failed to get active signal info")
+		return nil, fmt.Errorf("failed to get active signal info: %w could not get room state", err)
 	}
 
 	activeMu := sync.Mutex{}
 	active := make(map[string]bool)
 	wg := sync.WaitGroup{}
 
-	log.L.Infof("Got room state and build input graph, checking each display for active signal")
+	slog.Info("Got room state and build input graph, checking each display for active signal")
 
 	for i := range state.Displays {
 		wg.Add(1)
@@ -76,33 +75,33 @@ func GetMap(ctx context.Context) (map[string]bool, *nerr.E) {
 
 func isInputPathActive(ctx context.Context, display base.Display, roomID string, graph inputgraph.InputGraph, roomDevices []structs.Device) bool {
 	if len(display.Input) == 0 || len(display.Name) == 0 {
-		log.L.Debugf("Skipping %s because input or name is empty", display.Name)
+		slog.Debug("Skipping display because input or name is empty", slog.String("displayName", display.Name))
 		return false
 	}
 
 	displayID := fmt.Sprintf("%s-%s", roomID, display.Name)
 	inputID := fmt.Sprintf("%s-%s", roomID, display.Input)
 
-	log.L.Infof("Checking for active input from %s to %s", inputID, displayID)
+	slog.Info("Checking for active input from %s to %s", inputID, displayID)
 
 	if display.Power == "standby" {
-		log.L.Debugf("Input not active on %s because the power is %v", display.Name, display.Power)
+		slog.Debug("Input not active because the power is standby", slog.String("displayName", display.Name))
 		return false
 	}
 
 	if display.Blanked == nil || *display.Blanked {
-		log.L.Debugf("Input not active on %s because blanked is true (or nil)", display.Name)
+		slog.Debug("Input not active because blanked is true (or nil)", slog.String("displayName", display.Name))
 		return false
 	}
 
 	reachable, nodes, gerr := inputgraph.CheckReachability(displayID, inputID, graph)
 	if gerr != nil {
-		log.L.Warnf("failed to get active input information in room %s: %s", roomID, gerr)
+		slog.Warn("failed to get active input information", slog.String("roomID", roomID), slog.String("error", gerr.Error()))
 		return false
 	}
 
 	if !reachable {
-		log.L.Warnf("input is set to %s on display %s, but there is no valid path from that input to this display", inputID, displayID)
+		slog.Warn("input is not reachable from display", slog.String("displayID", displayID), slog.String("inputID", inputID))
 		return false
 	}
 
@@ -116,12 +115,12 @@ func isInputPathActive(ctx context.Context, display base.Display, roomID string,
 		}
 
 		if !isInputActive(ctx, src, &nodes[i].Device, roomDevices) {
-			log.L.Infof("There *is not* an active input signal from %s to %s", inputID, displayID)
+			slog.Info("There *is not* an active input signal from %s to %s", inputID, displayID)
 			return false
 		}
 	}
 
-	log.L.Infof("There *is* an active input signal from %s to %s", inputID, displayID)
+	slog.Info("There *is* an active input signal from %s to %s", inputID, displayID)
 	return true
 }
 
@@ -129,19 +128,21 @@ func isInputPathActive(ctx context.Context, display base.Display, roomID string,
 // if src is nil, then it returns true if dest claims there is an active input
 func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Device, roomDevices []structs.Device) bool {
 	if dest == nil {
-		log.L.Errorf("destination device passed into isInputActive cannot be null.")
+		slog.Error("destination device passed into isInputActive cannot be null.")
 		return false
 	}
 
 	// TODO maybe cache whether or not a specific input as active for a little while?
 
-	// create a new sub logger
-	l := log.L.Named(dest.ID)
+	// create a new sub logger for this device
+	l := slog.With(
+		slog.String("destID", dest.ID),
+	)
 
 	if src != nil {
-		l.Debugf("Checking if %s is sending an active input signal to me", src.ID)
+		l.Debug("Checking if source is sending an active input signal to me", slog.String("srcID", src.ID))
 	} else {
-		l.Debugf("Checking if I'm sending an active input signal")
+		l.Debug("Checking if I am sending an active input signal")
 	}
 
 	if !dest.HasCommand(activeSignalCommandID) {
@@ -150,7 +151,7 @@ func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Devic
 
 	address, err := dest.BuildCommandURL(activeSignalCommandID)
 	if err != nil {
-		l.Warnf("unable to check if input is active: %s", err.Error())
+		l.Warn("unable to check if input is active", slog.String("error", err.Error()))
 		return false
 	}
 
@@ -174,9 +175,9 @@ func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Devic
 		address = strings.Replace(address, ":port", portID, 1)
 	}
 
-	req, gerr := http.NewRequest("GET", address, nil)
-	if gerr != nil {
-		l.Warnf("unable to check if input was active: %s", gerr)
+	req, reqErr := http.NewRequest("GET", address, nil)
+	if reqErr != nil {
+		l.Warn("unable to check if input was active", slog.String("error", reqErr.Error()))
 		return false
 	}
 
@@ -185,35 +186,35 @@ func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Devic
 		Timeout: 5 * time.Second,
 	}
 
-	l.Debugf("Sending GET request to: %s", address)
-	resp, gerr := c.Do(req)
-	if gerr != nil {
-		l.Warnf("unable to check if input was active: %s", gerr)
+	l.Debug("Sending GET request", slog.String("address", address))
+	resp, respErr := c.Do(req)
+	if respErr != nil {
+		l.Warn("unable to check if input was active", slog.String("error", respErr.Error()))
 		return false
 	}
 	defer resp.Body.Close()
 
-	bytes, gerr := io.ReadAll(resp.Body)
-	if gerr != nil {
-		l.Warnf("unable to check if input was active: %s", gerr)
+	bytes, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		l.Warn("unable to check if input was active", slog.String("error", readErr.Error()))
 		return false
 	}
 
 	var active structs.ActiveSignal
-	gerr = json.Unmarshal(bytes, &active)
-	if gerr != nil {
-		l.Warnf("unable to check if input was active: %s. response body: %s", gerr, bytes)
+	unmarshalErr := json.Unmarshal(bytes, &active)
+	if unmarshalErr != nil {
+		l.Warn("unable to check if input was active", slog.String("error", unmarshalErr.Error()), slog.String("responseBody", string(bytes)))
 		return false
 	}
 
 	if src != nil && active.Active {
-		l.Debugf("%s *is* sending an active input signal to me", src.ID)
+		l.Debug(fmt.Sprintf("%s *is* sending an active input signal to me", src.ID), slog.String("srcID", src.ID))
 	} else if src == nil && active.Active {
-		l.Debugf("I *am* sending an active input signal")
+		l.Debug("I *am* sending an active input signal")
 	} else if src != nil {
-		l.Debugf("%s *is not* sending an active input signal to me", src.ID)
+		l.Debug(fmt.Sprintf("%s *is not* sending an active input signal to me", src.ID), slog.String("srcID", src.ID))
 	} else {
-		l.Debugf("I *am not* sending an active input signal")
+		l.Debug("I *am not* sending an active input signal")
 	}
 
 	return active.Active

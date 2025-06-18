@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/byuoitav/common/nerr"
+	"log/slog"
+
 	"github.com/byuoitav/device-monitoring/actions/hardwareinfo"
 	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/actions/screenshot"
 	"github.com/byuoitav/device-monitoring/localsystem"
-	"github.com/labstack/echo"
+	"github.com/gin-gonic/gin"
 )
 
 // DeviceInfo .
@@ -28,131 +29,142 @@ type DeviceInfo struct {
 }
 
 // GetDeviceInfo .
-func GetDeviceInfo(ectx echo.Context) error {
+func GetDeviceInfo(c *gin.Context) {
 	var info DeviceInfo
-	var err *nerr.E
+	var err error
 
-	info.Hostname, err = localsystem.Hostname()
-	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+	if info.Hostname, err = localsystem.Hostname(); err != nil {
+		slog.Error("hostname lookup failed", slog.Any("error", err))
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	info.ID, err = localsystem.SystemID()
-	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+	if info.ID, err = localsystem.SystemID(); err != nil {
+		slog.Error("system ID lookup failed", slog.Any("error", err))
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	ip, err := localsystem.IPAddress()
 	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+		slog.Error("ip address lookup failed", slog.Any("error", err))
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	info.IP = ip.String()
 	info.InternetConnectivity = localsystem.IsConnectedToInternet()
 
-	info.DHCPInfo.Enabled, err = localsystem.UsingDHCP()
-	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+	if info.DHCPInfo.Enabled, err = localsystem.UsingDHCP(); err != nil {
+		slog.Error("failed to check DHCP state", slog.Any("error", err))
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	err = localsystem.CanToggleDHCP()
-	if err != nil {
+	if err = localsystem.CanToggleDHCP(); err != nil {
 		info.DHCPInfo.Toggleable = false
 	} else {
 		info.DHCPInfo.Toggleable = true
 	}
 
-	return ectx.JSON(http.StatusOK, info)
+	c.JSON(http.StatusOK, info)
 }
 
 // GetHostname returns the hostname of the device we are on
-func GetHostname(ectx echo.Context) error {
+func GetHostname(c *gin.Context) {
 	hostname, err := localsystem.Hostname()
 	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+		slog.Error("hostname lookup failed", slog.Any("error", err))
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
-
-	return ectx.String(http.StatusOK, hostname)
+	c.String(http.StatusOK, hostname)
 }
 
-// GetDeviceID returns the hostname of the device we are on
-func GetDeviceID(ectx echo.Context) error {
+// GetSystemID returns the system ID of the device we are on
+func GetDeviceID(c *gin.Context) {
 	id, err := localsystem.SystemID()
 	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+		slog.Error("system ID lookup failed", slog.Any("error", err))
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
-
-	return ectx.String(http.StatusOK, id)
+	c.String(http.StatusOK, id)
 }
 
 // GetIPAddress returns the ip address of the device we are on
-func GetIPAddress(ectx echo.Context) error {
-	ip, err := localsystem.IPAddress()
+func GetIPAddress(c *gin.Context) {
+	ipAddr, err := localsystem.IPAddress()
 	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+		slog.Error("ip address lookup failed", slog.Any("error", err))
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
-
-	return ectx.String(http.StatusOK, ip.String())
+	c.String(http.StatusOK, ipAddr.String())
 }
 
 // IsConnectedToInternet returns a bool of true/false
-func IsConnectedToInternet(ectx echo.Context) error {
+func IsConnectedToInternet(c *gin.Context) {
 	status := localsystem.IsConnectedToInternet()
-	return ectx.String(http.StatusOK, fmt.Sprintf("%v", status))
+	c.String(http.StatusOK, fmt.Sprintf("%v", status))
 }
 
 // GetDHCPState returns whether or not dhcp is enabled and if it can be toggled or not
-func GetDHCPState(ectx echo.Context) error {
+func GetDHCPState(c *gin.Context) {
 	ret := make(map[string]interface{})
-
-	usingDHCP, err := localsystem.UsingDHCP()
+	enabled, err := localsystem.UsingDHCP()
 	if err != nil {
-		ret["error"] = err.String()
-		return ectx.JSON(http.StatusInternalServerError, ret)
+		slog.Error("UsingDHCP failed", slog.Any("error", err))
+		ret["error"] = err.Error()
+		c.JSON(http.StatusInternalServerError, ret)
+		return
 	}
-	ret["enabled"] = usingDHCP
+	ret["enabled"] = enabled
 
-	if err = localsystem.CanToggleDHCP(); err != nil {
-		ret["error"] = err.String()
-		return ectx.JSON(http.StatusInternalServerError, ret)
+	if err := localsystem.CanToggleDHCP(); err != nil {
+		slog.Info("Cannot toggle DHCP", slog.Any("error", err))
+		ret["toggleable"] = false
+	} else {
+		ret["toggleable"] = true
 	}
-	ret["toggleable"] = true
 
-	return ectx.JSON(http.StatusOK, ret)
+	c.JSON(http.StatusOK, ret)
 }
 
 // GetScreenshot a screenshot of the device's screen
-func GetScreenshot(ectx echo.Context) error {
-	bytes, err := screenshot.Take(ectx.Request().Context())
+func GetScreenshot(c *gin.Context) {
+	imgBytes, err := screenshot.Take(c.Request.Context())
 	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+		slog.Error("screenshot failed", slog.Any("error", err))
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
-
-	return ectx.Blob(http.StatusOK, "image/jpeg", bytes)
+	c.Data(http.StatusOK, "image/jpeg", imgBytes)
 }
 
 // HardwareInfo returns hardware info about this device
-func HardwareInfo(ectx echo.Context) error {
+func HardwareInfo(c *gin.Context) {
 	info, err := hardwareinfo.PiInfo()
 	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+		slog.Error("hardware info retrieval failed", slog.Any("error", err))
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
-
-	return ectx.JSON(http.StatusOK, info)
+	c.JSON(http.StatusOK, info)
 }
 
 // GetServiceHealth returns the health of services on this device
-func GetServiceHealth(ectx echo.Context) error {
+func GetServiceHealth(c *gin.Context) {
 	var configs []health.ServiceCheckConfig
-	err := ectx.Bind(&configs)
-	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+	if err := c.Bind(&configs); err != nil {
+		slog.Error("failed to bind health config", slog.Any("error", err))
+		c.String(http.StatusBadRequest, err.Error())
+		return
 	}
 
-	// timeout if this takes longer than 15 seconds
-	ctx, cancel := context.WithTimeout(ectx.Request().Context(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
 	defer cancel()
 
-	resps := health.CheckServices(ctx, configs)
-	return ectx.JSON(http.StatusOK, resps)
+	results := health.CheckServices(ctx, configs)
+	c.JSON(http.StatusOK, results)
 }

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -16,10 +15,10 @@ import (
 
 // ServiceConfig .
 type ServiceConfig struct {
-	Name   string      `json:"name"`
-	URL    string      `json:"url"`
-	Method string      `json:"method,omitempty"`
-	Body   interface{} `json:"body,omitempty"`
+	Name   string `json:"name"`
+	URL    string `json:"url"`
+	Method string `json:"method,omitempty"`
+	Body   any    `json:"body,omitempty"`
 }
 
 type socketResponse struct {
@@ -59,7 +58,7 @@ func makeRequest(method, url string) (*socketResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

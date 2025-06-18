@@ -98,3 +98,29 @@ $(NAME):
 
 files/$(NG1):
 	$(MAKE) build-web
+
+# make deps # Initial setup
+# make ci 	# Full build/test/deploy
+
+# make binary for testing in a pi
+
+pitest:
+	@echo Building for pi
+	GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME) -v
+	@echo Building web for pi
+	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
+	mkdir files
+	mv $(NG1)/dist/$(NG1) files/$(NG1)
+	@echo Building deployment tarball
+	@cp version.txt files/
+	@cp service-config.json files/
+	@tar -czf $(NAME).tar.gz $(NAME) files
+	@echo Done!
+	@echo You can now scp $(NAME).tar.gz to the pi and run:
+	@echo tar -xzf $(NAME).tar.gz
+	@echo cd $(NAME)
+	@echo ./$(NAME) -config service-config.json
+	@echo Done!
+	@echo You can also run the binary directly with:
+	@echo ./$(NAME) -config service-config.json
+	@echo Done!

@@ -12,13 +12,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
+	"log/slog"
+
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
-	"github.com/shirou/gopsutil/docker"
+	dockerstat "github.com/shirou/gopsutil/docker"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/mem"
@@ -36,234 +36,225 @@ var (
 	avgProcsInUSleep float64
 )
 
-// CPUInfo .
-func CPUInfo() (map[string]interface{}, *nerr.E) {
+// CPUInfo returns per-CPU and load-average stats.
+func CPUInfo() (map[string]interface{}, error) {
 	info := make(map[string]interface{})
 
-	// get hardware info about cpu
 	cpuState, err := cpu.Info()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get cpu info")
+		slog.Error("failed to get CPU info", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get CPU info: %w", err)
 	}
-
 	info["hardware"] = cpuState
-
-	// get percent usage information per cpu
-	usage := make(map[string]float64)
-	info["usage"] = usage
 
 	percentages, err := cpu.Percent(0, true)
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get cpu info")
+		slog.Error("failed to get per-CPU usage", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get CPU usage: %w", err)
 	}
-
-	for i := range percentages {
-		usage[fmt.Sprintf("cpu%d", i)] = round(percentages[i], .01)
+	usage := make(map[string]float64, len(percentages))
+	for i, p := range percentages {
+		usage[fmt.Sprintf("cpu%d", i)] = round(p, .01)
 	}
+	info["usage"] = usage
 
-	// get average usage
 	avgPercent, err := cpu.Percent(0, false)
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get cpu info")
+		slog.Error("failed to get average CPU usage", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get average CPU usage: %w", err)
 	}
-
-	if len(avgPercent) == 1 {
+	if len(avgPercent) > 0 {
 		usage["avg"] = round(avgPercent[0], .01)
 	}
 
-	// get load average metrics
 	loadAvg, err := load.Avg()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get load avg info")
+		slog.Error("failed to get load average", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get load average: %w", err)
 	}
-
 	info["avg1min"] = loadAvg.Load1
 	info["avg5min"] = loadAvg.Load5
 
 	return info, nil
 }
 
-// MemoryInfo .
-func MemoryInfo() (map[string]interface{}, *nerr.E) {
+// MemoryInfo returns virtual and swap memory statistics.
+func MemoryInfo() (map[string]interface{}, error) {
 	info := make(map[string]interface{})
 
 	vMem, err := mem.VirtualMemory()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get memory info")
+		slog.Error("failed to get virtual memory info", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get virtual memory info: %w", err)
 	}
-
 	vMem.UsedPercent = round(vMem.UsedPercent, .01)
 	info["virtual"] = vMem
 
 	sMem, err := mem.SwapMemory()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get memory info")
+		slog.Error("failed to get swap memory info", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get swap memory info: %w", err)
 	}
-
 	sMem.UsedPercent = round(sMem.UsedPercent, .01)
 	info["swap"] = sMem
 
 	return info, nil
 }
 
-// HostInfo .
-func HostInfo() (map[string]interface{}, *nerr.E) {
+// HostInfo returns OS info, logged-in users, and thermal sensor readings.
+func HostInfo() (map[string]interface{}, error) {
 	info := make(map[string]interface{})
 
 	stat, err := host.Info()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get host info")
+		slog.Error("failed to get host info", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get host info: %w", err)
 	}
-
 	info["os"] = stat
 
 	users, err := host.Users()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get host info")
+		slog.Error("failed to get host users", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get host users: %w", err)
 	}
-
 	info["users"] = users
 
 	temps := make(map[string]float64)
 	count := make(map[string]int)
 	info["temperature"] = temps
 
-	filepath.Walk(temperatureRootPath, func(path string, info os.FileInfo, err error) error {
-		if info.Mode()&os.ModeSymlink == os.ModeSymlink && strings.Contains(path, "thermal_") {
-			// get type
-			ttype, err := os.ReadFile(path + "/type")
-			if err != nil {
-				return err
+	if err := filepath.Walk(temperatureRootPath, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if fi.Mode()&os.ModeSymlink == os.ModeSymlink && strings.Contains(path, "thermal_") {
+			ttype, terr := os.ReadFile(path + "/type")
+			if terr != nil {
+				return terr
 			}
-
-			// get temperature
-			ttemp, err := os.ReadFile(path + "/temp")
-			if err != nil {
-				return err
+			ttemp, terr := os.ReadFile(path + "/temp")
+			if terr != nil {
+				return terr
 			}
-
 			stype := strings.TrimSpace(string(ttype))
-			dtemp, err := strconv.ParseFloat(strings.TrimSpace(string(ttemp)), 64)
-
-			temps[fmt.Sprintf("%s%d", stype, count[stype])] = dtemp / 1000
+			dtemp, perr := strconv.ParseFloat(strings.TrimSpace(string(ttemp)), 64)
+			if perr != nil {
+				return perr
+			}
+			key := fmt.Sprintf("%s%d", stype, count[stype])
+			temps[key] = dtemp / 1000
 			count[stype]++
 		}
-
-		if info.IsDir() && path != temperatureRootPath {
+		if fi.IsDir() && path != temperatureRootPath {
 			return filepath.SkipDir
 		}
-
 		return nil
-	})
+	}); err != nil {
+		slog.Warn("error walking temperature sensors", slog.Any("error", err))
+	}
 
 	return info, nil
 }
 
-// DiskInfo .
-func DiskInfo() (map[string]interface{}, *nerr.E) {
+// DiskInfo returns usage and IO counters for key devices.
+func DiskInfo() (map[string]interface{}, error) {
 	info := make(map[string]interface{})
 
 	usage, err := disk.Usage("/")
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get disk info")
+		slog.Error("failed to get disk usage", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get disk usage: %w", err)
 	}
-
 	usage.UsedPercent = round(usage.UsedPercent, .01)
 	info["usage"] = usage
 
 	ioCounters, err := disk.IOCounters("sda", "mmcblk0")
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get disk info")
+		slog.Error("failed to get disk IO counters", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get disk IO counters: %w", err)
 	}
-
 	info["io-counters"] = ioCounters
 
 	return info, nil
 }
 
-// NetworkInfo .
-func NetworkInfo() (map[string]interface{}, *nerr.E) {
+// NetworkInfo returns the list of network interfaces.
+func NetworkInfo() (map[string]interface{}, error) {
 	info := make(map[string]interface{})
 
-	interfaces, err := net.Interfaces()
+	ifaces, err := net.Interfaces()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get network info")
+		slog.Error("failed to get network interfaces", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get network interfaces: %w", err)
 	}
-
-	info["interfaces"] = interfaces
+	info["interfaces"] = ifaces
 
 	return info, nil
 }
 
-// DockerInfo .
-func DockerInfo() (map[string]interface{}, *nerr.E) {
+// DockerInfo returns Docker stats and the count of running containers.
+func DockerInfo() (map[string]interface{}, error) {
 	info := make(map[string]interface{})
 
-	stats, err := docker.GetDockerStat()
+	stats, err := dockerstat.GetDockerStat()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get docker info")
+		slog.Error("failed to get Docker stats", slog.Any("error", err))
+		return info, fmt.Errorf("failed to get Docker stats: %w", err)
 	}
-
 	info["stats"] = stats
 
-	//add section getting the number of running docker containers
-	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get docker info")
+		slog.Error("failed to create Docker client", slog.Any("error", err))
+		return info, fmt.Errorf("failed to create Docker client: %w", err)
 	}
+	cli.NegotiateAPIVersion(context.Background())
 
-	containerList := container.ListOptions{} // reset the container list
-
-	cli.NegotiateAPIVersion(ctx)
-	containers, err := cli.ContainerList(context.Background(), containerList)
+	containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get docker info")
+		slog.Error("failed to list Docker containers", slog.Any("error", err))
+		return info, fmt.Errorf("failed to list Docker containers: %w", err)
 	}
-
 	info["docker-containers"] = len(containers)
 
 	return info, nil
 }
 
-// ProcsInfo .
-func ProcsInfo() (map[string]interface{}, *nerr.E) {
+// ProcsInfo returns the names of processes in uninterruptible sleep,
+// plus a running average of how many are in that state.
+func ProcsInfo() (map[string]interface{}, error) {
 	avgProcsInit.Do(startWatchingUSleep)
 	info := make(map[string]interface{})
 
 	procs, err := process.Processes()
 	if err != nil {
-		return info, nerr.Translate(err).Addf("failed to get processes info")
+		slog.Error("failed to list processes", slog.Any("error", err))
+		return info, fmt.Errorf("failed to list processes: %w", err)
 	}
 
-	bad := []string{}
-
+	var bad []string
 	for _, p := range procs {
-		status, err := p.Status()
-		if err != nil {
+		status, serr := p.Status()
+		if serr != nil {
 			continue
 		}
-
 		if status == "D" {
-			name, err := p.Name()
-			if err != nil {
-				name = fmt.Sprintf("unable to get name: %s", name)
+			if name, nerr := p.Name(); nerr == nil {
+				bad = append(bad, name)
+			} else {
+				bad = append(bad, fmt.Sprintf("unknown(%v)", p.Pid))
 			}
-
-			bad = append(bad, name)
 		}
 	}
 
 	info["cur-procs-u-sleep"] = bad
 	info["avg-procs-u-sleep"] = avgProcsInUSleep
-
 	return info, nil
 }
 
-// constantly measure the number of processes that are in sleep and get an average
+// startWatchingUSleep continuously measures processes in uninterruptible sleep.
 func startWatchingUSleep() {
 	avgProcsInUSleep = 0
-
 	checkTicker := time.NewTicker(uSleepCheckInterval)
 	resetTicker := time.NewTicker(uSleepResetInterval)
 
@@ -276,25 +267,17 @@ func startWatchingUSleep() {
 			case <-checkTicker.C:
 				procs, err := process.Processes()
 				if err != nil {
-					log.L.Warnf("failed to get running processes: %s", err)
+					slog.Warn("failed to list processes for u-sleep monitoring", slog.Any("error", err))
 					continue
 				}
-
 				count := 0
-
 				for _, p := range procs {
-					status, err := p.Status()
-					if err != nil {
-						continue
-					}
-
-					if status == "D" {
+					if status, serr := p.Status(); serr == nil && status == "D" {
 						count++
 					}
 				}
+				avgProcsInUSleep = round((avgProcsInUSleep+float64(count))/2, .05)
 
-				avgProcsInUSleep = (avgProcsInUSleep + float64(count)) / 2
-				avgProcsInUSleep = round(avgProcsInUSleep, .05)
 			case <-resetTicker.C:
 				avgProcsInUSleep = 0
 			}
@@ -302,6 +285,7 @@ func startWatchingUSleep() {
 	}()
 }
 
+// round to the nearest multiple of unit.
 func round(x, unit float64) float64 {
 	return math.Round(x/unit) * unit
 }

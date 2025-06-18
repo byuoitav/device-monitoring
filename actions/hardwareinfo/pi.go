@@ -1,8 +1,9 @@
 package hardwareinfo
 
 import (
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
+	"fmt"
+	"log/slog"
+
 	"github.com/byuoitav/device-monitoring/localsystem"
 )
 
@@ -18,44 +19,44 @@ type HardwareInfo struct {
 }
 
 // PiInfo .
-func PiInfo() (HardwareInfo, *nerr.E) {
-	log.L.Infof("Getting pi hardware info")
+func PiInfo() (HardwareInfo, error) {
+	slog.Info("Getting pi hardware info")
 	var info HardwareInfo
-	var err *nerr.E
+	var err error
 
 	info.CPU, err = localsystem.CPUInfo()
 	if err != nil {
-		return info, err.Addf("failed to get hardware info")
+		return info, fmt.Errorf("failed to get hardware info: %w", err)
 	}
 
 	info.Memory, err = localsystem.MemoryInfo()
 	if err != nil {
-		return info, err.Addf("failed to get hardware info")
+		return info, fmt.Errorf("failed to get hardware info: %w", err)
 	}
 
 	info.Host, err = localsystem.HostInfo()
 	if err != nil {
-		return info, err.Addf("failed to get hardware info")
+		return info, fmt.Errorf("failed to get hardware info: %w", err)
 	}
 
 	info.Disk, err = localsystem.DiskInfo()
 	if err != nil {
-		return info, err.Addf("failed to get hardware info")
+		return info, fmt.Errorf("failed to get hardware info: %w", err)
 	}
 
 	info.Network, err = localsystem.NetworkInfo()
 	if err != nil {
-		return info, err.Addf("failed to get hardware info")
+		return info, fmt.Errorf("failed to get hardware info: %w", err)
 	}
 
 	info.Docker, err = localsystem.DockerInfo()
 	if err != nil {
-		return info, err.Addf("failed to get hardware info")
+		return info, fmt.Errorf("failed to get hardware info: %w", err)
 	}
 
 	info.Procs, err = localsystem.ProcsInfo()
 	if err != nil {
-		return info, err.Addf("failed to get hardware info")
+		return info, fmt.Errorf("failed to get hardware info: %w", err)
 	}
 
 	return info, nil

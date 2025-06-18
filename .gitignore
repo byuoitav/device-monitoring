@@ -8,10 +8,12 @@ testing.tar.gz
 stage.tar.gz
 production.tar.gz
 
-#device-monitoring
+device-monitoring
 files/
 vendor/
 
 # ignore .angular directory
 .angular/
 .angular/cache/
+
+.yaml

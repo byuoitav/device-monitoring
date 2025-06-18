@@ -4,21 +4,20 @@ import (
 	"sync"
 
 	mess "github.com/byuoitav/central-event-system/messenger"
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/model"
 )
 
 // Messenger .
 type Messenger struct {
 	*mess.Messenger
 
-	registered   []chan events.Event
+	registered   []chan model.Event
 	registeredMu sync.Mutex
 	once         sync.Once
 }
 
 // BuildMessenger .
-func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messenger, *nerr.E) {
+func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messenger, error) {
 	msgr, err := mess.BuildMessenger(hubAddress, connectionType, bufferSize)
 
 	m := &Messenger{
@@ -47,7 +46,7 @@ func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messeng
 }
 
 // Register .
-func (m *Messenger) Register(ch chan events.Event) {
+func (m *Messenger) Register(ch chan model.Event) {
 	m.registeredMu.Lock()
 	defer m.registeredMu.Unlock()
 
@@ -55,7 +54,7 @@ func (m *Messenger) Register(ch chan events.Event) {
 }
 
 // Deregister .
-func (m *Messenger) Deregister(ch chan events.Event) {
+func (m *Messenger) Deregister(ch chan model.Event) {
 	m.registeredMu.Lock()
 	defer m.registeredMu.Unlock()
 

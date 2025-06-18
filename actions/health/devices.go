@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
 
-	"github.com/byuoitav/common/db"
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/structs"
+	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/localsystem"
+	"github.com/byuoitav/device-monitoring/model"
 )
 
 const (
@@ -22,48 +21,48 @@ const (
 	healthyCommandID = "HealthCheck"
 )
 
-// GetDeviceAPIHealth .
-func GetDeviceAPIHealth(ctx context.Context) (map[string]string, *nerr.E) {
-	log.L.Infof("Getting device api health")
+// GetDeviceAPIHealth queries all devices in the current room and returns a map
+// of deviceID -> health status string, or an error.
+func GetDeviceAPIHealth(ctx context.Context) (map[string]string, error) {
+	slog.Info("Getting device API health")
 
 	roomID, err := localsystem.RoomID()
 	if err != nil {
-		return nil, err.Addf("failed to get device api health")
+		return nil, fmt.Errorf("failed to get room ID: %w", err)
 	}
 
-	devices, gerr := db.GetDB().GetDevicesByRoom(roomID)
-	if gerr != nil {
-		return nil, nerr.Translate(gerr).Addf("failed to get device api health")
+	devices, err := couchdb.GetDevicesByRoom(ctx, roomID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list devices in room %q: %w", roomID, err)
 	}
 
-	healthy := make(map[string]string)
-	healthyMu := sync.Mutex{}
-	wg := sync.WaitGroup{}
+	healthy := make(map[string]string, len(devices))
+	var mu sync.Mutex
+	var wg sync.WaitGroup
 
-	for i := range devices {
-		if devices[i].Address == "0.0.0.0" ||
-			len(devices[i].Address) == 0 ||
-			!devices[i].HasCommand(healthyCommandID) {
+	for _, dev := range devices {
+		if dev.Address == "" ||
+			dev.Address == "0.0.0.0" ||
+			!dev.HasCommand(healthyCommandID) {
 			continue
 		}
 
 		wg.Add(1)
-
-		go func(idx int) {
+		go func(d model.Device) {
 			defer wg.Done()
-			h := isDeviceAPIHealthy(ctx, devices[idx])
+			status := isDeviceAPIHealthy(ctx, d)
 
-			healthyMu.Lock()
-			healthy[devices[idx].ID] = h
-			healthyMu.Unlock()
-		}(i)
+			mu.Lock()
+			healthy[d.ID] = status
+			mu.Unlock()
+		}(dev)
 	}
 
 	wg.Wait()
 	return healthy, nil
 }
 
-func isDeviceAPIHealthy(ctx context.Context, device structs.Device) string {
+func isDeviceAPIHealthy(ctx context.Context, device model.Device) string {
 	// build the command
 	address, err := device.BuildCommandURL(healthyCommandID)
 	if err != nil {
@@ -75,7 +74,7 @@ func isDeviceAPIHealthy(ctx context.Context, device structs.Device) string {
 
 	req, gerr := http.NewRequest("GET", address, nil)
 	if gerr != nil {
-		return fmt.Sprintf("unable to check if API is healthy: %s", err.Error())
+		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}
 
 	req = req.WithContext(ctx)

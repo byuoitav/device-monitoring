@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/messenger"
-	"github.com/labstack/echo"
+	"github.com/byuoitav/device-monitoring/model"
+	"github.com/gin-gonic/gin"
 )
 
 // SendEvent injects an event into the event mesh
-func SendEvent(ctx echo.Context) error {
-	event := events.Event{}
+func SendEvent(c *gin.Context) {
+	event := model.Event{}
 
-	err := ctx.Bind(&event)
+	err := c.BindJSON(&event)
 	if err != nil {
-		return ctx.String(http.StatusBadRequest, fmt.Sprintf("unable to send event: %s", err))
+		c.String(http.StatusBadRequest, fmt.Sprintf("failed to bind event: %v", err))
+		return
 	}
 
 	messenger.Get().SendEvent(event)
-	return ctx.String(http.StatusOK, "success")
+	c.String(http.StatusOK, "event sent")
 }

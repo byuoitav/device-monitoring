@@ -3,15 +3,14 @@ package screenshot
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"log/slog"
 	"os/exec"
-
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
 )
 
-// Take .
-func Take(ctx context.Context) ([]byte, *nerr.E) {
-	log.L.Infof("Taking screenshot of the pi")
+// Take -> moving this to wayland since x11 is deprecated
+func Take(ctx context.Context) ([]byte, error) {
+	slog.Info("Taking screenshot of the pi")
 
 	// get the xwd dump
 	xwd := &bytes.Buffer{}
@@ -22,15 +21,14 @@ func Take(ctx context.Context) ([]byte, *nerr.E) {
 	cmd.Stderr = stderr
 	// cmd.Env = []string{"DISPLAY=:0"}
 
-	log.L.Debugf("Getting xwd screenshot with command: %s", cmd.Args)
+	slog.Debug("Getting xwd screenshot with command", slog.String("command", cmd.String()))
 
 	err := cmd.Run()
 	if err != nil {
 		if stderr.Len() > 0 {
-			return []byte{}, nerr.Translate(err).Addf("unable to take a screenshot: %s", stderr)
+			return []byte{}, fmt.Errorf("unable to take a screenshot: %s", stderr)
 		}
-
-		return []byte{}, nerr.Translate(err).Addf("unable to take a screenshot")
+		return []byte{}, fmt.Errorf("unable to take a screenshot: %w", err)
 	}
 
 	// convert the xwd dump to a jpg
@@ -40,16 +38,15 @@ func Take(ctx context.Context) ([]byte, *nerr.E) {
 	cmd.Stdout = jpg
 	cmd.Stderr = stderr
 
-	log.L.Debugf("Converting xwd screenshot to jpg with command: %s", cmd.Args)
+	slog.Debug("Converting xwd screenshot to jpg with command", slog.String("command", cmd.String()))
 	err = cmd.Run()
 	if err != nil {
 		if stderr.Len() > 0 {
-			return []byte{}, nerr.Translate(err).Addf("unable to take screenshot: %s", stderr)
+			return []byte{}, fmt.Errorf("unable to take screenshot: %s", stderr)
 		}
 
-		return []byte{}, nerr.Translate(err).Addf("unable to take screenshot")
+		return []byte{}, fmt.Errorf("unable to take screenshot: %w", err)
 	}
-
-	log.L.Debugf("Successfully took screenshot.")
+	slog.Debug("Successfully took screenshot", slog.String("size", jpg.String()))
 	return jpg.Bytes(), nil
 }

@@ -4,29 +4,31 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/byuoitav/common/log"
+	"log/slog"
+
 	"github.com/byuoitav/device-monitoring/localsystem"
-	"github.com/labstack/echo"
+	"github.com/gin-gonic/gin"
 )
 
 // RebootPi reboots the pi
-func RebootPi(context echo.Context) error {
+func RebootPi(c *gin.Context) {
 	go func() {
 		for i := 5; i > 0; i-- {
-			log.L.Infof("REBOOTING PI IN %v SECONDS", i)
+			slog.Info("Reboot countdown", slog.Int("seconds_remaining", i))
 			time.Sleep(1 * time.Second)
 		}
-
-		err := localsystem.Reboot()
-		if err != nil {
-			log.L.Errorf("failed to reboot pi: %v", err.Error())
+		if err := localsystem.Reboot(); err != nil {
+			slog.Error("Failed to reboot pi", slog.Any("error", err))
 		}
 	}()
-
-	return context.Blob(http.StatusOK, "text/plain", []byte("Rebooting in 5 seconds..."))
+	c.Data(http.StatusOK, "text/plain", []byte("Rebooting in 5 seconds..."))
 }
 
 // SetDHCPState toggles dhcp to be on/off
-func SetDHCPState(ectx echo.Context) error {
-	return ectx.String(http.StatusInternalServerError, "not implemented")
+func SetDHCPState(c *gin.Context) {
+	state := c.Param("state")
+	slog.Info("Received request to set DHCP state", slog.String("state", state))
+
+	// TODO: implement actual DHCP-toggle logic here
+	c.String(http.StatusNotImplemented, "SetDHCPState is not yet implemented")
 }

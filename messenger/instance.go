@@ -1,12 +1,11 @@
 package messenger
 
 import (
+	"log/slog"
 	"os"
 	"sync"
 
 	"github.com/byuoitav/central-event-system/hub/base"
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
 )
 
 var (
@@ -17,11 +16,11 @@ var (
 // Get .
 func Get() *Messenger {
 	once.Do(func() {
-		var err *nerr.E
+		var err error
 
 		m, err = BuildMessenger(os.Getenv("HUB_ADDRESS"), base.Messenger, 5000)
 		if err != nil {
-			log.L.Warnf("failed to build messenger: %s", err.Error())
+			slog.Warn("failed to build messenger: %s", slog.String("error", err.Error()))
 		}
 	})
 

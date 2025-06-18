@@ -3,10 +3,10 @@ package ping
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"time"
 
-	"github.com/byuoitav/common/log"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 )
@@ -67,16 +67,16 @@ func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 		select {
 		case <-time.After(config.Delay):
 			// count this as a lost packet
-			log.L.Infof("lost packet (seq %v) to %s", host.seq, host.Addr)
+			slog.Info("lost packet", "seq", host.seq, "address", host.Addr)
 			result.PacketsLost++
 			host.seq++
 		case reply := <-host.replies:
 			// discard the reply if it's old
 			if body, ok := reply.body.(*icmp.Echo); ok {
 				if body.Seq == host.seq {
-					log.L.Debugf("received a reply from %s at %s (seq: %d)", host.Addr, reply.at, body.Seq)
+					slog.Debug("received a reply", "host", host.Addr, "time", reply.at, "seq", body.Seq)
 				} else {
-					log.L.Debugf("received a *late* reply from %s at %s (seq: %d)", host.Addr, reply.at, body.Seq)
+					slog.Debug("received a reply", "host", host.Addr, "time", reply.at, "seq", body.Seq, "expected_seq", host.seq)
 				}
 
 				host.seq++
@@ -84,7 +84,7 @@ func (p *Pinger) ping(ctx context.Context, host *host, config Config) *Result {
 				avgrtt += reply.at.Sub(tSent)
 				time.Sleep(config.Delay)
 			} else {
-				log.L.Warnf("received a reply from %s at %s (unknown type: %#v)", host.Addr, reply.at, reply.body)
+				slog.Warn("received a reply", "host", host.Addr, "time", reply.at, "unknown_type", fmt.Sprintf("%#v", reply.body))
 			}
 		case <-ctx.Done():
 			result.Error = fmt.Sprintf("timed out waiting for a response from %s", host.Addr)

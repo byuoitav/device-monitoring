@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  test1:
+    image: test1
+    build:
+      context: .
+    environment:
+      - SYSTEM_ID={SYSTEM_ID}
+      - DB_ADDRESS=${COUCH_ADDR}
+      - DB_USERNAME=${COUCH_USER}
+      - DB_PASSWORD=${COUCH_PASS}
+    command: ["./mybinary", "-config", "/files/service-config.json"]

@@ -2,12 +2,12 @@ package ping
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/byuoitav/common/log"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 )
@@ -110,7 +110,10 @@ func (p *Pinger) receive(source net.IP, bytes []byte, at time.Time) {
 			return
 		}
 
-		log.L.Warnf("GOT DEST UNREACHABLE PACKET from %s", source.String())
+		slog.Warn("destination unreachable received",
+			slog.String("source", source.String()),
+		)
+
 		p.process(source, msg.Body, at)
 	default:
 		return
@@ -120,7 +123,9 @@ func (p *Pinger) receive(source net.IP, bytes []byte, at time.Time) {
 func (p *Pinger) process(source net.IP, body icmp.MessageBody, at time.Time) {
 	echo, ok := body.(*icmp.Echo)
 	if !ok || echo == nil {
-		log.L.Warnf("expected *icmp.Echo, got %#v", body)
+		slog.Warn("unexpected ICMP body type",
+			slog.Any("body", body),
+		)
 		return
 	}
 
