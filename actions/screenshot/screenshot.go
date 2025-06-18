@@ -9,47 +9,29 @@ import (
 	"github.com/byuoitav/common/nerr"
 )
 
-// Take .
+// Take captures a screenshot of the current display and returns it as a byte slice.
 func Take(ctx context.Context) ([]byte, *nerr.E) {
-	log.L.Infof("Taking screenshot of the pi")
+	// needed to be fixed to use grim since xwdump is deprecated
+	log.L.Infof("Taking screenshot of the Pi using grim")
 
-	// get the xwd dump
-	xwd := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
+	var out bytes.Buffer
+	var stderr bytes.Buffer
 
-	cmd := exec.Command("/usr/bin/xwd", "-root", "-display", ":0")
-	cmd.Stdout = xwd
-	cmd.Stderr = stderr
-	// cmd.Env = []string{"DISPLAY=:0"}
+	// Use grim with stdout to capture the entire screen
+	cmd := exec.CommandContext(ctx, "/usr/bin/grim", "-") // "-" outputs to stdout
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
 
-	log.L.Debugf("Getting xwd screenshot with command: %s", cmd.Args)
+	log.L.Debugf("Running grim screenshot command: %v", cmd.Args)
 
 	err := cmd.Run()
 	if err != nil {
 		if stderr.Len() > 0 {
-			return []byte{}, nerr.Translate(err).Addf("unable to take a screenshot: %s", stderr)
+			return nil, nerr.Translate(err).Addf("unable to take screenshot: %s", stderr.String())
 		}
-
-		return []byte{}, nerr.Translate(err).Addf("unable to take a screenshot")
+		return nil, nerr.Translate(err).Addf("unable to take screenshot")
 	}
 
-	// convert the xwd dump to a jpg
-	jpg := &bytes.Buffer{}
-	cmd = exec.Command("/usr/bin/convert", "xwd:-", "jpg:-")
-	cmd.Stdin = xwd
-	cmd.Stdout = jpg
-	cmd.Stderr = stderr
-
-	log.L.Debugf("Converting xwd screenshot to jpg with command: %s", cmd.Args)
-	err = cmd.Run()
-	if err != nil {
-		if stderr.Len() > 0 {
-			return []byte{}, nerr.Translate(err).Addf("unable to take screenshot: %s", stderr)
-		}
-
-		return []byte{}, nerr.Translate(err).Addf("unable to take screenshot")
-	}
-
-	log.L.Debugf("Successfully took screenshot.")
-	return jpg.Bytes(), nil
+	log.L.Debugf("Successfully took screenshot. Size: %d bytes", out.Len())
+	return out.Bytes(), nil
 }
