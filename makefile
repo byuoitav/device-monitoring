@@ -1,126 +1,111 @@
-# vars
-ORG=$(shell echo $(CIRCLE_PROJECT_USERNAME))
-BRANCH=$(shell echo $(CIRCLE_BRANCH))
-NAME=$(shell echo $(CIRCLE_PROJECT_REPONAME))
+# =============================
+# Metadata and Project Defaults
+# =============================
+
+ORG  ?= $(shell echo $(CIRCLE_PROJECT_USERNAME))
+NAME ?= $(shell echo $(CIRCLE_PROJECT_REPONAME))
+BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ifeq ($(NAME),)
 NAME := $(shell basename "$(PWD)")
 endif
 
 ifeq ($(ORG),)
-ORG=byuoitav
+ORG := byuoitav
 endif
 
-ifeq ($(BRANCH),)
-BRANCH:= $(shell git rev-parse --abbrev-ref HEAD)
-endif
+# =============================
+# Tools and Commands
+# =============================
 
-# go
-GOCMD=go
-GOBUILD=$(GOCMD) build
-GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
-VENDOR=gvt fetch -branch $(BRANCH)
+GOCMD      = go
+GOBUILD    = $(GOCMD) build
+GOCLEAN    = $(GOCMD) clean
+GOTEST     = $(GOCMD) test
+GOGET      = $(GOCMD) get
+VENDOR     = gvt fetch -branch $(BRANCH)
 
-# angular
-NPM=npm
-NPM_INSTALL=$(NPM) install
-NPM_BUILD=npm run-script build
-NG1=dashboard
+NPM        = npm
+NPM_INSTALL= $(NPM) install
+NPM_BUILD  = npm run-script build
+NG1        = dashboard
 
-all: deploy clean
+BUILD_DIR  = dist
+BIN_OUTPUT = $(BUILD_DIR)/$(NAME)
 
-ci: deps all
+PLATFORMS = linux/amd64 linux/arm
 
-build: build-web
-	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME) -v
+# =============================
+# Main Targets
+# =============================
+
+all: build-web build-local
+
+ci: deps all test
+
+build-local:
+	@echo "Building local binary..."
+	$(GOBUILD) -o $(BIN_OUTPUT) -v
+
+build-binaries:
+	@echo "Building binaries for multiple platforms..."
+	@mkdir  -p $(BUILD_DIR)
+	@for platform in $(PLATFORMS); do \
+		OS=$${platform%/*}; ARCH=$${platform#*/}; \
+		OUTPUT=$(BUILD_DIR)/$(NAME)-$$OS-$$ARCH; \
+		[ "$$OS" = "windows" ] && OUTPUT=$$OUTPUT.exe; \
+		echo "Building $$OS/$$ARCH -> $$OUTPUT"; \
+		GOOS=$$OS GOARCH=$$ARCH $(GOBUILD) -o $$OUTPUT -v || exit 1; \
+	done
 
 build-web: $(NG1)
-	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
-	mkdir files
+	cd $(NG1) && NODE_OPTIONS=--openssl-legacy-provider $(NPM_INSTALL) && $(NPM_BUILD)
+	mkdir -p files
 	mv $(NG1)/dist/$(NG1) files/$(NG1)
 
 test:
-	$(GOTEST) -v -race $(go list ./... | grep -v /vendor/)
+	$(GOTEST) -v -race $$(go list ./... | grep -v /vendor/)
 
 clean:
-ifeq "$(BRANCH)" "master"
-	$(eval BRANCH=development)
-endif
 	$(GOCLEAN)
-	rm -f $(NAME)
-	rm -f $(BRANCH).tar.gz
-	rm -rf files/
-	rm -rf vendor/
-ifeq "$(BRANCH)" "development"
-	$(eval BRANCH=master)
-endif
+	rm -rf $(NAME)
+	rm -rf $(BUILD_DIR) files vendor
+	rm -rf *.tar.gz
 
 deps:
-	# TODO remove whenever this npm bug is fixed
-	# https://github.com/npm/npm/issues/20861
 	npm config set unsafe-perm true
 	$(NPM_INSTALL) -g @angular/cli
-ifneq "$(BRANCH)" "master"
-	# put vendored packages in here
-	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
-	gvt fetch -tag v3.3.10 github.com/labstack/echo
-	gvt fetch -tag v6.15.3 github.com/go-redis/redis
+ifneq ($(BRANCH),master)
+	$(VENDOR) github.com/labstack/echo@v3.3.10
+	$(VENDOR) github.com/go-redis/redis@v6.15.3
 	$(VENDOR) github.com/byuoitav/common
 	$(VENDOR) github.com/byuoitav/central-event-system
 	$(VENDOR) github.com/byuoitav/shipwright
 endif
 	$(GOGET) -d -v
 
+# =============================
+# Deployment
+# =============================
+
 deploy: $(NAME) files/$(NG1) version.txt
-ifeq "$(BRANCH)" "master"
+ifeq ($(BRANCH),master)
 	$(eval BRANCH=development)
 endif
 	@echo Building deployment tarball
 	@cp version.txt files/
 	@cp service-config.json files/
-
 	@tar -czf $(BRANCH).tar.gz $(NAME) files
-
 	@echo Getting current doc revision
 	$(eval rev=$(shell curl -s -n -X GET -u ${DB_USERNAME}:${DB_PASSWORD} "${DB_ADDRESS}/deployment-information/$(NAME)" | cut -d, -f2 | cut -d\" -f4))
-
 	@echo Pushing zip up to couch
 	@curl -X PUT -u ${DB_USERNAME}:${DB_PASSWORD} -H "Content-Type: application/gzip" -H "If-Match: $(rev)" ${DB_ADDRESS}/deployment-information/$(NAME)/$(BRANCH).tar.gz --data-binary @$(BRANCH).tar.gz
-ifeq "$(BRANCH)" "development"
+ifeq ($(BRANCH),development)
 	$(eval BRANCH=master)
 endif
 
-### depsd
+# Build triggers
 $(NAME):
-	$(MAKE) build
-
+	$(MAKE) build-local
 files/$(NG1):
 	$(MAKE) build-web
-
-# make deps # Initial setup
-# make ci 	# Full build/test/deploy
-
-# make binary for testing in a pi
-
-pitest:
-	@echo Building for pi
-	GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME) -v
-	@echo Building web for pi
-	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
-	mkdir files
-	mv $(NG1)/dist/$(NG1) files/$(NG1)
-	@echo Building deployment tarball
-	@cp version.txt files/
-	@cp service-config.json files/
-	@tar -czf $(NAME).tar.gz $(NAME) files
-	@echo Done!
-	@echo You can now scp $(NAME).tar.gz to the pi and run:
-	@echo tar -xzf $(NAME).tar.gz
-	@echo cd $(NAME)
-	@echo ./$(NAME) -config service-config.json
-	@echo Done!
-	@echo You can also run the binary directly with:
-	@echo ./$(NAME) -config service-config.json
-	@echo Done!

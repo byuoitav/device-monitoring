@@ -17,11 +17,9 @@ var (
 func Get() *Messenger {
 	once.Do(func() {
 		var err error
-
 		m, err = BuildMessenger(os.Getenv("HUB_ADDRESS"), base.Messenger, 5000)
-		if err != nil {
-			slog.Warn("failed to build messenger: %s", slog.String("error", err.Error()))
-		}
+		slog.Info("Messenger initialized", slog.String("address", os.Getenv("HUB_ADDRESS")), slog.String("type", base.Messenger))
+		slog.Error("Error initializing messenger", slog.Any("error", err))
 	})
 
 	return m

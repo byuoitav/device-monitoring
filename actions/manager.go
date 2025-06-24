@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/byuoitav/common/db/couch"
-	"github.com/byuoitav/device-monitoring/model"
+	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/shipwright/actions"
 )
 
@@ -28,7 +28,7 @@ func ActionManager() *actions.ActionManager {
 		manager = &actions.ActionManager{
 			Config:      GetConfig(),
 			Workers:     1000,
-			EventStream: make(chan model.Event, 10000),
+			EventStream: make(chan events.Event, 10000),
 			EventCache:  "default",
 		}
 	})

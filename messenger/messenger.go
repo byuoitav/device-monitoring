@@ -13,7 +13,6 @@ type Messenger struct {
 
 	registered   []chan model.Event
 	registeredMu sync.Mutex
-	once         sync.Once
 }
 
 // BuildMessenger .
@@ -33,7 +32,7 @@ func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messeng
 			// dump the event into each channel and skip ones that are full
 			for i := range m.registered {
 				select {
-				case m.registered[i] <- event:
+				case m.registered[i] <- model.ConvertEvent(event):
 				default:
 				}
 			}

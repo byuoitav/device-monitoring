@@ -19,6 +19,6 @@ func SendEvent(c *gin.Context) {
 		return
 	}
 
-	messenger.Get().SendEvent(event)
+	messenger.Get().SendEvent(model.ToCommonEvent(event))
 	c.String(http.StatusOK, "event sent")
 }

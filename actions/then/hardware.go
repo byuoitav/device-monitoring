@@ -43,7 +43,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 	}
 
 	// send info dump
-	messenger.Get().SendEvent(event)
+	messenger.Get().SendEvent(model.ToCommonEvent(event))
 	event.Data = nil
 
 	if usage, ok := info.CPU["usage"].(map[string]float64); ok {
@@ -52,7 +52,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 			tmp.AddToTags(model.DetailState)
 			tmp.Key = "cpu-usage-percent"
 			tmp.Value = fmt.Sprintf("%v", avg)
-			messenger.Get().SendEvent(tmp)
+			messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 		}
 	}
 
@@ -62,7 +62,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 		tmp.AddToTags(model.DetailState)
 		tmp.Key = "cpu-load-average-1-min"
 		tmp.Value = fmt.Sprintf("%v", loadAvg1min)
-		messenger.Get().SendEvent(tmp)
+		messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 	}
 
 	if loadAvg5min, ok := info.CPU["avg5min"].(float64); ok {
@@ -70,7 +70,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 		tmp.AddToTags(model.DetailState)
 		tmp.Key = "cpu-load-average-5-min"
 		tmp.Value = fmt.Sprintf("%v", loadAvg5min)
-		messenger.Get().SendEvent(tmp)
+		messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 	}
 
 	// send info about memory usage
@@ -79,14 +79,14 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 		tmp.AddToTags(model.DetailState)
 		tmp.Key = "v-mem-used-percent"
 		tmp.Value = fmt.Sprintf("%v", vMem.UsedPercent)
-		messenger.Get().SendEvent(tmp)
+		messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 	}
 
 	// send info about swap usage
 	if sMem, ok := info.Memory["swap"].(*mem.SwapMemoryStat); ok {
 		event.Key = "s-mem-used-percent"
 		event.Value = fmt.Sprintf("%v", sMem.UsedPercent)
-		messenger.Get().SendEvent(event)
+		messenger.Get().SendEvent(model.ToCommonEvent(event))
 	}
 
 	// send info about chip temp
@@ -96,7 +96,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 			tmp.AddToTags(model.DetailState)
 			tmp.Key = fmt.Sprintf("%s-temp", chip)
 			tmp.Value = fmt.Sprintf("%v", temp)
-			messenger.Get().SendEvent(tmp)
+			messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 		}
 	}
 
@@ -108,7 +108,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 				tmp.AddToTags(model.DetailState)
 				tmp.Key = fmt.Sprintf("writes-to-%s", disk)
 				tmp.Value = fmt.Sprintf("%v", stats.WriteCount)
-				messenger.Get().SendEvent(tmp)
+				messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 			}
 		}
 	}
@@ -119,7 +119,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 		tmp.AddToTags(model.DetailState)
 		tmp.Key = "disk-used-percent"
 		tmp.Value = fmt.Sprintf("%v", usage.UsedPercent)
-		messenger.Get().SendEvent(tmp)
+		messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 	}
 
 	// send info about avg # of processes in uninterruptible sleep
@@ -128,7 +128,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 		tmp.AddToTags(model.DetailState)
 		tmp.Key = "avg-procs-u-sleep"
 		tmp.Value = fmt.Sprintf("%v", avg)
-		messenger.Get().SendEvent(tmp)
+		messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 	}
 
 	// send info about docker containers running -- I get it, it's not hardware but... where else is it going to go?
@@ -137,7 +137,7 @@ func hardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 		tmp.AddToTags(model.DetailState)
 		tmp.Key = "docker-containers"
 		tmp.Value = fmt.Sprintf("%v", containers)
-		messenger.Get().SendEvent(tmp)
+		messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 	}
 
 	return nil
@@ -174,7 +174,7 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 		}
 
 		// send info dump for this device
-		messenger.Get().SendEvent(event)
+		messenger.Get().SendEvent(model.ToCommonEvent(event))
 		event.Data = nil
 
 		// push up hostname
@@ -183,7 +183,7 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 			tmp.AddToTags(model.DetailState)
 			tmp.Key = "hostname"
 			tmp.Value = v.Hostname
-			messenger.Get().SendEvent(tmp)
+			messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 		}
 
 		if len(v.ModelName) > 0 {
@@ -191,7 +191,7 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 			tmp.AddToTags(model.DetailState)
 			tmp.Key = "hardware-version"
 			tmp.Value = v.ModelName
-			messenger.Get().SendEvent(tmp)
+			messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 		}
 
 		if len(v.SerialNumber) > 0 {
@@ -199,7 +199,7 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 			tmp.AddToTags(model.DetailState)
 			tmp.Key = "serial-number"
 			tmp.Value = v.SerialNumber
-			messenger.Get().SendEvent(tmp)
+			messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 		}
 
 		if len(v.FirmwareVersion) > 0 {
@@ -208,7 +208,7 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 			tmp.Key = "software-version"
 			// TODO what kind of interface{}...?
 			tmp.Value = fmt.Sprintf("%v", v.FirmwareVersion)
-			messenger.Get().SendEvent(tmp)
+			messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 		}
 
 		if len(v.FilterStatus) > 0 {
@@ -216,7 +216,7 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 			tmp.AddToTags(model.DetailState)
 			tmp.Key = "filter-status"
 			tmp.Value = v.FilterStatus
-			messenger.Get().SendEvent(tmp)
+			messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 		}
 
 		if len(v.WarningStatus) > 0 {
@@ -231,7 +231,7 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 			}
 
 			tmp.Value = str
-			messenger.Get().SendEvent(tmp)
+			messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 		}
 
 		if len(v.ErrorStatus) > 0 {
@@ -245,13 +245,13 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 			}
 
 			tmp.Value = str
-			messenger.Get().SendEvent(tmp)
+			messenger.Get().SendEvent(model.ToCommonEvent(tmp))
 		}
 
 		if len(v.PowerStatus) > 0 {
 			event.Key = "power-status"
 			event.Value = v.PowerStatus
-			messenger.Get().SendEvent(event)
+			messenger.Get().SendEvent(model.ToCommonEvent(event))
 		}
 
 		if v.TimerInfo != nil {
@@ -259,25 +259,25 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 
 			// TODO what kind of interface{}?
 			event.Value = fmt.Sprintf("%v", v.TimerInfo)
-			messenger.Get().SendEvent(event)
+			messenger.Get().SendEvent(model.ToCommonEvent(event))
 		}
 
 		if len(v.NetworkInfo.IPAddress) > 0 {
 			event.Key = "ip-address"
 			event.Value = v.NetworkInfo.IPAddress
-			messenger.Get().SendEvent(event)
+			messenger.Get().SendEvent(model.ToCommonEvent(event))
 		}
 
 		if len(v.NetworkInfo.MACAddress) > 0 {
 			event.Key = "mac-address"
 			event.Value = v.NetworkInfo.MACAddress
-			messenger.Get().SendEvent(event)
+			messenger.Get().SendEvent(model.ToCommonEvent(event))
 		}
 
 		if len(v.NetworkInfo.Gateway) > 0 {
 			event.Key = "default-gateway"
 			event.Value = v.NetworkInfo.Gateway
-			messenger.Get().SendEvent(event)
+			messenger.Get().SendEvent(model.ToCommonEvent(event))
 		}
 
 		if len(v.NetworkInfo.DNS) > 0 {
@@ -293,7 +293,7 @@ func deviceHardwareInfo(ctx context.Context, with []byte, log *zap.SugaredLogger
 			}
 
 			event.Value = builder.String()
-			messenger.Get().SendEvent(event)
+			messenger.Get().SendEvent(model.ToCommonEvent(event))
 		}
 	}
 
@@ -346,13 +346,13 @@ func liveTemperatureCheck1(ctx context.Context, with []byte, log *zap.SugaredLog
 					event.Key = "temp-critical"
 					event.Value = fmt.Sprintf("%v", temp)
 					event.Data = chip
-					messenger.Get().SendEvent(event)
+					messenger.Get().SendEvent(model.ToCommonEvent(event))
 				} else {
 					event.AddToTags(model.DetailState)
 					event.Key = "temp-warning"
 					event.Value = fmt.Sprintf("%v", temp)
 					event.Data = chip
-					messenger.Get().SendEvent(event)
+					messenger.Get().SendEvent(model.ToCommonEvent(event))
 				}
 			}
 		}
@@ -413,7 +413,7 @@ func liveTemperatureCheck(ctx context.Context, with []byte, log *zap.SugaredLogg
 								event.Value = fmt.Sprintf("%v", temp)
 								event.Data = chip
 								event.Timestamp = t1
-								messenger.Get().SendEvent(event)
+								messenger.Get().SendEvent(model.ToCommonEvent(event))
 							}
 						} else {
 							if oldTemp > limits.CriticalThreshold || oldTemp < limits.WarningThreshold {
@@ -422,7 +422,7 @@ func liveTemperatureCheck(ctx context.Context, with []byte, log *zap.SugaredLogg
 								event.Value = fmt.Sprintf("%v", temp)
 								event.Data = chip
 								event.Timestamp = t1
-								messenger.Get().SendEvent(event)
+								messenger.Get().SendEvent(model.ToCommonEvent(event))
 							}
 						}
 					}
@@ -447,21 +447,21 @@ func liveTemperatureCheck(ctx context.Context, with []byte, log *zap.SugaredLogg
 							event.Value = fmt.Sprintf("%v", temp)
 							event.Data = chip
 							event.Timestamp = t2
-							messenger.Get().SendEvent(event)
+							messenger.Get().SendEvent(model.ToCommonEvent(event))
 						} else if temp > limits.WarningThreshold {
 							event.AddToTags(model.DetailState)
 							event.Key = "temp-warning"
 							event.Value = fmt.Sprintf("%v", temp)
 							event.Data = chip
 							event.Timestamp = t2
-							messenger.Get().SendEvent(event)
+							messenger.Get().SendEvent(model.ToCommonEvent(event))
 						} else {
 							event.AddToTags(model.DetailState)
 							event.Key = "temp-normal"
 							event.Value = fmt.Sprintf("%v", temp)
 							event.Data = chip
 							event.Timestamp = t2
-							messenger.Get().SendEvent(event)
+							messenger.Get().SendEvent(model.ToCommonEvent(event))
 						}
 					}
 				}
