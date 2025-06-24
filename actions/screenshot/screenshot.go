@@ -5,48 +5,48 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 )
 
 // Take -> moving this to wayland since x11 is deprecated
 func Take(ctx context.Context) ([]byte, error) {
-	slog.Info("Taking screenshot of the pi")
+	slog.Info("Taking screenshot of the Pi using grim")
 
-	// get the xwd dump
-	xwd := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
+	xdg := os.Getenv("XDG_RUNTIME_DIR")
+	wayland := os.Getenv("WAYLAND_DISPLAY")
 
-	cmd := exec.Command("/usr/bin/xwd", "-root", "-display", ":0")
-	cmd.Stdout = xwd
-	cmd.Stderr = stderr
-	// cmd.Env = []string{"DISPLAY=:0"}
+	if xdg == "" || wayland == "" {
+		slog.Warn("Environment not ready: XDG_RUNTIME_DIR=%q, WAYLAND_DISPLAY=%q", xdg, wayland)
+		return nil, fmt.Errorf("environment not ready: XDG_RUNTIME_DIR=%q, WAYLAND_DISPLAY=%q", xdg, wayland)
+	}
 
-	slog.Debug("Getting xwd screenshot with command", slog.String("command", cmd.String()))
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+
+	// Use grim with stdout to capture the entire screen
+	cmd := exec.CommandContext(ctx, "/usr/bin/grim", "-o", "DSI-1", "-") // "-" = write to stdout
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+
+	// explicitly pass the env
+	cmd.Env = append(os.Environ(),
+		"XDG_RUNTIME_DIR="+xdg,
+		"WAYLAND_DISPLAY="+wayland,
+	)
+
+	slog.Debug("Running grim screenshot command", slog.Any("command", cmd.String()))
 
 	err := cmd.Run()
 	if err != nil {
 		if stderr.Len() > 0 {
-			return []byte{}, fmt.Errorf("unable to take a screenshot: %s", stderr)
+			slog.Error("Failed to take screenshot", slog.String("error", err.Error()), slog.String("stderr", stderr.String()))
+			return nil, fmt.Errorf("failed to take screenshot: %w, stderr: %s", err, stderr.String())
 		}
-		return []byte{}, fmt.Errorf("unable to take a screenshot: %w", err)
+		slog.Error("Failed to take screenshot", slog.String("error", err.Error()))
+		return nil, fmt.Errorf("failed to take screenshot: %w", err)
 	}
 
-	// convert the xwd dump to a jpg
-	jpg := &bytes.Buffer{}
-	cmd = exec.Command("/usr/bin/convert", "xwd:-", "jpg:-")
-	cmd.Stdin = xwd
-	cmd.Stdout = jpg
-	cmd.Stderr = stderr
-
-	slog.Debug("Converting xwd screenshot to jpg with command", slog.String("command", cmd.String()))
-	err = cmd.Run()
-	if err != nil {
-		if stderr.Len() > 0 {
-			return []byte{}, fmt.Errorf("unable to take screenshot: %s", stderr)
-		}
-
-		return []byte{}, fmt.Errorf("unable to take screenshot: %w", err)
-	}
-	slog.Debug("Successfully took screenshot", slog.String("size", jpg.String()))
-	return jpg.Bytes(), nil
+	slog.Info("Screenshot taken successfully", slog.Int("size_bytes", out.Len()))
+	return out.Bytes(), nil
 }
