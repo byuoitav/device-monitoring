@@ -9,7 +9,7 @@ type HardwareInfo struct {
 	ProtocolVersion       string           `json:"protocol_version,omitempty"`
 	NetworkInfo           NetworkInfo      `json:"network_information,omitempty"`
 	FilterStatus          string           `json:"filter_status,omitempty"`
-	WarningSatus          []string         `json:"warning_status,omitempty"`
+	WarningStatus         []string         `json:"warning_status,omitempty"`
 	ErrorStatus           []string         `json:"error_status,omitempty"`
 	PowerStatus           string           `json:"power_status,omitempty"`
 	PowerSavingModeStatus string           `json:"power_saving_mode_status,omitempty"`
@@ -18,8 +18,8 @@ type HardwareInfo struct {
 }
 
 type NetworkInfo struct {
-	IPAddress  string `json:"ip_address,omitempty"`
-	MACAddress string `json:"mac_address,omitempty"`
-	Gateway    string `json:"gateway,omitempty"`
-	DNS        string `json:"dns,omitempty"`
+	IPAddress  string   `json:"ip_address,omitempty"`
+	MACAddress string   `json:"mac_address,omitempty"`
+	Gateway    string   `json:"gateway,omitempty"`
+	DNS        []string `json:"dns,omitempty"`
 }

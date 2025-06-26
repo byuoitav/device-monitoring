@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/actions/activesignal"
 	"github.com/byuoitav/device-monitoring/actions/browser"
@@ -28,7 +29,7 @@ type Then struct {
 }
 
 // Func can register a function
-type Func func(ctx context.Context, with []byte, log slog.Logger) error
+type Func func(ctx context.Context, with []byte, log slog.Logger) *nerr.E
 
 var (
 	thens struct {
@@ -51,6 +52,19 @@ func init() {
 	then.Add("live-temperature-check", liveTemperatureCheck)
 }
 
+// slog to zap logger
+func slogToZap(log slog.Logger) *zap.SugaredLogger {
+	if log == nil {
+		return zap.NewNop().Sugar()
+	}
+
+	// create a new zap logger with the slog logger
+	zapLogger := zap.New(slog.NewHandler(log, &slog.Options{
+		Level: zap.InfoLevel,
+	}))
+
+	return zapLogger.Sugar()
+}
 func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
 	systemID, err := localsystem.SystemID()
 	if err != nil {
@@ -198,9 +212,9 @@ func serviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger
 		return err.Addf("unable to check services")
 	}
 
-	systemID, err := localsystem.SystemID()
-	if err != nil {
-		return err.Addf("unable to check services")
+	systemID, gerr := localsystem.SystemID()
+	if gerr != nil {
+		return fmt.Errorf("unable to check services: %w", gerr)
 	}
 	deviceInfo := events.GenerateBasicDeviceInfo(systemID)
 

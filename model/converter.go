@@ -7,6 +7,7 @@ package model
 import (
 	"log/slog"
 
+	"github.com/byuoitav/common/structs"
 	"github.com/byuoitav/common/v2/events"
 )
 
@@ -62,4 +63,53 @@ func ToCommonEvent(e Event) events.Event {
 		User:             e.User,
 		Data:             e.Data,
 	}
+}
+
+// ConvertDevice converts a structs.Device from the common library to a model.Device.
+func ConvertDevice(d structs.Device) Device {
+	cmds := make([]Command, len(d.Type.Commands))
+	for i, c := range d.Type.Commands {
+		cmds[i] = Command{ID: c.ID}
+	}
+	return Device{
+		ID:      d.ID,
+		Address: d.Address,
+		Type:    DeviceType{Commands: cmds},
+		Proxy:   d.Proxy,
+	}
+}
+
+// ConvertDevices maps a slice of structs.Device to a slice of model.Device.
+func ConvertDevices(devices []structs.Device) []Device {
+	converted := make([]Device, len(devices))
+	for i, d := range devices {
+		converted[i] = ConvertDevice(d)
+	}
+	return converted
+}
+
+func ToCommonDevice(d Device) structs.Device {
+	cmds := make([]structs.Command, len(d.Type.Commands))
+	for i, c := range d.Type.Commands {
+		cmds[i] = structs.Command{ID: c.ID}
+
+	}
+	return structs.Device{
+		ID:      d.ID,
+		Address: d.Address,
+		Type: structs.DeviceType{
+			Commands: cmds,
+			// everything else stays at its zero‐value
+		},
+		Proxy: d.Proxy,
+		// Name, Description, Roles, Ports, etc. will be empty
+	}
+}
+
+func ToCommonDevices(devices []Device) []structs.Device {
+	converted := make([]structs.Device, len(devices))
+	for i, d := range devices {
+		converted[i] = ToCommonDevice(d)
+	}
+	return converted
 }

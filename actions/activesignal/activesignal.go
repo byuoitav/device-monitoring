@@ -17,6 +17,7 @@ import (
 	"github.com/byuoitav/device-monitoring/actions/roomstate"
 	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/localsystem"
+	"github.com/byuoitav/device-monitoring/model"
 )
 
 const (
@@ -37,7 +38,7 @@ func GetMap(ctx context.Context) (map[string]bool, error) {
 		return nil, fmt.Errorf("failed to get active signal info: %w could not get devices in room", gerr)
 	}
 
-	graph, gerr := inputgraph.BuildGraph(devices, "video")
+	graph, gerr := inputgraph.BuildGraph(model.ToCommonDevices(devices), "video")
 	if gerr != nil {
 		return nil, fmt.Errorf("failed to get active signal info: %w could not build input graph", gerr)
 	}
@@ -61,7 +62,7 @@ func GetMap(ctx context.Context) (map[string]bool, error) {
 			defer wg.Done()
 
 			deviceID := fmt.Sprintf("%s-%s", roomID, state.Displays[idx].Name)
-			a := isInputPathActive(ctx, state.Displays[idx], roomID, graph, devices)
+			a := isInputPathActive(ctx, state.Displays[idx], roomID, graph, model.ToCommonDevices(devices))
 
 			activeMu.Lock()
 			active[deviceID] = a
