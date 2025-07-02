@@ -104,7 +104,7 @@ ifeq ($(BRANCH),development)
 	$(eval BRANCH=master)
 endif
 
-# Build triggers
+# Build trigge
 $(BIN_OUTPUT): 
 	$(MAKE) build-local
 
