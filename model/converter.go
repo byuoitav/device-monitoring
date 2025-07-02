@@ -35,6 +35,18 @@ func ConvertEvent(e events.Event) Event {
 	}
 }
 
+// ChanEventConverter converts ch chan events.Event to a chan Event.
+func ChanEventConverter(ch chan events.Event) chan Event {
+	converted := make(chan Event, cap(ch))
+	go func() {
+		for e := range ch {
+			converted <- ConvertEvent(e)
+		}
+		close(converted)
+	}()
+	return converted
+}
+
 func ConvertEvents(events []events.Event) []Event {
 	converted := make([]Event, len(events))
 	for i, e := range events {

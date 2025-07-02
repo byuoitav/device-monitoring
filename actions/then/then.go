@@ -4,12 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/actions/activesignal"
 	"github.com/byuoitav/device-monitoring/actions/browser"
@@ -23,48 +20,21 @@ import (
 	"go.uber.org/zap"
 )
 
-type Then struct {
-	Do   string          `json:"do"`
-	With json.RawMessage `json:"with"`
-}
-
-// Func can register a function
-type Func func(ctx context.Context, with []byte, log slog.Logger) *nerr.E
-
-var (
-	thens struct {
-		sync.RWMutex
-		m map[string]Func
-	}
-)
-
 func init() {
-	then.Add("ping-devices", pingDevices)
-	then.Add("active-signal", activeSignal)
-	then.Add("device-health-check", deviceHealthCheck)
-	then.Add("service-health-check", serviceHealthCheck)
-	then.Add("state-update", stateUpdate)
-	then.Add("websocket-browser-check", websocketBrowserCheck)
+	then.Add("ping-devices", toThenFunc(pingDevices))
+	then.Add("active-signal", toThenFunc(activeSignal))
+	then.Add("device-health-check", toThenFunc(deviceHealthCheck))
+	then.Add("service-health-check", toThenFunc(serviceHealthCheck))
+	then.Add("state-update", toThenFunc(stateUpdate))
+	then.Add("websocket-browser-check", toThenFunc(websocketBrowserCheck))
 
-	then.Add("hardware-info", hardwareInfo)
-	then.Add("device-hardware-info", deviceHardwareInfo)
-	then.Add("monitor-dividers", monitorDividerSensors)
-	then.Add("live-temperature-check", liveTemperatureCheck)
+	then.Add("hardware-info", toThenFunc(hardwareInfo))
+	then.Add("device-hardware-info", toThenFunc(deviceHardwareInfo))
+	then.Add("monitor-dividers", toThenFunc(monitorDividerSensors))
+	then.Add("live-temperature-check", toThenFunc(liveTemperatureCheck))
 }
 
 // slog to zap logger
-func slogToZap(log slog.Logger) *zap.SugaredLogger {
-	if log == nil {
-		return zap.NewNop().Sugar()
-	}
-
-	// create a new zap logger with the slog logger
-	zapLogger := zap.New(slog.NewHandler(log, &slog.Options{
-		Level: zap.InfoLevel,
-	}))
-
-	return zapLogger.Sugar()
-}
 func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
 	systemID, err := localsystem.SystemID()
 	if err != nil {
@@ -84,7 +54,7 @@ func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) error
 	results, err := ping.Room(ctx, roomID, ping.Config{
 		Count: 3,
 		Delay: 1 * time.Second,
-	}, log)
+	}, ZapSugaredToSlog(log))
 	if err != nil {
 		return fmt.Errorf("unable to ping devices: %w", err)
 	}

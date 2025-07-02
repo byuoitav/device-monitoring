@@ -8,6 +8,7 @@ import (
 	"github.com/byuoitav/device-monitoring/actions"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/messenger"
+	"github.com/byuoitav/device-monitoring/model"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/pflag"
@@ -20,7 +21,7 @@ var uiURL string
 func main() {
 	// start the action manager
 	go actions.ActionManager().Start(context.Background())
-	messenger.Get().Register(actions.ActionManager().EventStream)
+	messenger.Get().Register(model.ChanEventConverter(actions.ActionManager().EventStream))
 
 	// parse --ui-url
 	pflag.StringVar(&uiURL, "ui-url", "", "url to redirect to the ui")
