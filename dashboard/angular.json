@@ -26,6 +26,11 @@
               "src/styles.scss",
               "src/assets/fonts/material-icons/material-icons.css"
             ],
+            "stylePreprocessorOptions": {
+              "includePaths": [
+                "src/styles"
+              ]
+            },
             "scripts": []
           },
           "configurations": {

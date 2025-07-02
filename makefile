@@ -2,9 +2,9 @@
 # Metadata and Project Defaults
 # =============================
 
-ORG  ?= $(shell echo $(CIRCLE_PROJECT_USERNAME))
-NAME ?= $(shell echo $(CIRCLE_PROJECT_REPONAME))
-BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
+ORG     ?= $(shell echo $(CIRCLE_PROJECT_USERNAME))
+NAME    ?= $(shell echo $(CIRCLE_PROJECT_REPONAME))
+BRANCH  ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ifeq ($(NAME),)
 NAME := $(shell basename "$(PWD)")
@@ -33,7 +33,7 @@ NG1        = dashboard
 BUILD_DIR  = dist
 BIN_OUTPUT = $(BUILD_DIR)/$(NAME)
 
-PLATFORMS = linux/amd64 linux/arm
+PLATFORMS  = linux/amd64 linux/arm
 
 # =============================
 # Main Targets
@@ -58,7 +58,7 @@ build-binaries:
 	done
 
 build-web: $(NG1)
-	cd $(NG1) && NODE_OPTIONS=--openssl-legacy-provider $(NPM_INSTALL) && $(NPM_BUILD)
+	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
 	mkdir -p files
 	mv $(NG1)/dist/$(NG1) files/$(NG1)
 
@@ -67,7 +67,7 @@ test:
 
 clean:
 	$(GOCLEAN)
-	rm -f $(NAME)
+	rm -f $(BUILD_DIR)/$(NAME)
 	rm -rf $(BUILD_DIR) files vendor
 	rm -f *.tar.gz
 
@@ -87,25 +87,32 @@ endif
 # Deployment
 # =============================
 
-deploy: $(NAME) files/$(NG1) version.txt
+deploy: $(BIN_OUTPUT) files/$(NG1) version.txt
 ifeq ($(BRANCH),master)
 	$(eval BRANCH=development)
 endif
 	@echo Building deployment tarball
 	@cp version.txt files/
 	@cp service-config.json files/
-	@tar -czf $(BRANCH).tar.gz $(NAME) files
+	$(eval BRANCH_FILENAME := $(subst /,-,$(BRANCH)))
+	@tar -czf $(BRANCH_FILENAME).tar.gz $(BIN_OUTPUT) files
 	@echo Getting current doc revision
 	$(eval rev=$(shell curl -s -n -X GET -u ${DB_USERNAME}:${DB_PASSWORD} "${DB_ADDRESS}/deployment-information/$(NAME)" | cut -d, -f2 | cut -d\" -f4))
 	@echo Pushing zip up to couch
-	@curl -X PUT -u ${DB_USERNAME}:${DB_PASSWORD} -H "Content-Type: application/gzip" -H "If-Match: $(rev)" ${DB_ADDRESS}/deployment-information/$(NAME)/$(BRANCH).tar.gz --data-binary @$(BRANCH).tar.gz
+	@curl -X PUT -u ${DB_USERNAME}:${DB_PASSWORD} -H "Content-Type: application/gzip" -H "If-Match: $(rev)" ${DB_ADDRESS}/deployment-information/$(NAME)/$(BRANCH).tar.gz --data-binary @$(BRANCH_FILENAME).tar.gz
 ifeq ($(BRANCH),development)
 	$(eval BRANCH=master)
 endif
 
 # Build triggers
-$(NAME):
+$(BIN_OUTPUT): 
 	$(MAKE) build-local
 
 files/$(NG1):
 	$(MAKE) build-web
+
+# Debug helper
+print-vars:
+	@echo "NAME=$(NAME)"
+	@echo "BRANCH=$(BRANCH)"
+	@echo "BIN_OUTPUT=$(BIN_OUTPUT)"
