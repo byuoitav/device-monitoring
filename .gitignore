@@ -11,3 +11,5 @@ production.tar.gz
 device-monitoring
 files/
 vendor/
+
+dist/

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -193,7 +193,7 @@ func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Devic
 	}
 	defer resp.Body.Close()
 
-	bytes, gerr := ioutil.ReadAll(resp.Body)
+	bytes, gerr := io.ReadAll(resp.Body)
 	if gerr != nil {
 		l.Warnf("unable to check if input was active: %s", gerr)
 		return false

@@ -3,53 +3,50 @@ package screenshot
 import (
 	"bytes"
 	"context"
+	"os"
 	"os/exec"
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
 )
 
-// Take .
+// Take captures a screenshot of the current display and returns it as a byte slice.
 func Take(ctx context.Context) ([]byte, *nerr.E) {
-	log.L.Infof("Taking screenshot of the pi")
+	// needed to be fixed to use grim since xwdump is deprecated
+	log.L.Infof("Taking screenshot of the Pi using grim")
 
-	// get the xwd dump
-	xwd := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
+	xdg := os.Getenv("XDG_RUNTIME_DIR")
+	wayland := os.Getenv("WAYLAND_DISPLAY")
 
-	cmd := exec.Command("/usr/bin/xwd", "-root", "-display", ":0")
-	cmd.Stdout = xwd
-	cmd.Stderr = stderr
-	// cmd.Env = []string{"DISPLAY=:0"}
+	if xdg == "" || wayland == "" {
+		log.L.Warnf("Environment not ready: XDG_RUNTIME_DIR=%q, WAYLAND_DISPLAY=%q", xdg, wayland)
+		return nil, nerr.Create("Wayland environment variables not set; cannot take screenshot", "wayland-env-missing")
+	}
 
-	log.L.Debugf("Getting xwd screenshot with command: %s", cmd.Args)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+
+	// Use grim with stdout to capture the entire screen
+	cmd := exec.CommandContext(ctx, "/usr/bin/grim", "-o", "DSI-1", "-") // "-" = write to stdout
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+
+	// explicitly pass the env
+	cmd.Env = append(os.Environ(),
+		"XDG_RUNTIME_DIR="+xdg,
+		"WAYLAND_DISPLAY="+wayland,
+	)
+
+	log.L.Debugf("Running grim screenshot command: %v", cmd.Args)
 
 	err := cmd.Run()
 	if err != nil {
 		if stderr.Len() > 0 {
-			return []byte{}, nerr.Translate(err).Addf("unable to take a screenshot: %s", stderr)
+			return nil, nerr.Translate(err).Addf("unable to take screenshot: %s", stderr.String())
 		}
-
-		return []byte{}, nerr.Translate(err).Addf("unable to take a screenshot")
+		return nil, nerr.Translate(err).Addf("unable to take screenshot")
 	}
 
-	// convert the xwd dump to a jpg
-	jpg := &bytes.Buffer{}
-	cmd = exec.Command("/usr/bin/convert", "xwd:-", "jpg:-")
-	cmd.Stdin = xwd
-	cmd.Stdout = jpg
-	cmd.Stderr = stderr
-
-	log.L.Debugf("Converting xwd screenshot to jpg with command: %s", cmd.Args)
-	err = cmd.Run()
-	if err != nil {
-		if stderr.Len() > 0 {
-			return []byte{}, nerr.Translate(err).Addf("unable to take screenshot: %s", stderr)
-		}
-
-		return []byte{}, nerr.Translate(err).Addf("unable to take screenshot")
-	}
-
-	log.L.Debugf("Successfully took screenshot.")
-	return jpg.Bytes(), nil
+	log.L.Debugf("Successfully took screenshot. Size: %d bytes", out.Len())
+	return out.Bytes(), nil
 }

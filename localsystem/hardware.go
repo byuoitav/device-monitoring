@@ -2,7 +2,6 @@ package localsystem
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net"
 	"os"
@@ -119,13 +118,13 @@ func HostInfo() (map[string]interface{}, *nerr.E) {
 	filepath.Walk(temperatureRootPath, func(path string, info os.FileInfo, err error) error {
 		if info.Mode()&os.ModeSymlink == os.ModeSymlink && strings.Contains(path, "thermal_") {
 			// get type
-			ttype, err := ioutil.ReadFile(path + "/type")
+			ttype, err := os.ReadFile(path + "/type")
 			if err != nil {
 				return err
 			}
 
 			// get temperature
-			ttemp, err := ioutil.ReadFile(path + "/temp")
+			ttemp, err := os.ReadFile(path + "/temp")
 			if err != nil {
 				return err
 			}
