@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context"
+	//"context"
 	"net/http"
 
 	"github.com/byuoitav/common"
-	"github.com/byuoitav/device-monitoring/actions"
+	//"github.com/byuoitav/device-monitoring/actions"
 	"github.com/byuoitav/device-monitoring/handlers"
-	"github.com/byuoitav/device-monitoring/messenger"
+	//"github.com/byuoitav/device-monitoring/messenger"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
@@ -15,8 +15,8 @@ import (
 )
 
 func main() {
-	go actions.ActionManager().Start(context.TODO())
-	messenger.Get().Register(actions.ActionManager().EventStream)
+	//go actions.ActionManager().Start(context.TODO())
+	//messenger.Get().Register(actions.ActionManager().EventStream)
 
 	// subscribe to something?
 
@@ -76,8 +76,8 @@ func main() {
 		router.GET("/provisioning/id", handlers.GetProvisioningID)
 	*/
 
-	router.GET("/actions", actions.ActionManager().Info)
-	router.GET("/actions/trigger/:trigger", actions.ActionManager().Config.ActionsByTrigger)
+	//	router.GET("/actions", actions.ActionManager().Info)
+	//	router.GET("/actions/trigger/:trigger", actions.ActionManager().Config.ActionsByTrigger)
 
 	server := http.Server{
 		Addr:           port,
