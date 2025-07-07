@@ -67,7 +67,7 @@ test:
 
 clean:
 	$(GOCLEAN)
-	rm -f $(BUILD_DIR)/$(NAME)
+	rm -rf $(BUILD_DIR)/$(NAME)
 	rm -rf $(BUILD_DIR) files vendor
 	rm -f *.tar.gz
 
