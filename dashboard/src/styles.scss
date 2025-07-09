@@ -1,16 +1,9 @@
-// styles.scss
-// ----------------------------
-// Global SCSS entry point
-// Loads Material themes and app-wide styles
-// ----------------------------
-
 @use './app/themes' as *;
 
-// Global style overrides or additions can go below
-
+// Global app styles
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background-color: mat.get-theme-color($default-theme, background);
+  background-color: var(--md-sys-color-background);
 }

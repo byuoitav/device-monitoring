@@ -59,10 +59,10 @@ build-binaries:
 	done
 
 build-web: $(NG1)
-	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
+	. $$HOME/.nvm/nvm.sh && nvm use 20.19.0 && cd dashboard && npm install && ./node_modules/.bin/ng build --configuration production --base-href /dashboard/
+	@echo "Building web assets..."
 	mkdir -p files
 	mv $(NG1)/dist/$(NG1) files/$(NG1)
-
 test:
 	$(GOTEST) -v -race $$(go list ./... | grep -v /vendor/)
 
