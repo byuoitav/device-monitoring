@@ -45,7 +45,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/nlopes/slack v0.6.0 // indirect
 	github.com/oleiade/reflections v1.1.0 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.36.3 // indirect
@@ -53,6 +52,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/robfig/cron v1.2.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -75,7 +75,7 @@ require (
 )
 
 require (
-	github.com/byuoitav/shipwright v0.0.0-20201020215637-d221b79696ff
+	github.com/byuoitav/shipwright v0.0.0-20190803190148-8de43fc6d948
 	github.com/fatih/color v1.18.0
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.4.2 // indirect
@@ -92,3 +92,7 @@ require (
 	golang.org/x/sys v0.33.0
 	golang.org/x/text v0.25.0 // indirect
 )
+
+replace github.com/byuoitav/wso2services => /home/orcrist/Desktop/wso2services
+
+replace github.com/byuoitav/endpoint-authorization-controller => /home/orcrist/Desktop/endpoint-authorization-controller

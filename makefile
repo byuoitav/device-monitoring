@@ -59,7 +59,7 @@ build-binaries:
 	done
 
 build-web: $(NG1)
-	cd $(NG1) && NODE_OPTIONS=--openssl-legacy-provider $(NPM_INSTALL) && $(NPM_BUILD)
+	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
 	mkdir -p files
 	mv $(NG1)/dist/$(NG1) files/$(NG1)
 
@@ -109,3 +109,9 @@ $(NAME):
 	$(MAKE) build-local
 files/$(NG1):
 	$(MAKE) build-web
+
+# Debug helper
+print-vars:
+	@echo "NAME=$(NAME)"
+	@echo "BRANCH=$(BRANCH)"
+	@echo "BIN_OUTPUT=$(BIN_OUTPUT)"
