@@ -1,4 +1,5 @@
 @use '@angular/material' as mat;
+
 // ----------------------------
 // Define palettes (M3 uses different structure)
 // ----------------------------
@@ -8,13 +9,13 @@ $tertiary: mat.define-palette(mat.$pink-palette);
 $error: mat.define-palette(mat.$red-palette);
 
 // ----------------------------
-// Create theme object
+// Create theme object bo
 // ----------------------------
 
 $default-theme: mat.define-theme((
   color: (
     primary: $primary,
-    secondary: $tertiary,
+    tertiary: $tertiary,
     error: $error
   ),
   typography: mat.define-typography(),
