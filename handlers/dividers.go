@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/byuoitav/device-monitoring/actions/gpio"
@@ -31,7 +30,7 @@ func PresetForHostname(c *gin.Context) {
 	pins := gpio.GetPins()
 
 	if len(pins) != 1 {
-		c.String(http.StatusBadRequest, fmt.Sprintf("not supported in this room"))
+		c.String(http.StatusBadRequest, "not supported in this room")
 		return
 	}
 	preset := pins[0].CurrentPreset(hostname)

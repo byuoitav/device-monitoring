@@ -9,7 +9,6 @@ import (
 
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/actions/activesignal"
-	"github.com/byuoitav/device-monitoring/actions/browser"
 	"github.com/byuoitav/device-monitoring/actions/gpio"
 	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/actions/ping"
@@ -26,12 +25,10 @@ func init() {
 	then.Add("device-health-check", toThenFunc(deviceHealthCheck))
 	then.Add("service-health-check", toThenFunc(serviceHealthCheck))
 	then.Add("state-update", toThenFunc(stateUpdate))
-	then.Add("websocket-browser-check", toThenFunc(websocketBrowserCheck))
 
 	then.Add("hardware-info", toThenFunc(hardwareInfo))
 	then.Add("device-hardware-info", toThenFunc(deviceHardwareInfo))
 	then.Add("monitor-dividers", toThenFunc(monitorDividerSensors))
-	then.Add("live-temperature-check", toThenFunc(liveTemperatureCheck))
 }
 
 // slog to zap logger
@@ -332,36 +329,6 @@ func monitorDividerSensors(ctx context.Context, with []byte, log *zap.SugaredLog
 		for i := range pins {
 			go pins[i].Monitor()
 		}
-	}
-
-	return nil
-}
-
-func websocketBrowserCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
-	var configs []browser.ServiceConfig
-	err := json.Unmarshal(with, &configs)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal browser configs: %w", err)
-	}
-
-	restarted, err := browser.CheckWebSocketCount(ctx, configs)
-	if err != nil {
-		return fmt.Errorf("failed to check websocket count: %w", err)
-	}
-
-	if restarted {
-		id := localsystem.MustSystemID()
-		deviceInfo := events.GenerateBasicDeviceInfo(id)
-		roomInfo := events.GenerateBasicRoomInfo(deviceInfo.RoomID)
-		var event events.Event
-		event.GeneratingSystem = id
-		event.Timestamp = time.Now()
-		event.EventTags = []string{events.DetailState}
-		event.TargetDevice = deviceInfo
-		event.AffectedRoom = roomInfo
-		event.Key = "chrome-restarted"
-		event.Value = "true"
-		messenger.Get().SendEvent(event)
 	}
 
 	return nil

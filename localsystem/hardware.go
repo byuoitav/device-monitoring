@@ -37,8 +37,8 @@ var (
 )
 
 // CPUInfo returns per-CPU and load-average stats.
-func CPUInfo() (map[string]interface{}, error) {
-	info := make(map[string]interface{})
+func CPUInfo() (map[string]any, error) {
+	info := make(map[string]any)
 
 	cpuState, err := cpu.Info()
 	if err != nil {

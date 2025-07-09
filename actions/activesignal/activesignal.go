@@ -127,7 +127,7 @@ func isInputPathActive(ctx context.Context, display base.Display, roomID string,
 
 // isInputActive returns true if the port connecting dest -> src is marked as active
 // if src is nil, then it returns true if dest claims there is an active input
-func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Device, roomDevices []structs.Device) bool {
+func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Device, _ []structs.Device) bool {
 	if dest == nil {
 		slog.Error("destination device passed into isInputActive cannot be null.")
 		return false

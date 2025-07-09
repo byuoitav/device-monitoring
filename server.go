@@ -11,6 +11,7 @@ import (
 	"github.com/byuoitav/device-monitoring/model"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo"
 	"github.com/spf13/pflag"
 
 	_ "github.com/byuoitav/device-monitoring/actions/then"
@@ -20,7 +21,7 @@ var uiURL string
 
 func main() {
 	// start the action manager
-	go actions.ActionManager().Start(context.Background())
+	go actions.ActionManager().Start(context.TODO())
 	messenger.Get().Register(model.ChanEventConverter(actions.ActionManager().EventStream))
 
 	// parse --ui-url
@@ -93,8 +94,8 @@ func main() {
 		router.GET("/provisioning/id", handlers.GetProvisioningID)
 	*/
 
-	router.GET("/actions", actions.ActionManager().Info)
-	router.GET("/actions/trigger/:trigger", actions.ActionManager().Config.ActionsByTrigger)
+	router.GET("/actions", echoToGinHandler(actions.ActionManager().Info))
+	router.GET("/actions/trigger/:trigger", echoToGinHandler(actions.ActionManager().Config.ActionsByTrigger))
 
 	// reSyncDB (old SWAB)
 	router.GET("/resyncDB", handlers.ResyncDB)
@@ -120,4 +121,22 @@ func redirectHandler(c *gin.Context) {
 	}
 	host := strings.Split(c.Request.Host, ":")[0]
 	c.Redirect(http.StatusTemporaryRedirect, "http://"+host+"/")
+}
+
+// echoToGinHandler adapts an Echo handler to a Gin handler
+func echoToGinHandler(echoHandler func(echo.Context) error) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Create a fake Echo context to satisfy the handler
+		e := echo.New()
+		req := c.Request
+		res := c.Writer
+
+		// Bind the Gin context to an Echo context
+		echoCtx := e.NewContext(req, res)
+
+		// Run the Echo handler
+		if err := echoHandler(echoCtx); err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+		}
+	}
 }

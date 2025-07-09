@@ -59,7 +59,7 @@ func Get(ctx context.Context, roomID string) (base.PublicRoom, error) {
 		return state, fmt.Errorf("failed to read AV-API response - %v", err)
 	}
 
-	if resp.StatusCode/100 != 2 {
+	if resp.StatusCode != http.StatusOK {
 		slog.Error("Failed to get room state",
 			slog.String("roomID", roomID),
 			slog.Int("status_code", resp.StatusCode),
