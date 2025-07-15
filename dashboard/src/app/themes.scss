@@ -1,73 +1,53 @@
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
-// ----------------------------
-// Define palettes (M3 uses different structure)
-// ----------------------------
+// default (light) theme
+$default-primary: mat.m2-define-palette(mat.$m2-blue-palette, 800, 600, 900);
+$default-accent: mat.m2-define-palette(mat.$m2-blue-grey-palette);
+$default-warn: mat.m2-define-palette(mat.$m2-pink-palette);
 
-$primary: mat.define-palette(mat.$blue-palette);
-$tertiary: mat.define-palette(mat.$pink-palette);
-$error: mat.define-palette(mat.$red-palette);
-
-// ----------------------------
-// Create theme object bo
-// ----------------------------
-
-$default-theme: mat.define-theme((
+$default: mat.m2-define-light-theme((
   color: (
-    primary: $primary,
-    tertiary: $tertiary,
-    error: $error
+    primary: $default-primary,
+    accent: $default-accent,
+    warn: $default-warn,
   ),
-  typography: mat.define-typography(),
-  density: 0
+  typography: mat.m2-define-typography-config(),
+  density: 0,
 ));
 
-// ----------------------------
-// Include base styles
-// ----------------------------
+// Emit theme-dependent styles for common features used across multiple components.
+@include mat.core-theme($default);
 
-@include mat.core();
-@include mat.all-component-themes($default-theme);
+// theme for status (success/warning/error) colors
+$status-primary: mat.m2-define-palette(mat.$m2-green-palette);
+$status-accent: mat.m2-define-palette(mat.$m2-yellow-palette);
+$status-warn: mat.m2-define-palette(mat.$m2-red-palette);
 
-// ----------------------------
-// Optional: Dark theme
-// ----------------------------
-
-$dark-theme: mat.define-theme((
+$status: mat.m2-define-light-theme((
   color: (
-    primary: $primary,
-    tertiary: $tertiary,
-    error: $error,
-    theme-type: dark
+    primary: $status-primary,
+    accent: $status-accent,
+    warn: $status-warn,
   ),
-  typography: mat.define-typography(),
-  density: 0
+  typography: mat.m2-define-typography-config(),
+  density: 0,
 ));
+// Emit theme-dependent styles for common features used across multiple components.
+#status-theme {
+  @include mat.core-theme($status);
+}
 
+// dark theme :)
+$dark: mat.m2-define-dark-theme((
+  color: (
+    primary: $default-primary,
+    accent: $default-accent,
+    warn: $default-warn,
+  ),
+  typography: mat.m2-define-typography-config(),
+  density: 0,
+));
+// Emit theme-dependent styles for common features used across multiple components.
 .dark-theme {
-  @include mat.all-component-themes($dark-theme);
-}
-
-// ----------------------------
-// CSS variables for runtime theming
-// ----------------------------
-
-:root {
-  @include mat.color-variables($default-theme);
-  @include mat.typography-variables($default-theme);
-  @include mat.elevation-variables($default-theme);
-}
-
-.dark-theme {
-  @include mat.color-variables($dark-theme);
-  @include mat.typography-variables($dark-theme);
-  @include mat.elevation-variables($dark-theme);
-}
-
-// ----------------------------
-// Global Font
-// ----------------------------
-
-body {
-  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+  @include mat.core-theme($dark);
 }
