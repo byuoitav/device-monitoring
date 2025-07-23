@@ -7,7 +7,6 @@ require (
 	github.com/byuoitav/central-event-system v0.0.0-20200121172633-64fd9d467249
 	github.com/byuoitav/common v0.0.0-20230217215806-8472d0ddbfb3
 	github.com/docker/docker v27.3.1+incompatible
-	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-kivik/kivik/v4 v4.4.0
 	github.com/gorilla/websocket v1.4.2
@@ -77,12 +76,12 @@ require (
 require (
 	github.com/byuoitav/shipwright v0.0.0-20190803190148-8de43fc6d948
 	github.com/fatih/color v1.18.0
+	github.com/gin-contrib/static v1.1.5
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/spf13/pflag v1.0.5
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/multierr v1.10.0 // indirect

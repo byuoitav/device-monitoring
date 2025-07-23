@@ -59,7 +59,7 @@ build-binaries:
 	done
 
 build-web: $(NG1)
-	. $$HOME/.nvm/nvm.sh && nvm use 20.19.0 && cd dashboard && npm install && ./node_modules/.bin/ng build --configuration production --base-href /dashboard/
+	. $$HOME/.nvm/nvm.sh && nvm use 20.19.0 && cd dashboard && npm install && ./node_modules/.bin/ng build --configuration production --base-href /dashboard
 	@echo "Building web assets..."
 	mkdir -p files
 	mv $(NG1)/dist/$(NG1) files/$(NG1)
@@ -71,6 +71,7 @@ clean:
 	rm -rf $(NAME)
 	rm -rf $(BUILD_DIR) files vendor
 	rm -rf *.tar.gz
+	rm -rf dist
 
 deps:
 	npm config set unsafe-perm true

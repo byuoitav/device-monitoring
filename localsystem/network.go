@@ -73,10 +73,11 @@ func IsConnectedToInternet() bool {
 	return true
 }
 
-// UsingDHCP returns true if the device is using DHCP, and false if it has a static ip set.tenidno
+// UsingDHCP returns true if the device is using DHCP, and false if it has a static ip set.
 func UsingDHCP() (bool, error) {
 	// read dhcpcd.conf file
 	contents, err := os.ReadFile(dhcpFile)
+	//nmcli
 	if err != nil {
 		return false, fmt.Errorf("unable to read %s: %w", dhcpFile, err)
 	}

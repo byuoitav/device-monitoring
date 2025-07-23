@@ -2,53 +2,53 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
-	"strings"
+	"os"
+	"time"
 
 	"github.com/byuoitav/device-monitoring/actions"
+	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/messenger"
 	"github.com/byuoitav/device-monitoring/model"
-	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/labstack/echo"
-	"github.com/spf13/pflag"
 
 	_ "github.com/byuoitav/device-monitoring/actions/then"
 )
 
-var uiURL string
-
 func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := couchdb.ValidateConnection(ctx); err != nil {
+		slog.Error("Failed to connect to CouchDB", slog.Any("error", err))
+		os.Exit(1)
+	}
+	slog.Info("Successfully connected to CouchDB")
+
 	// start the action manager
 	go actions.ActionManager().Start(context.TODO())
 	messenger.Get().Register(model.ChanEventConverter(actions.ActionManager().EventStream))
-
-	// parse --ui-url
-	pflag.StringVar(&uiURL, "ui-url", "", "url to redirect to the ui")
-	pflag.Parse()
 
 	// create Gin router
 	port := ":10000"
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
-	router.Use(cors.Default())
+
+	// redirect from /dash to /dashboard
+	router.GET("/dash", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/dashboard")
+	})
+
+	// static webpages
+	router.Use(static.Serve("/dashboard", static.LocalFile("dashboard", true)))
 
 	// health endpoint
 	router.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "Don't meddle in the affairs of Wizards, for they are subtle and quick to anger.")
 	})
-
-	// dash & root redirects
-	router.GET("/dash", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/dashboard")
-	})
-	router.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/dashboard")
-	})
-
-	// serve SPA (static files)
-	router.StaticFS("/dashboard", http.Dir("dashboard"))
 
 	// device info endpoints
 	router.GET("/device", handlers.GetDeviceInfo)
@@ -61,70 +61,57 @@ func main() {
 	router.GET("/device/hardwareinfo", handlers.HardwareInfo)
 	router.PUT("/device/health", handlers.GetServiceHealth)
 
-	// room info endpoints
+	// room info endpoints]
+	// TODO: fix nothing shows on hardwareinfo and health
 	router.GET("/room/ping", handlers.PingRoom)
 	router.GET("/room/state", handlers.RoomState)
 	router.GET("/room/activesignal", handlers.ActiveSignal)
-	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
-	router.GET("/room/viainfo", handlers.ViaInfo)
-	router.GET("/room/health", handlers.RoomHealth)
+	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo) // nothing shows
+	router.GET("/room/health", handlers.RoomHealth)               // nothing shows
 
 	// action endpoints
+	// TODO: check is this work with shipwright
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
 	router.POST("/event", handlers.SendEvent)
 
 	// divider sensors
+	// TODO: send actual feedback message
 	router.GET("/divider/state", handlers.GetDividerState)
 	router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
+
+	// action manager
+	router.GET("/actions", func(c *gin.Context) {
+		c.JSON(http.StatusOK, actions.ActionManager().Info)
+	})
+	router.GET("/actions/trigger/:trigger", func(c *gin.Context) {
+		c.JSON(http.StatusOK, actions.ActionManager().Config.ActionsByTrigger)
+	})
 
 	// flush dns cache
 	router.GET("/dns", handlers.FlushDNS)
 
-	// dynamic UI redirect
-	router.GET("/ui", redirectHandler)
-
-	/*
-		// test mode endpoints
-		// router.GET("/maintenance", handlers.IsInMaintMode)
-		// router.PUT("/maintenance", handlers.ToggleMaintMode)
-
-		// provisioning endpoints
-		router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioning.SocketManager()))
-		router.GET("/provisioning/id", handlers.GetProvisioningID)
-	*/
-
-	router.GET("/actions", echoToGinHandler(actions.ActionManager().Info))
-	router.GET("/actions/trigger/:trigger", echoToGinHandler(actions.ActionManager().Config.ActionsByTrigger))
-
 	// reSyncDB (old SWAB)
-	router.GET("/resyncDB", handlers.ResyncDB)
+	// TODO: fix this, it was failing with 405 Method Not Allowed
+	router.GET("/resyncDB", handlers.ResyncDB) // failed to refresh Ui: 405 Method Not Allowed
 
 	// refreshContainers (old refloat)
-	router.GET("/refreshContainers", handlers.RefreshContainers)
+	// TODO: fix this, it was response from flight-deck {"error":"Not Authorized"}
+	router.GET("/refreshContainers", handlers.RefreshContainers) //{"error":"Not Authorized"} response from flight-deck
 
 	// New Router Group for the API with versioning /api/v1 or /api/v2 etc.
 	// This is where you would add your API endpoints
 	api := router.Group("/api")
 	// returns JSON of all the devices and their health
-	api.GET("/v1/monitoring", handlers.GetDeviceHealth)
+	// TODO: fix missing room_id
+	api.GET("/v1/monitoring", handlers.GetDeviceHealth) // missing room_id
 
 	// run!
 	router.Run(port)
 }
 
-// redirectHandler handles the redirect to the UI
-func redirectHandler(c *gin.Context) {
-	if uiURL != "" {
-		c.Redirect(http.StatusTemporaryRedirect, "http://"+uiURL)
-		return
-	}
-	host := strings.Split(c.Request.Host, ":")[0]
-	c.Redirect(http.StatusTemporaryRedirect, "http://"+host+"/")
-}
-
 // echoToGinHandler adapts an Echo handler to a Gin handler
-func echoToGinHandler(echoHandler func(echo.Context) error) gin.HandlerFunc {
+/*func echoToGinHandler(echoHandler func(echo.Context) error) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Create a fake Echo context to satisfy the handler
 		e := echo.New()
@@ -139,4 +126,4 @@ func echoToGinHandler(echoHandler func(echo.Context) error) gin.HandlerFunc {
 			c.String(http.StatusInternalServerError, err.Error())
 		}
 	}
-}
+}*/

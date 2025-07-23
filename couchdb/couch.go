@@ -3,13 +3,15 @@ package couchdb
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/byuoitav/device-monitoring/model"
-	"github.com/go-kivik/kivik/v4"
+	kivik "github.com/go-kivik/kivik/v4"
+	_ "github.com/go-kivik/kivik/v4/couchdb" // The CouchDB driver
 )
 
 var (
@@ -20,21 +22,30 @@ var (
 )
 
 func initClient() {
-	addr := os.Getenv("COUCHDB_ADDR") // e.g. http://localhost:5984
-	if addr == "" {
-		clientErr = fmt.Errorf("COUCHDB_ADDR environment variable not set")
-		return
-	}
-
-	if !strings.HasPrefix(addr, "http") {
-		addr = "http://" + addr
-	}
-
-	client, clientErr = kivik.New("couch", addr)
+	username := os.Getenv("DB_USERNAME")
+	password := os.Getenv("DB_PASSWORD")
+	address := os.Getenv("DB_ADDRESS") // should be something like "http://localhost:5984"
 	dbName = os.Getenv("COUCHDB_DB")
+
 	if dbName == "" {
 		dbName = "devices"
 	}
+
+	if username == "" || password == "" || address == "" {
+		clientErr = fmt.Errorf("missing DB_USERNAME, DB_PASSWORD, or DB_ADDRESS")
+		return
+	}
+
+	// Trim possible scheme prefix from address for later parsing
+	address = strings.TrimPrefix(address, "http://")
+	fullURL := fmt.Sprintf("http://%s:%s@%s", username, password, address)
+
+	// Mask password for logging
+	maskedURL := fmt.Sprintf("http://%s:*****@%s", username, address)
+	slog.Info("Initializing CouchDB client", slog.String("addr", maskedURL), slog.String("db", dbName))
+
+	// Create the Kivik client
+	client, clientErr = kivik.New("couch", fullURL)
 }
 
 func getClient() (*kivik.Client, error) {
@@ -105,4 +116,28 @@ func GetDevicesByRoomAndType(ctx context.Context, roomID, typeID string) ([]mode
 		fmt.Printf("No filtering applied, all %d devices in room %s with type %s\n", len(filtered), roomID, typeID)
 	}
 	return filtered, nil
+}
+
+// ValidateConnection tries to connect to CouchDB and ping the DB.
+func ValidateConnection(ctx context.Context) error {
+	client, err := getClient()
+	if err != nil {
+		return fmt.Errorf("couchdb client error: %w", err)
+	}
+
+	// verify connectivity to CouchDB server
+	ping, err := client.Ping(ctx)
+	if err != nil {
+		return fmt.Errorf("couchdb server ping failed: %w", err)
+	}
+	if !ping {
+		return fmt.Errorf("couchdb server is not reachable")
+	}
+	// verify the DB is usable
+	db := client.DB(dbName)
+	if err := db.Err(); err != nil {
+		return fmt.Errorf("couchdb db error: %w", err)
+	}
+
+	return nil
 }

@@ -30,7 +30,7 @@ func ResyncDB(ctx *gin.Context) {
 	rplUrl := fmt.Sprintf("%s:7012/replication/start", localhost)
 
 	// start the db replication
-	req, err := http.NewRequestWithContext(ctx.Request.Context(), http.MethodPost, rplUrl, nil)
+	req, err := http.NewRequestWithContext(ctx.Request.Context(), http.MethodGet, rplUrl, nil)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to create replication request: %v", err))
 		return
