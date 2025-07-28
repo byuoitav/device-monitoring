@@ -17,3 +17,6 @@ vendor/
 .angular/cache/
 
 .yaml
+
+# ignore dist directory
+dist/

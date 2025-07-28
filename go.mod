@@ -76,7 +76,6 @@ require (
 require (
 	github.com/byuoitav/shipwright v0.0.0-20190803190148-8de43fc6d948
 	github.com/fatih/color v1.18.0
-	github.com/gin-contrib/static v1.1.5
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

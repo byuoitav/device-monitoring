@@ -158,7 +158,7 @@ func GetServiceHealth(c *gin.Context) {
 	var configs []health.ServiceCheckConfig
 	if err := c.Bind(&configs); err != nil {
 		slog.Error("failed to bind health config", slog.Any("error", err))
-		c.String(http.StatusBadRequest, err.Error())
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 

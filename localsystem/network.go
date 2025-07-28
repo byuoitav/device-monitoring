@@ -96,7 +96,9 @@ func UsingDHCP() (bool, error) {
 		return false, fmt.Errorf("failed to run nmcli command: %w", err)
 	}
 
+	// Parse the output ipv4.method:string method is only after the colon
 	method := strings.TrimSpace(out.String())
+	method = strings.TrimPrefix(method, "ipv4.method:")
 	switch method {
 	case "auto":
 		return true, nil

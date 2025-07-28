@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/byuoitav/device-monitoring/actions"
@@ -12,8 +13,8 @@ import (
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/messenger"
 	"github.com/byuoitav/device-monitoring/model"
-	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo"
 
 	_ "github.com/byuoitav/device-monitoring/actions/then"
 )
@@ -42,8 +43,17 @@ func main() {
 		c.Redirect(http.StatusMovedPermanently, "/dashboard")
 	})
 
-	// static webpages
-	router.Use(static.Serve("/dashboard", static.LocalFile("dashboard", true)))
+	router.Static("/dashboard", "./dashboard")
+
+	// HTML5 fallback for SPA (if requested file doesn't exist)
+	router.NoRoute(func(c *gin.Context) {
+		// if request starts with /dashboard, serve index.html
+		if len(c.Request.URL.Path) >= 10 && c.Request.URL.Path[:10] == "/dashboard" {
+			c.File(filepath.Join("dashboard", "index.html"))
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
+	})
 
 	// health endpoint
 	router.GET("/health", func(c *gin.Context) {
@@ -82,10 +92,11 @@ func main() {
 
 	// action manager
 	router.GET("/actions", func(c *gin.Context) {
-		c.JSON(http.StatusOK, actions.ActionManager().Info)
+		c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Info))
 	})
+
 	router.GET("/actions/trigger/:trigger", func(c *gin.Context) {
-		c.JSON(http.StatusOK, actions.ActionManager().Config.ActionsByTrigger)
+		c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Config.ActionsByTrigger))
 	})
 
 	// flush dns cache
@@ -103,27 +114,30 @@ func main() {
 	// This is where you would add your API endpoints
 	api := router.Group("/api")
 	// returns JSON of all the devices and their health
-	// TODO: fix missing room_id
-	api.GET("/v1/monitoring", handlers.GetDeviceHealth) // missing room_id
+	// TODO: check if we want this to use a ?room_id query parameter or get all devices in the room
+	api.GET("/v1/monitoring", handlers.GetDeviceHealth)
 
 	// run!
 	router.Run(port)
 }
 
-// echoToGinHandler adapts an Echo handler to a Gin handler
-/*func echoToGinHandler(echoHandler func(echo.Context) error) gin.HandlerFunc {
+// echoToGin adapts an Echo handler to a Gin handler (this is hacky and needs to be fixed)
+// This is a workaround to use Echo handlers in Gin, which is not ideal but works for now.
+// Needs to be fixed in shipwright or replaced with Gin handlers.
+func echoToGin(eh func(echo.Context) error) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Create a fake Echo context to satisfy the handler
-		e := echo.New()
-		req := c.Request
-		res := c.Writer
+		// create a minimal Echo context
+		eCtx := echo.New().NewContext(c.Request, c.Writer)
 
-		// Bind the Gin context to an Echo context
-		echoCtx := e.NewContext(req, res)
+		// copy params (optional, if Info() uses them)
+		for _, param := range c.Params {
+			eCtx.SetParamNames(param.Key)
+			eCtx.SetParamValues(param.Value)
+		}
 
-		// Run the Echo handler
-		if err := echoHandler(echoCtx); err != nil {
+		// execute the Echo handler
+		if err := eh(eCtx); err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 		}
 	}
-}*/
+}

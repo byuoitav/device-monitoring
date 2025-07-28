@@ -59,10 +59,26 @@ build-binaries:
 	done
 
 build-web: $(NG1)
-	. $$HOME/.nvm/nvm.sh && nvm use 20.19.0 && cd dashboard && npm install && ./node_modules/.bin/ng build --configuration production --base-href /dashboard
-	@echo "Building web assets..."
-	mkdir -p files
-	mv $(NG1)/dist/$(NG1) files/$(NG1)
+	@echo "Building Angular dashboard..."
+	. $$HOME/.nvm/nvm.sh && nvm use 20.19.0 \
+		&& cd dashboard \
+		&& npm install \
+		&& ./node_modules/.bin/ng build --configuration production --base-href /dashboard
+
+	@echo "Copying built web assets..."
+	mkdir -p files/$(NG1)
+
+	@if [ -d "$(NG1)/dist/$(NG1)/browser" ]; then \
+		echo "Detected Angular new builder output (browser/)"; \
+		cp -r $(NG1)/dist/$(NG1)/browser/* files/$(NG1)/; \
+	elif [ -d "$(NG1)/dist/$(NG1)/media"]; then \
+		echo "Detected Angular new builder output (media/)"; \
+		cp -r $(NG1)/dist/$(NG1)/media/* files/$(NG1)/; \
+	else \
+		echo "Detected classic Angular output"; \
+		cp -r $(NG1)/dist/$(NG1)/* files/$(NG1)/; \
+	fi
+
 test:
 	$(GOTEST) -v -race $$(go list ./... | grep -v /vendor/)
 

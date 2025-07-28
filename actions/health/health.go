@@ -22,12 +22,15 @@ const (
 // HealthStatus is the JSON‑serializable result for one device.
 type HealthStatus struct {
 	DeviceID string `json:"device_id"`
-	Status   string `json:"status"`          // "healthy" or "error"
-	Error    string `json:"error,omitempty"` // populated if Status=="error"
+	Status   string `json:"status"` // "healthy" or "error" or "not supported"
+	// If Status is "healthy", no Error field is populated.
+	Error string `json:"error,omitempty"` // populated if Status=="error"
 }
 
-// GetDeviceHealth looks up all devices in the room, skips those without the HealthCheck commnad,
-// the probes each device in parallel.
+// GetDeviceHealth looks up all devices in the room and checks their health.
+// if a device does not have an address or does not support the health check command, add it with status "not supported".
+// and it's why it was not checked.
+// Returns a slice of HealthStatus for each device in the room.
 func GetDeviceHealth(ctx context.Context, roomID string) ([]HealthStatus, error) {
 	devices, err := couchdb.GetDevicesByRoom(ctx, roomID)
 	if err != nil {
@@ -40,6 +43,11 @@ func GetDeviceHealth(ctx context.Context, roomID string) ([]HealthStatus, error)
 
 	for _, dev := range devices {
 		if dev.Address == "" || !dev.HasCommand(healthCheckCmd) {
+			results = append(results, HealthStatus{
+				DeviceID: dev.ID,
+				Status:   "not supported",
+				Error:    "device has no address or does not support health check command",
+			})
 			continue
 		}
 		wg.Add(1)
@@ -90,4 +98,17 @@ func probe(device model.Device) HealthStatus {
 
 	hs.Status = healthyStatus
 	return hs
+}
+
+func GetRoomHealth(ctx context.Context, roomID string) ([]HealthStatus, error) {
+	results, err := GetDeviceHealth(ctx, roomID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device health: %w", err)
+	}
+
+	if len(results) == 0 {
+		return nil, fmt.Errorf("no devices found in room %s", roomID)
+	}
+
+	return results, nil
 }

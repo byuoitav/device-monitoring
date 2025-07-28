@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	hardwareInfoCommandID = "HardwareInfo"
+	hardwareInfoCommandID = "Hardware_Info"
 )
 
 // RoomDevicesInfo queries every non‑Pi device in the room for its hardware info.
@@ -37,6 +37,7 @@ func RoomDevicesInfo(ctx context.Context) (map[string]model.HardwareInfo, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list devices in room %q: %w", roomID, err)
 	}
+	slog.Info("Devices fetched", slog.Int("count", len(devices)), slog.String("room_id", roomID))
 
 	// concurrently collect each device’s hardware info
 	infoMap := make(map[string]model.HardwareInfo, len(devices))
@@ -46,9 +47,10 @@ func RoomDevicesInfo(ctx context.Context) (map[string]model.HardwareInfo, error)
 	for _, dev := range devices {
 		// skip Pis, zero‑address, or devices without the command
 		if dev.Type.ID == "Pi3" ||
-			dev.Address == "" ||
+			len(dev.Address) == 0 ||
 			dev.Address == "0.0.0.0" ||
 			!dev.HasCommand(hardwareInfoCommandID) {
+			slog.Info("Skipping device", slog.String("id", dev.ID), slog.String("type", dev.Type.ID), slog.String("address", dev.Address), slog.Bool("has_command", dev.HasCommand(hardwareInfoCommandID)))
 			continue
 		}
 

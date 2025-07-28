@@ -59,7 +59,7 @@ func ResyncDB(ctx *gin.Context) {
 	// refresh UI URL
 	uiUrl := fmt.Sprintf("%s:8888/refresh", localhost)
 	// refresh the UI
-	req, err = http.NewRequestWithContext(ctx.Request.Context(), http.MethodPost, uiUrl, nil)
+	req, err = http.NewRequestWithContext(ctx.Request.Context(), http.MethodPut, uiUrl, nil)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to create refresh UI request: %v", err))
 		return
@@ -121,7 +121,7 @@ func RefreshContainers(ctx *gin.Context) {
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, fmt.Sprintf("%v response from flight-deck", err))
+			ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body: %v response from flight-deck", err))
 			return
 		}
 

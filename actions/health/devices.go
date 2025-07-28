@@ -35,15 +35,17 @@ func GetDeviceAPIHealth(ctx context.Context) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list devices in room %q: %w", roomID, err)
 	}
+	slog.Info("Devices fetched", slog.Int("count", len(devices)), slog.String("room_id", roomID))
 
 	healthy := make(map[string]string, len(devices))
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
 	for _, dev := range devices {
-		if dev.Address == "" ||
+		if len(dev.Address) == 0 ||
 			dev.Address == "0.0.0.0" ||
 			!dev.HasCommand(healthyCommandID) {
+			slog.Info("Skipping device", slog.String("id", dev.ID), slog.String("type", dev.Type.ID), slog.String("address", dev.Address), slog.Bool("has_command", dev.HasCommand(healthyCommandID)))
 			continue
 		}
 
@@ -89,7 +91,7 @@ func isDeviceAPIHealthy(ctx context.Context, device model.Device) string {
 		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}
 
-	if resp.StatusCode/100 != 2 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Sprintf("failed health check. response: %s", bytes)
 	}
 
