@@ -103,8 +103,7 @@ func main() {
 	router.GET("/dns", handlers.FlushDNS)
 
 	// reSyncDB (old SWAB)
-	// TODO: fix this, it was failing with 405 Method Not Allowed
-	router.GET("/resyncDB", handlers.ResyncDB) // failed to refresh Ui: 405 Method Not Allowed
+	router.GET("/resyncDB", handlers.ResyncDB)
 
 	// refreshContainers (old refloat)
 	// TODO: fix this, it was response from flight-deck {"error":"Not Authorized"}
