@@ -76,6 +76,7 @@ func ResyncDB(ctx *gin.Context) {
 	}
 
 	// restart the device monitoring service (dmm) with systemctl
+	// after this the dmm goes offliine for a few seconds so we need to wait for it to come back online
 	cmd := exec.Command("sudo", "systemctl", "restart", "device-monitoring.service")
 	output, err := cmd.Output()
 	if err != nil {

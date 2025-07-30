@@ -3,6 +3,7 @@ module github.com/byuoitav/device-monitoring
 go 1.23.1
 
 require (
+	github.com/byuoitav/auth v0.3.6
 	github.com/byuoitav/av-api v1.0.1-0.20200922205639-e147ea6cc7a9
 	github.com/byuoitav/central-event-system v0.0.0-20200121172633-64fd9d467249
 	github.com/byuoitav/common v0.0.0-20230217215806-8472d0ddbfb3
@@ -35,6 +36,7 @@ require (
 	github.com/go-redis/redis v6.15.7+incompatible // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
@@ -52,6 +54,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/robfig/cron v1.2.0 // indirect
+	github.com/segmentio/ksuid v1.0.3 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -78,6 +81,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.4.2 // indirect
+	github.com/lmittmann/tint v1.1.2
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible

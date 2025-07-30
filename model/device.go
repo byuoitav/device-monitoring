@@ -41,8 +41,8 @@ type Endpoint struct {
 
 // HasCommand checks if this device type supports the given command.
 func (d *Device) HasCommand(commandID string) bool {
-	for _, command := range d.Type.Commands {
-		if command.ID == commandID {
+	for i := range d.Type.Commands {
+		if d.Type.Commands[i].ID == commandID {
 			return true
 		}
 	}
@@ -78,6 +78,7 @@ func (d *Device) BuildCommandURL(commandID string) (string, error) {
 		slog.Error("command not found in device type",
 			slog.String("deviceID", d.ID),
 			slog.String("commandID", commandID),
+			slog.Any("commands", d.Type.Commands),
 		)
 		return "", fmt.Errorf("command %s not found in device type %s", commandID, d.Type.Commands)
 	}

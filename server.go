@@ -16,10 +16,23 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo"
 
+	"github.com/lmittmann/tint"
+
 	_ "github.com/byuoitav/device-monitoring/actions/then"
 )
 
 func main() {
+
+	// set up logging
+	w := os.Stderr
+	handler := tint.NewHandler(w, &tint.Options{
+		Level:      slog.LevelDebug,
+		TimeFormat: time.Kitchen,
+	})
+	slog.SetDefault(slog.New(handler))
+
+	slog.Info("Starting device-monitoring server")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -77,7 +90,7 @@ func main() {
 	router.GET("/room/state", handlers.RoomState)
 	router.GET("/room/activesignal", handlers.ActiveSignal)
 	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo) // nothing shows
-	router.GET("/room/health", handlers.RoomHealth)               // nothing shows
+	router.GET("/room/health", handlers.RoomHealth)
 
 	// action endpoints
 	// TODO: check is this work with shipwright

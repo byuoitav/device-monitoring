@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	hardwareInfoCommandID = "Hardware_Info"
+	hardwareInfoCommandID = "HardwareInfo"
 )
 
 // RoomDevicesInfo queries every non‑Pi device in the room for its hardware info.
@@ -44,16 +44,15 @@ func RoomDevicesInfo(ctx context.Context) (map[string]model.HardwareInfo, error)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	for _, dev := range devices {
-		// skip Pis, zero‑address, or devices without the command
-		if dev.Type.ID == "Pi3" ||
-			len(dev.Address) == 0 ||
-			dev.Address == "0.0.0.0" ||
-			!dev.HasCommand(hardwareInfoCommandID) {
-			slog.Info("Skipping device", slog.String("id", dev.ID), slog.String("type", dev.Type.ID), slog.String("address", dev.Address), slog.Bool("has_command", dev.HasCommand(hardwareInfoCommandID)))
+	for i := range devices {
+		// skip the pi's
+		if devices[i].Type.ID == "Pi3" ||
+			devices[i].Address == "0.0.0.0" ||
+			len(devices[i].Address) == 0 ||
+			!devices[i].HasCommand(hardwareInfoCommandID) {
+			slog.Debug("Skipping device", slog.Any("device", devices[i]))
 			continue
 		}
-
 		wg.Add(1)
 		go func(d model.Device) {
 			defer wg.Done()
@@ -62,7 +61,7 @@ func RoomDevicesInfo(ctx context.Context) (map[string]model.HardwareInfo, error)
 			mu.Lock()
 			infoMap[d.ID] = hw
 			mu.Unlock()
-		}(dev)
+		}(devices[i])
 	}
 
 	wg.Wait()

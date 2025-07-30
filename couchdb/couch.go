@@ -91,6 +91,26 @@ func GetDevicesByRoom(ctx context.Context, roomID string) ([]model.Device, error
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
+
+	// populate the device Types with their commands found in the device_types database
+	for i := range out {
+		if out[i].Type.ID == "" {
+			slog.Warn("Device has no type ID, skipping", slog.String("device_id", out[i].ID))
+			continue
+		}
+		typeID := out[i].Type.ID
+		typeDoc := client.DB("device_types").Get(ctx, typeID)
+		if typeDoc.Err() != nil {
+			slog.Error("Failed to get device type", slog.String("type_id", typeID), slog.Any("error", typeDoc.Err()))
+			continue
+		}
+		var deviceType model.DeviceType
+		if err := typeDoc.ScanDoc(&deviceType); err != nil {
+			slog.Error("Failed to scan device type", slog.String("type_id", typeID), slog.Any("error", err))
+			continue
+		}
+		out[i].Type = deviceType
+	}
 	return out, nil
 }
 

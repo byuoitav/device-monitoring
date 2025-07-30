@@ -38,3 +38,4 @@ replace github.com/byuoitav/endpoint-authorization-controller => /home/user/Desk
 ```
 This packages are not available in the public repositories, so you need to replace them with the local paths where you have them cloned.
 
+ 

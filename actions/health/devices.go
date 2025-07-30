@@ -45,7 +45,6 @@ func GetDeviceAPIHealth(ctx context.Context) (map[string]string, error) {
 		if len(dev.Address) == 0 ||
 			dev.Address == "0.0.0.0" ||
 			!dev.HasCommand(healthyCommandID) {
-			slog.Info("Skipping device", slog.String("id", dev.ID), slog.String("type", dev.Type.ID), slog.String("address", dev.Address), slog.Bool("has_command", dev.HasCommand(healthyCommandID)))
 			continue
 		}
 
@@ -67,6 +66,7 @@ func GetDeviceAPIHealth(ctx context.Context) (map[string]string, error) {
 func isDeviceAPIHealthy(ctx context.Context, device model.Device) string {
 	// build the command
 	address, err := device.BuildCommandURL(healthyCommandID)
+	slog.Debug("Building command URL", slog.String("device_id", device.ID), slog.String("address", address))
 	if err != nil {
 		return fmt.Sprintf("unable to check if API is healthy: %s", err.Error())
 	}

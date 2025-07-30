@@ -4,17 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/model"
 )
 
 const (
-	HealthEndpoint = "/health"
 	healthyStatus  = "healthy"
 	healthCheckCmd = "HealthCheck"
 )
@@ -22,7 +21,7 @@ const (
 // HealthStatus is the JSON‑serializable result for one device.
 type HealthStatus struct {
 	DeviceID string `json:"device_id"`
-	Status   string `json:"status"` // "healthy" or "error" or "not supported"
+	Status   string `json:"status"` // "healthy" or "error"
 	// If Status is "healthy", no Error field is populated.
 	Error string `json:"error,omitempty"` // populated if Status=="error"
 }
@@ -42,12 +41,9 @@ func GetDeviceHealth(ctx context.Context, roomID string) ([]HealthStatus, error)
 	var wg sync.WaitGroup
 
 	for _, dev := range devices {
-		if dev.Address == "" || !dev.HasCommand(healthCheckCmd) {
-			results = append(results, HealthStatus{
-				DeviceID: dev.ID,
-				Status:   "not supported",
-				Error:    "device has no address or does not support health check command",
-			})
+		if len(dev.Address) == 0 ||
+			dev.Address == "0.0.0.0" ||
+			!dev.HasCommand(healthCheckCmd) {
 			continue
 		}
 		wg.Add(1)
@@ -68,35 +64,45 @@ func GetDeviceHealth(ctx context.Context, roomID string) ([]HealthStatus, error)
 func probe(device model.Device) HealthStatus {
 	hs := HealthStatus{DeviceID: device.ID}
 
-	url := strings.TrimRight(device.Address, "/") + HealthEndpoint
-	req, err := http.NewRequest("GET", url, nil)
+	address, err := device.BuildCommandURL(healthCheckCmd)
 	if err != nil {
 		hs.Status = "error"
-		hs.Error = err.Error()
+		hs.Error = fmt.Sprintf("unable to build command URL: %s", err.Error())
 		return hs
 	}
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
+	// fill in the address
+	address = strings.Replace(address, ":address", device.Address, 1)
+	req, err := http.NewRequest("GET", address, nil)
 	if err != nil {
 		hs.Status = "error"
-		hs.Error = err.Error()
+		hs.Error = fmt.Sprintf("unable to create request: %s", err.Error())
+		return hs
+	}
+	req.Header.Set("User-Agent", "Device Monitoring Health Check")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		hs.Status = "error"
+		hs.Error = fmt.Sprintf("unable to check health: %s", err.Error())
 		return hs
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		hs.Status = "error"
-		hs.Error = err.Error()
+		hs.Error = fmt.Sprintf("unable to read response: %s", err.Error())
 		return hs
 	}
-	if resp.StatusCode/100 != 2 {
+	if resp.StatusCode != http.StatusOK {
 		hs.Status = "error"
-		hs.Error = fmt.Sprintf("status %d: %s", resp.StatusCode, string(body))
+		hs.Error = fmt.Sprintf("health check failed. response: %s", bytes)
 		return hs
 	}
-
 	hs.Status = healthyStatus
+	// if the response is not empty, we can log it
+	if len(bytes) > 0 {
+		slog.Info("Health check response", slog.String("device_id", device.ID), slog.String("response", string(bytes)))
+	}
 	return hs
 }
 
