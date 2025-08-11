@@ -8,15 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// TODO:
-// 1. Get all the Devices in the room
-// 2. For each device, get the Device api health
-// 3. For each device, check if the device is healthy
-// 4. If the device is healthy, return healthy
-// 5. If the device is not healthy, return the health of the device (error message)
-// 6. Return the health of each device (json or something)
-
 // GetDeviceHealth handles GET /api/v1/monitoring
+// It retrieves the health status of devices in the current room.
 func GetDeviceHealth(c *gin.Context) {
 	roomID, err := localsystem.RoomID()
 	if err != nil {
@@ -30,4 +23,10 @@ func GetDeviceHealth(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, results)
+}
+
+// Plink handles GET /api/v1/monitoring/plink
+// It checks if the service is reachable and returns a simple message. (plink is a common term for a simple connectivity check)
+func Plink(c *gin.Context) {
+	c.String(http.StatusOK, "Service is reachable")
 }

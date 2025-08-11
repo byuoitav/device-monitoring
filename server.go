@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/byuoitav/auth/wso2"
 	"github.com/byuoitav/device-monitoring/actions"
 	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/handlers"
@@ -15,6 +16,7 @@ import (
 	"github.com/byuoitav/device-monitoring/model"
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo"
+	"github.com/spf13/pflag"
 
 	"github.com/lmittmann/tint"
 
@@ -22,12 +24,37 @@ import (
 )
 
 func main() {
+	// ---- CLI Flags with Environment Defaults ----
+	defaultGatewayURL := os.Getenv("WSO2_GATEWAY_URL")
+	defaultClientID := os.Getenv("WSO2_CLIENT_ID")
+	defaultClientSecret := os.Getenv("WSO2_CLIENT_SECRET")
+
+	var (
+		gatewayURL   string
+		clientID     string
+		clientSecret string
+	)
+
+	pflag.StringVar(&gatewayURL, "gateway-url", defaultGatewayURL, "WSO2 API Gateway URL")
+	pflag.StringVar(&clientID, "client-id", defaultClientID, "WSO2 Client ID")
+	pflag.StringVar(&clientSecret, "client-secret", defaultClientSecret, "WSO2 Client Secret")
+	pflag.Parse()
+
+	// ---- Validate Credentials ----
+	if gatewayURL == "" || clientID == "" || clientSecret == "" {
+		slog.Error("WSO2 credentials are required. Use flags or set environment variables.")
+		os.Exit(1)
+	}
+
+	// ---- Initialize global WSO2 client ----
+	handlers.WSO2Client = *wso2.New(clientID, clientSecret, gatewayURL, "device-monitoring")
 
 	// set up logging
 	w := os.Stderr
 	handler := tint.NewHandler(w, &tint.Options{
 		Level:      slog.LevelDebug,
 		TimeFormat: time.Kitchen,
+		NoColor:    false,
 	})
 	slog.SetDefault(slog.New(handler))
 
@@ -56,6 +83,11 @@ func main() {
 		c.Redirect(http.StatusMovedPermanently, "/dashboard")
 	})
 
+	// redirect from :10000 to /dashboard
+	router.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/dashboard")
+	})
+
 	router.Static("/dashboard", "./dashboard")
 
 	// HTML5 fallback for SPA (if requested file doesn't exist)
@@ -68,8 +100,11 @@ func main() {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
 	})
 
-	// health endpoint
-	router.GET("/health", func(c *gin.Context) {
+	// ping endpoint for health checks
+	// this is used by the load balancer to check if the service is up
+	// and running, and it should return a 200 OK response.
+	// It can also be used to check if the service is reachable.
+	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "Don't meddle in the affairs of Wizards, for they are subtle and quick to anger.")
 	})
 
@@ -84,12 +119,11 @@ func main() {
 	router.GET("/device/hardwareinfo", handlers.HardwareInfo)
 	router.PUT("/device/health", handlers.GetServiceHealth)
 
-	// room info endpoints]
-	// TODO: fix nothing shows on hardwareinfo and health
+	// room info endpoints
 	router.GET("/room/ping", handlers.PingRoom)
 	router.GET("/room/state", handlers.RoomState)
 	router.GET("/room/activesignal", handlers.ActiveSignal)
-	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo) // nothing shows
+	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
 	router.GET("/room/health", handlers.RoomHealth)
 
 	// action endpoints
@@ -126,7 +160,6 @@ func main() {
 	// This is where you would add your API endpoints
 	api := router.Group("/api")
 	// returns JSON of all the devices and their health
-	// TODO: check if we want this to use a ?room_id query parameter or get all devices in the room
 	api.GET("/v1/monitoring", handlers.GetDeviceHealth)
 
 	// run!

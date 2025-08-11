@@ -36,8 +36,36 @@ BIN_OUTPUT = $(BUILD_DIR)/$(NAME)
 PLATFORMS = linux/amd64 linux/arm
 
 # =============================
+# Runtime (pflags) Variables
+# =============================
+
+# You can pass these on the command line (e.g., make run WSO2_CLIENT_ID=...),
+# or export them in your shell. serve.go will also use environment defaults.
+WSO2_GATEWAY_URL   ?=
+WSO2_CLIENT_ID     ?=
+WSO2_CLIENT_SECRET ?=
+PORT               ?= :10000
+
+# Build CLI flags from variables if provided
+RUN_FLAGS :=
+ifneq ($(strip $(WSO2_GATEWAY_URL)),)
+RUN_FLAGS += --gateway-url=$(WSO2_GATEWAY_URL)
+endif
+ifneq ($(strip $(WSO2_CLIENT_ID)),)
+RUN_FLAGS += --client-id=$(WSO2_CLIENT_ID)
+endif
+ifneq ($(strip $(WSO2_CLIENT_SECRET)),)
+RUN_FLAGS += --client-secret=$(WSO2_CLIENT_SECRET)
+endif
+ifneq ($(strip $(PORT)),)
+RUN_FLAGS += --port=$(PORT)
+endif
+
+# =============================
 # Main Targets
 # =============================
+
+.PHONY: all ci build-local build-binaries build-web test clean deps deploy run check-creds print-vars
 
 all: build-web build-local
 
@@ -49,7 +77,7 @@ build-local:
 
 build-binaries:
 	@echo "Building binaries for multiple platforms..."
-	@mkdir  -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)
 	@for platform in $(PLATFORMS); do \
 		OS=$${platform%/*}; ARCH=$${platform#*/}; \
 		OUTPUT=$(BUILD_DIR)/$(NAME)-$$OS-$$ARCH; \
@@ -71,7 +99,7 @@ build-web: $(NG1)
 	@if [ -d "$(NG1)/dist/$(NG1)/browser" ]; then \
 		echo "Detected Angular new builder output (browser/)"; \
 		cp -r $(NG1)/dist/$(NG1)/browser/* files/$(NG1)/; \
-	elif [ -d "$(NG1)/dist/$(NG1)/media"]; then \
+	elif [ -d "$(NG1)/dist/$(NG1)/media" ]; then \
 		echo "Detected Angular new builder output (media/)"; \
 		cp -r $(NG1)/dist/$(NG1)/media/* files/$(NG1)/; \
 	else \
@@ -127,8 +155,26 @@ $(NAME):
 files/$(NG1):
 	$(MAKE) build-web
 
-# Debug helper
+# =============================
+# Convenience / Debug
+# =============================
+
+run: build-local
+	@echo "Running $(BIN_OUTPUT) $(RUN_FLAGS)"
+	@$(BIN_OUTPUT) $(RUN_FLAGS)
+
+check-creds:
+	@if [ -z "$(WSO2_GATEWAY_URL)" ] || [ -z "$(WSO2_CLIENT_ID)" ] || [ -z "$(WSO2_CLIENT_SECRET)" ]; then \
+		echo "WSO2 creds not fully set. Provide WSO2_GATEWAY_URL, WSO2_CLIENT_ID, WSO2_CLIENT_SECRET (via env or make vars)."; \
+		exit 1; \
+	fi
+
 print-vars:
 	@echo "NAME=$(NAME)"
 	@echo "BRANCH=$(BRANCH)"
 	@echo "BIN_OUTPUT=$(BIN_OUTPUT)"
+	@echo "WSO2_GATEWAY_URL=$(WSO2_GATEWAY_URL)"
+	@echo "WSO2_CLIENT_ID=$(WSO2_CLIENT_ID)"
+	@echo "WSO2_CLIENT_SECRET=$(if $(WSO2_CLIENT_SECRET),<set>,<empty>)"
+	@echo "PORT=$(PORT)"
+	@echo "RUN_FLAGS=$(RUN_FLAGS)"
