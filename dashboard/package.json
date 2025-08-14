@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json --host 0.0.0.0 --disable-host-check",
-    "build": "ng build --configuration production --base-href /dashboard/",
+    "build": "ng build --configuration production --deploy-url /dashboard/",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e",
@@ -34,6 +34,7 @@
     "zone.js": "^0.15.0"
   },
   "devDependencies": {
+    "@angular-devkit/build-angular": "^20.1.6",
     "@angular/build": "^20.0.6",
     "@angular/cli": "^20.0.6",
     "@angular/compiler-cli": "^20.1.0",

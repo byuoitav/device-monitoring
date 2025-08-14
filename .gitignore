@@ -20,3 +20,8 @@ vendor/
 
 # ignore dist directory
 dist/
+
+# ignore .env files
+.env
+.env.*
+.env.local
