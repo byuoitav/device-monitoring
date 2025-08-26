@@ -36,8 +36,8 @@
             <p>Internet Connectivity</p>
 
             <div id="status-theme">
-              <mat-icon color="primary" *ngIf="deviceInfo?.internetConnectivity">wifi_off</mat-icon>
-              <mat-icon color="warn" *ngIf="!deviceInfo?.internetConnectivity">wifi</mat-icon>
+              <mat-icon color="primary" *ngIf="deviceInfo?.internetConnectivity">wifi</mat-icon>
+              <mat-icon color="warn" *ngIf="!deviceInfo?.internetConnectivity">wifi_off</mat-icon>
             </div>
           </div>
         </mat-list-item>
@@ -48,12 +48,12 @@
             <p>DHCP Enabled</p>
 
             <div id="status-theme">
-              <mat-icon color="warn" *ngIf="!isDefined(deviceInfo?.dhcp?.enabled)">help_outline</mat-icon>
-              <mat-icon *ngIf="
+              <mat-icon color="yellow" *ngIf="!isDefined(deviceInfo?.dhcp?.enabled)">help_outline</mat-icon>
+              <mat-icon color="warn" *ngIf="
                   isDefined(deviceInfo?.dhcp?.enabled) &&
                   !deviceInfo?.dhcp?.enabled
                 ">highlight_off</mat-icon>
-              <mat-icon *ngIf="
+              <mat-icon color="green" *ngIf="
                   isDefined(deviceInfo?.dhcp?.enabled) &&
                   deviceInfo?.dhcp?.enabled
                 ">check_circle_outline</mat-icon>
@@ -88,12 +88,10 @@
       </button>
       -->
       <button mat-raised-button color="accent" (click)="api.flushDNS()">
+        <mat-icon>dns</mat-icon> 
         Flush DNS
       </button>
-      <button mat-raised-button color="warn" (click)="api.reboot()">
-        <mat-icon>power_settings_new</mat-icon>
-        Reboot
-      </button>
+      
       <button mat-raised-button color="accent" *ngIf="deviceInfo?.dhcp?.toggleable">
         <mat-icon *ngIf="!deviceInfo?.dhcp?.enabled">lock_open</mat-icon>
         <mat-icon *ngIf="deviceInfo?.dhcp?.enabled">lock</mat-icon>
@@ -101,17 +99,20 @@
       </button>
 
       <!--Add ReSync DB (Swab) button-->
-      <button mat-raised-button color="accent" (click)="api.reSyncDB()"
-      (click)="alertService.success('Successfully ReSync DB!', options)">
+      <button mat-raised-button color="accent" (click)="api.reSyncDB(); alertService.success('Successfully ReSync DB!', options)">
         <mat-icon>sync</mat-icon>
         ReSync
       </button>
 
       <!--Add ReFresh (Float) Containers button-->
-      <button mat-raised-button color="accent" (click)="api.refreshContainers()"
-      (click)="alertService.success('Successfully Refreshed Containers', options)">
+      <button mat-raised-button color="accent" (click)="api.refreshContainers(); alertService.success('Successfully Refreshed Containers', options)">
         <mat-icon>refresh</mat-icon>
         Refresh Containers
+      </button>
+
+      <button mat-raised-button color="warn" (click)="api.reboot()">
+        <mat-icon>power_settings_new</mat-icon>
+        Reboot
       </button>
       
     </mat-card-actions>

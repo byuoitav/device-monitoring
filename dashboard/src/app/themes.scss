@@ -1,53 +1,30 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 
 // default (light) theme
 $default-primary: mat.m2-define-palette(mat.$m2-blue-palette, 800, 600, 900);
-$default-accent: mat.m2-define-palette(mat.$m2-blue-grey-palette);
-$default-warn: mat.m2-define-palette(mat.$m2-pink-palette);
+$default-accent:  mat.m2-define-palette(mat.$m2-blue-grey-palette);
+$default-warn:    mat.m2-define-palette(mat.$m2-pink-palette);
 
 $default: mat.m2-define-light-theme((
-  color: (
-    primary: $default-primary,
-    accent: $default-accent,
-    warn: $default-warn,
-  ),
+  color: ( primary: $default-primary, accent: $default-accent, warn: $default-warn ),
   typography: mat.m2-define-typography-config(),
   density: 0,
 ));
 
-// Emit theme-dependent styles for common features used across multiple components.
-@include mat.core-theme($default);
-
-// theme for status (success/warning/error) colors
+// separate status theme if you actually scope components under #status-theme
 $status-primary: mat.m2-define-palette(mat.$m2-green-palette);
-$status-accent: mat.m2-define-palette(mat.$m2-yellow-palette);
-$status-warn: mat.m2-define-palette(mat.$m2-red-palette);
+$status-accent:  mat.m2-define-palette(mat.$m2-yellow-palette);
+$status-warn:    mat.m2-define-palette(mat.$m2-red-palette);
 
 $status: mat.m2-define-light-theme((
-  color: (
-    primary: $status-primary,
-    accent: $status-accent,
-    warn: $status-warn,
-  ),
+  color: ( primary: $status-primary, accent: $status-accent, warn: $status-warn ),
   typography: mat.m2-define-typography-config(),
   density: 0,
 ));
-// Emit theme-dependent styles for common features used across multiple components.
-#status-theme {
-  @include mat.core-theme($status);
-}
 
-// dark theme :)
+// dark theme (class-based)
 $dark: mat.m2-define-dark-theme((
-  color: (
-    primary: $default-primary,
-    accent: $default-accent,
-    warn: $default-warn,
-  ),
+  color: ( primary: $default-primary, accent: $default-accent, warn: $default-warn ),
   typography: mat.m2-define-typography-config(),
   density: 0,
 ));
-// Emit theme-dependent styles for common features used across multiple components.
-.dark-theme {
-  @include mat.core-theme($dark);
-}

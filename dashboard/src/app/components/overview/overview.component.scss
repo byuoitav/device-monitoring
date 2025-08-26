@@ -8,6 +8,24 @@ html {
   box-sizing: inherit;
 }
 
+mat-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;         /* space between buttons */
+  align-items: center; /* nice vertical alignment */
+  padding: 16px;       /* ensure comfortable padding */
+}
+
+mat-card-actions button {
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  mat-card-actions button {
+    width: 100%;
+  }
+}
+
 .card-container {
   margin: 1.5em auto;
   width: 95%;

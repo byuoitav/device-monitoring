@@ -11,7 +11,7 @@
       "schematics": {},
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular-devkit/build-angular:browser-esbuild",
           "options": {
             "allowedCommonJsDependencies": [
               "hammerjs"
@@ -31,9 +31,9 @@
               "src/assets/fonts/material-icons/material-icons.css"
             ],
             "scripts": [],
-            "browser": "src/main.ts",
+            "main": "src/main.ts",
             "stylePreprocessorOptions": {
-              "includePaths": ["node_modules"]
+              "includePaths": ["src/styles", "node_modules"]
             }
           },
           "configurations": {
@@ -89,7 +89,7 @@
               "src/assets"
             ],
             "stylePreprocessorOptions": {
-              "includePaths": ["node_modules"]
+              "includePaths": ["src/styles", "node_modules"]
             }
           }
         },

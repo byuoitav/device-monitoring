@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { JsonConvert, OperationMode, ValueCheckingMode } from "json2typescript";
+import { firstValueFrom } from "rxjs";
+import { MatDialog } from "@angular/material/dialog";
 
 import {
   DeviceInfo,
@@ -9,9 +10,8 @@ import {
   RunnerInfo,
   ViaInfo
 } from "../objects";
-import { MatDialog } from "@angular/material/dialog";
 import { RebootComponent } from "../popups/reboot/reboot.component";
-import { lastValueFrom } from "rxjs";
+
 
 @Injectable({
   providedIn: "root"
@@ -19,21 +19,22 @@ import { lastValueFrom } from "rxjs";
 export class APIService {
   public theme = "default";
 
-  private jsonConvert: JsonConvert;
   private urlParams: URLSearchParams;
 
   constructor(private http: HttpClient, private dialog: MatDialog) {
-    this.jsonConvert = new JsonConvert();
-    this.jsonConvert.ignorePrimitiveChecks = false;
-
     this.urlParams = new URLSearchParams(window.location.search);
     if (this.urlParams.has("theme")) {
-      this.theme = this.urlParams.get("theme");
+      this.theme = this.urlParams.get("theme") ?? 'default';
     }
   }
 
+  private api(path: string): string {
+    if (/^https?:\/\//i.test(path)) return path;
+    return path.startsWith("/") ? path : `/${path}`;
+  }
+
   public switchToUI() {
-    window.location.pathname = "/ui"
+    window.location.assign(`${location.protocol}//${location.hostname}:8888/`);
   }
 
   public refresh() {
@@ -52,39 +53,36 @@ export class APIService {
     );
   }
 
-  public async reboot() {
+  public async reboot(): Promise<string | void> {
     try {
       this.dialog.open(RebootComponent, { disableClose: true });
-      const data = await this.http
-        .put("device/reboot", {
-          responseType: "text"
-        })
-        .toPromise();
-    } catch (e) {
-      // bug where responseType doesn't actually work
-      if (e.status === 200) {
+      const text = await firstValueFrom(
+        this.http.put(this.api("device/reboot"), null, { responseType: "text" as const })
+      );
+      return text;
+    } catch (e: any) {
+      // Preserve historical behavior in case the backend returns text-but-marked-as-error
+      if (e?.status === 200 && e?.error?.text) {
         console.log(e.error.text);
         return e.error.text;
       }
-
-      throw new Error("error getting rebooting device: " + e);
+      throw new Error('error rebooting device: ' + (e?.message ?? e));
     }
   }
 
-  public async getDeviceInfo() {
+  public async getDeviceInfo(): Promise<DeviceInfo> {
     try {
-      const data = await this.http.get("device").toPromise();
-      const deviceInfo = this.jsonConvert.deserializeObject(data, DeviceInfo);
-
-      return deviceInfo;
-    } catch (e) {
-      const deviceInfo = this.jsonConvert.deserializeObject(
-        e.error,
-        DeviceInfo
+      const data = await firstValueFrom(
+        this.http.get<DeviceInfo>(this.api("device"))
       );
-
-      console.error("error getting device info:", e);
-      return deviceInfo;
+      return data;
+    } catch (e: any) {
+      // Some backends send the actual payload on error paths
+      if (e?.error) {
+        return e.error as DeviceInfo;
+      }
+      console.error('error getting device info:', e);
+      throw new Error('error getting device info: ' + (e?.message ?? e));
     }
   }
 
@@ -92,169 +90,162 @@ export class APIService {
     return false;
     /*
     try {
-      const data = await this.http.get("maintenance").toPromise();
-
-      return (<any>data) as boolean;
-    } catch (e) {
-      throw new Error("error getting maintenance mode: " + e);
+      const data = await firstValueFrom(this.http.get<boolean>('maintenance'));
+      return data;
+    } catch (e: any) {
+      throw new Error('error getting maintenance mode: ' + (e?.message ?? e));
     }
-     */
+    */
   }
 
   public async toggleMaintenanceMode() {
     return false;
     /*
     try {
-      const data = await this.http.put("maintenance", null).toPromise();
-
-      return (<any>data) as boolean;
-    } catch (e) {
-      throw new Error("error toggling maintenance mode: " + e);
-    }
-     */
-  }
-
-  public async getSoftwareStati() {
-    try {
-      const data: any = await this.http.get("device/status").toPromise();
-      const stati = this.jsonConvert.deserializeObject(data, Status);
-
-      return stati;
-    } catch (e) {
-      throw new Error("error getting software status': " + e);
-    }
-  }
-
-  public async getDeviceID() {
-    try {
-      const data = await this.http
-        .get("device/id", { responseType: "text" })
-        .toPromise();
-
+      const data = await firstValueFrom(this.http.put<boolean>('maintenance', null));
       return data;
-    } catch (e) {
-      throw new Error("error getting device id: " + e);
+    } catch (e: any) {
+      throw new Error('error toggling maintenance mode: ' + (e?.message ?? e));
+    }
+    */
+  }
+
+  public async getSoftwareStati(): Promise<Status> {
+    try {
+      const data = await firstValueFrom(
+        this.http.get<Status>(this.api("device/status"))
+      );
+      return data;
+    } catch (e: any) {
+      throw new Error("error getting software status': " + (e?.message ?? e));
     }
   }
 
-  public async getRoomPing() {
+  public async getDeviceID(): Promise<string> {
     try {
-      const data = await this.http.get("room/ping").toPromise();
+      const data = await firstValueFrom(
+        this.http.get(this.api("device/id"), { responseType: "text" as const })
+      );
+      return data;
+    } catch (e: any) {
+      throw new Error('error getting device id: ' + (e?.message ?? e));
+    }
+  }
 
-      // build the map
+  public async getRoomPing(): Promise<Map<string, PingResult>> {
+    try {
+      const data = await firstValueFrom(
+        this.http.get<Record<string, PingResult>>(this.api("room/ping"))
+      );
+
+      console.log('room ping data:', data);
+
       const result = new Map<string, PingResult>();
-      for (const key of Object.keys(data)) {
-        if (key && data[key]) {
-          const val = this.jsonConvert.deserializeObject(data[key], PingResult);
+      for (const [key, val] of Object.entries(data ?? {})) {
+        if (key && val) {
           result.set(key, val);
         }
       }
-
       return result;
-    } catch (e) {
-      throw new Error("error getting room ping info: " + e);
+    } catch (e: any) {
+      throw new Error('error getting room ping info: ' + (e?.message ?? e));
     }
   }
 
-  public async getRoomHealth() {
+  public async getRoomHealth(): Promise<Map<string, string>> {
     try {
-      const data = await this.http.get("room/health").toPromise();
+      const data = await firstValueFrom(
+        this.http.get<Record<string, string>>(this.api("room/health"))
+      );
 
-      // build the map
       const result = new Map<string, string>();
-      for (const key of Object.keys(data)) {
-        if (key && data[key]) {
-          result.set(key, data[key]);
+      for (const [key, val] of Object.entries(data ?? {})) {
+        if (key && val) {
+          result.set(key, val);
         }
       }
-
       return result;
-    } catch (e) {
-      throw new Error("error getting room ping info: " + e);
+    } catch (e: any) {
+      throw new Error('error getting room health info: ' + (e?.message ?? e));
     }
   }
 
-  public async getRunnerInfo() {
+  public async getRunnerInfo(): Promise<RunnerInfo[]> {
     try {
-      const data: any = await this.http.get("device/runners").toPromise();
-      const info = this.jsonConvert.deserializeArray(data, RunnerInfo);
-
-      return info;
-    } catch (e) {
-      throw new Error("error getting device runner info: " + e);
+      const data = await firstValueFrom(
+        this.http.get<RunnerInfo[]>(this.api("device/runners"))
+      );
+      return data;
+    } catch (e: any) {
+      throw new Error('error getting device runner info: ' + (e?.message ?? e));
     }
   }
 
-  public async getViaInfo() {
+  public async getViaInfo(): Promise<ViaInfo[]> {
     try {
-      const data: any = await this.http.get("room/viainfo").toPromise();
-      const info = this.jsonConvert.deserializeArray(data, ViaInfo);
-
-      return info;
-    } catch (e) {
-      throw new Error("error getting via info: " + e);
+      const data = await firstValueFrom(
+        this.http.get<ViaInfo[]>(this.api("room/viainfo"))
+      );
+      return data;
+    } catch (e: any) {
+      throw new Error('error getting via info: ' + (e?.message ?? e));
     }
   }
 
-  public async resetVia(address: string) {
+  public async resetVia(address: string): Promise<void> {
     try {
-      const data = await this.http
-        .get("http://" + location.hostname + ":8014/via/" + address + "/reset")
-        .toPromise();
-
-      console.log("data", data);
-    } catch (e) {
-      throw new Error("error resetting via: " + e);
+      await firstValueFrom(
+        this.http.get(`http://${location.hostname}:8014/via/${address}/reset`)
+      );
+    } catch (e: any) {
+      throw new Error('error resetting via: ' + (e?.message ?? e));
     }
   }
 
-  public async rebootVia(address: string) {
+  public async rebootVia(address: string): Promise<void> {
     try {
-      const data = await this.http
-        .get("http://" + location.hostname + ":8014/via/" + address + "/reboot")
-        .toPromise();
-
-      console.log("data", data);
-    } catch (e) {
-      throw new Error("error rebooting via: " + e);
+      await firstValueFrom(
+        this.http.get(`http://${location.hostname}:8014/via/${address}/reboot`)
+      );
+    } catch (e: any) {
+      throw new Error('error rebooting via: ' + (e?.message ?? e));
     }
   }
 
-  public async getDividerSensorsStatus(address: string) {
+  public async getDividerSensorsStatus(address: string): Promise<boolean | undefined> {
     try {
-      const data = await this.http
-        .get("http://" + address + ":10000/divider/state")
-        .toPromise();
+      const data = await firstValueFrom(
+        this.http.get<Record<string, unknown>>(`http://${address}:10000/divider/state`)
+      );
 
-      console.log("getDividerSensorsStatus", data);
-
-      for (const [key] of Object.entries(data)) {
-        if (key.includes("disconnected")) {
+      for (const [key] of Object.entries(data ?? {})) {
+        if (key.includes('disconnected')) {
           return false;
         }
-        if (key.includes("connected")) {
+        if (key.includes('connected')) {
           return true;
         }
       }
-    } catch (e) {
-      throw new Error("error getting divider sensors connection status: " + e);
+      return undefined; // if neither key is present
+    } catch (e: any) {
+      throw new Error('error getting divider sensors connection status: ' + (e?.message ?? e));
     }
   }
 
-  public async getHardwareInfo() {
+  public async getHardwareInfo(): Promise<unknown> {
     try {
-      const data = await this.http.get("/device/hardwareinfo").toPromise();
-
-      console.log("hardware info", data);
-
+      const data = await firstValueFrom(
+        this.http.get<unknown>(this.api("/device/hardwareinfo"))
+      );
       return data;
-    } catch (e) {
-      throw new Error("error getting hardware info: " + e)
+    } catch (e: any) {
+      throw new Error('error getting hardware info: ' + (e?.message ?? e));
     }
   }
+
 
   public async flushDNS() {
-    this.http.get("/dns").subscribe((data: any) => {
+    this.http.get(this.api("/dns")).subscribe((data: any) => {
       if (data == "success") {
         console.log("%c successfully flushed the dns cache", "color: green; font-size: 20px");
       } else {
@@ -264,24 +255,30 @@ export class APIService {
   }
 
   // reSyncDB (Swab)
-  public async reSyncDB() {
-    this.http.get("/resyncDB").subscribe((data: any) => {
-      if (data == "success") {
-        console.log("%c successfully resynced the database", "color: green; font-size: 20px");
+  public async reSyncDB(): Promise<void> {
+    try {
+      const data = await firstValueFrom(this.http.get(this.api("/resyncDB"), { responseType: "text" as const }));
+      if (data === 'success') {
+        console.log('%c successfully resynced the database', 'color: green; font-size: 20px');
       } else {
-        console.log("%c failed to resync the database", "color: red; font-size: 20px");
+        console.log('%c failed to resync the database', 'color: red; font-size: 20px');
       }
-    });
+    } catch {
+      console.log('%c failed to resync the database', 'color: red; font-size: 20px');
+    }
   }
 
   // refreshContainers (Float)
-  public async refreshContainers() {
-    this.http.get("/refreshContainers").subscribe((data: any) => { 
-      if (data == "success") {
-        console.log("%c successfully refreshed the containers", "color: green; font-size: 20px");
+  public async refreshContainers(): Promise<void> {
+    try {
+      const data = await firstValueFrom(this.http.get(this.api("/refreshContainers"), { responseType: "text" as const }));
+      if (data === 'success') {
+        console.log('%c successfully refreshed the containers', 'color: green; font-size: 20px');
       } else {
-        console.log("failed to refresh the containers");
+        console.log('%c failed to refresh the containers', 'color: red; font-size: 20px');
       }
-    });
+    } catch {
+      console.log('%c failed to refresh the containers', 'color: red; font-size: 20px');
+    }
   }
 }

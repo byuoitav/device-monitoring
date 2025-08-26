@@ -1,109 +1,109 @@
 # =============================
-# Metadata and Project Defaults
+# Build & Deploy Only
 # =============================
+SHELL := /bin/bash
 
-ORG  ?= $(shell echo $(CIRCLE_PROJECT_USERNAME))
-NAME ?= $(shell echo $(CIRCLE_PROJECT_REPONAME))
+# Metadata
+ORG    ?= $(shell echo $(CIRCLE_PROJECT_USERNAME))
+NAME   ?= $(shell echo $(CIRCLE_PROJECT_REPONAME))
 BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
-
 ifeq ($(NAME),)
 NAME := $(shell basename "$(PWD)")
 endif
-
 ifeq ($(ORG),)
 ORG := byuoitav
 endif
 
-# =============================
-# Tools and Commands
-# =============================
 
-GOCMD      = go
-GOBUILD    = $(GOCMD) build
-GOCLEAN    = $(GOCMD) clean
-GOTEST     = $(GOCMD) test
-GOGET      = $(GOCMD) get
-VENDOR     = gvt fetch -branch $(BRANCH)
+# Tools
+GOCMD   = go
+GOBUILD = $(GOCMD) build
+NPM     = npm
+NG1     = dashboard
 
-NPM        = npm
-NPM_INSTALL= $(NPM) install
-NPM_BUILD  = npm run-script build
-NG1        = dashboard
-
+# Outputs
 BUILD_DIR  = dist
 BIN_OUTPUT = $(BUILD_DIR)/$(NAME)
 
+# Cross-build matrix for build-binaries
 PLATFORMS = linux/amd64 linux/arm
 
-# =============================
-# Runtime (pflags) Variables
-# =============================
 
-# You can pass these on the command line (e.g., make run WSO2_CLIENT_ID=...),
-# or export them in your shell. serve.go will also use environment defaults.
-WSO2_GATEWAY_URL   ?=
-WSO2_CLIENT_ID     ?=
-WSO2_CLIENT_SECRET ?=
-PORT               ?= :10000
+# Go build flags (all optional, override on make cmdline)
+GOOS        ?=
+GOARCH      ?=
+GOARM       ?=
+CGO_ENABLED ?=
+TAGS        ?=
+LDFLAGS     ?=
+GCFLAGS     ?=
+ASMFLAGS    ?=
+BUILD_FLAGS ?=
+MAIN_PKG    ?= .
 
-# Build CLI flags from variables if provided
-RUN_FLAGS :=
-ifneq ($(strip $(WSO2_GATEWAY_URL)),)
-RUN_FLAGS += --gateway-url=$(WSO2_GATEWAY_URL)
+# Compose go build flags
+COMMON_BUILD_FLAGS :=
+ifneq ($(strip $(TAGS)),)
+  COMMON_BUILD_FLAGS += -tags '$(TAGS)'
 endif
-ifneq ($(strip $(WSO2_CLIENT_ID)),)
-RUN_FLAGS += --client-id=$(WSO2_CLIENT_ID)
+ifneq ($(strip $(LDFLAGS)),)
+  COMMON_BUILD_FLAGS += -ldflags '$(LDFLAGS)'
 endif
-ifneq ($(strip $(WSO2_CLIENT_SECRET)),)
-RUN_FLAGS += --client-secret=$(WSO2_CLIENT_SECRET)
+ifneq ($(strip $(GCFLAGS)),)
+  COMMON_BUILD_FLAGS += -gcflags '$(GCFLAGS)'
 endif
-ifneq ($(strip $(PORT)),)
-RUN_FLAGS += --port=$(PORT)
+ifneq ($(strip $(ASMFLAGS)),)
+  COMMON_BUILD_FLAGS += -asmflags '$(ASMFLAGS)'
+endif
+ifneq ($(strip $(BUILD_FLAGS)),)
+  COMMON_BUILD_FLAGS += $(BUILD_FLAGS)
 endif
 
 # =============================
-# Main Targets
+# Targets
 # =============================
-
-.PHONY: all ci build-local build-binaries build-web test clean deps deploy run check-creds print-vars
+.PHONY: all build-local build-binaries build-web clean deploy
 
 all: build-web build-local
 
 ci: deps all test
 
+# Default local build targets linux/arm (GOARM=7)
 build-local:
-	@echo "Building local binary..."
-	$(GOBUILD) -o $(BIN_OUTPUT) -v
+	@echo "Building $(NAME) for linux/arm (GOARM=7) — override with GOOS/GOARCH/GOARM/CGO_ENABLED as needed..."
+	@mkdir -p $(BUILD_DIR)
+	@GOOS=$${GOOS:-linux} \
+	 GOARCH=$${GOARCH:-arm} \
+	 GOARM=$${GOARM:-7} \
+	 CGO_ENABLED=$${CGO_ENABLED:-0} \
+	 $(GOBUILD) $(COMMON_BUILD_FLAGS) -o $(BIN_OUTPUT) -v $(MAIN_PKG)
 
 build-binaries:
-	@echo "Building binaries for multiple platforms..."
+	@echo "Building binaries for: $(PLATFORMS)"
 	@mkdir -p $(BUILD_DIR)
 	@for platform in $(PLATFORMS); do \
 		OS=$${platform%/*}; ARCH=$${platform#*/}; \
-		OUTPUT=$(BUILD_DIR)/$(NAME)-$$OS-$$ARCH; \
-		[ "$$OS" = "windows" ] && OUTPUT=$$OUTPUT.exe; \
-		echo "Building $$OS/$$ARCH -> $$OUTPUT"; \
-		GOOS=$$OS GOARCH=$$ARCH $(GOBUILD) -o $$OUTPUT -v || exit 1; \
+		OUT=$(BUILD_DIR)/$(NAME)-$$OS-$$ARCH; \
+		[ "$$OS" = "windows" ] && OUT=$$OUT.exe; \
+		echo "  -> $$OS/$$ARCH => $$OUT"; \
+		if [ "$$ARCH" = "arm" ]; then GOARM_ENV="GOARM=$${GOARM:-7}"; else GOARM_ENV=""; fi; \
+		GOOS=$$OS GOARCH=$$ARCH $$GOARM_ENV CGO_ENABLED=$${CGO_ENABLED:-0} \
+		  $(GOBUILD) $(COMMON_BUILD_FLAGS) -o $$OUT -v $(MAIN_PKG) || exit 1; \
 	done
 
 build-web:
 	@echo "Building Angular dashboard..."
 	. $$HOME/.nvm/nvm.sh && nvm use 20.19.0 \
-		&& cd dashboard \
-		&& npm install \
-		&& ./node_modules/.bin/ng build --configuration production --base-href /dashboard/
+	  && cd dashboard \
+	  && $(NPM) install \
+	  && ./node_modules/.bin/ng build --configuration production --base-href /dashboard/
 	@echo "Copying built web assets..."
 	mkdir -p files/$(NG1)
 	@rsync -a --delete dashboard/dist/$(NG1)/ files/$(NG1)/
-test:
-	$(GOTEST) -v -race $$(go list ./... | grep -v /vendor/)
 
 clean:
-	$(GOCLEAN)
-	rm -rf $(NAME)
-	rm -rf $(BUILD_DIR) files vendor
-	rm -rf *.tar.gz
-	rm -rf dist
+	@echo "Cleaning build artifacts..."
+	rm -rf $(BUILD_DIR) files vendor *.tar.gz dist
 
 deps:
 	npm config set unsafe-perm true
@@ -125,16 +125,20 @@ deploy: $(BIN_OUTPUT) files/$(NG1) version.txt
 ifeq ($(BRANCH),master)
 	$(eval BRANCH=development)
 endif
-	@echo Building deployment tarball
+	@echo "Packaging $(BRANCH).tar.gz"
 	@cp version.txt files/
 	@cp service-config.json files/
 	@tar -czf $(BRANCH).tar.gz \
-		-C $(CURDIR) files \
-		-C $(BUILD_DIR) $(NAME)
-	@echo Getting current doc revision
+	  -C $(CURDIR) files \
+	  -C $(BUILD_DIR) $(NAME)
+	@echo "Fetching current CouchDB doc revision…"
 	$(eval rev=$(shell curl -s -n -X GET -u ${DB_USERNAME}:${DB_PASSWORD} "${DB_ADDRESS}/deployment-information/$(NAME)" | cut -d, -f2 | cut -d\" -f4))
-	@echo Pushing zip up to couch
-	@curl -X PUT -u ${DB_USERNAME}:${DB_PASSWORD} -H "Content-Type: application/gzip" -H "If-Match: $(rev)" ${DB_ADDRESS}/deployment-information/$(NAME)/$(BRANCH).tar.gz --data-binary @$(BRANCH).tar.gz
+	@echo "Uploading tarball to CouchDB…"
+	@curl -X PUT -u ${DB_USERNAME}:${DB_PASSWORD} \
+	  -H "Content-Type: application/gzip" \
+	  -H "If-Match: $(rev)" \
+	  ${DB_ADDRESS}/deployment-information/$(NAME)/$(BRANCH).tar.gz \
+	  --data-binary @$(BRANCH).tar.gz
 ifeq ($(BRANCH),development)
 	$(eval BRANCH=master)
 endif
@@ -145,27 +149,3 @@ $(BIN_OUTPUT):
 
 files/$(NG1):
 	$(MAKE) build-web
-
-# =============================
-# Convenience / Debug
-# =============================
-
-run: build-local
-	@echo "Running $(BIN_OUTPUT) $(RUN_FLAGS)"
-	@$(BIN_OUTPUT) $(RUN_FLAGS)
-
-check-creds:
-	@if [ -z "$(WSO2_GATEWAY_URL)" ] || [ -z "$(WSO2_CLIENT_ID)" ] || [ -z "$(WSO2_CLIENT_SECRET)" ]; then \
-		echo "WSO2 creds not fully set. Provide WSO2_GATEWAY_URL, WSO2_CLIENT_ID, WSO2_CLIENT_SECRET (via env or make vars)."; \
-		exit 1; \
-	fi
-
-print-vars:
-	@echo "NAME=$(NAME)"
-	@echo "BRANCH=$(BRANCH)"
-	@echo "BIN_OUTPUT=$(BIN_OUTPUT)"
-	@echo "WSO2_GATEWAY_URL=$(WSO2_GATEWAY_URL)"
-	@echo "WSO2_CLIENT_ID=$(WSO2_CLIENT_ID)"
-	@echo "WSO2_CLIENT_SECRET=$(if $(WSO2_CLIENT_SECRET),<set>,<empty>)"
-	@echo "PORT=$(PORT)"
-	@echo "RUN_FLAGS=$(RUN_FLAGS)"

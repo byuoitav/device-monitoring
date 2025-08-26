@@ -1,20 +1,27 @@
 
 // Custom Theming for Angular Material
 // For more information: https://material.angular.dev/guide/theming
-@use './app/themes' as *;
 @use '@angular/material' as mat;
+@use './app/themes' as *;
 
-html {
-  @include mat.theme((
-    color: (
-      theme-type: light,
-      primary: mat.$azure-palette,
-      tertiary: mat.$blue-palette,
-    ),
-    typography: Roboto,
-    density: 0,
-  ));
-};
+// Required once
+@include mat.core();
 
+// Emit the app's default theme globally
+@include mat.all-component-themes($default);
+
+// Optional: extra status palette scope (example usage: wrap status components)
+#status-theme {
+  @include mat.all-component-themes($status);
+}
+
+// Optional dark theme behind a class on <html> or <body>
+.dark-theme {
+  @include mat.all-component-colors($dark);
+}
+
+/* Global base styles */
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+body { outline: 6px solid red !important; } /* test marker */
