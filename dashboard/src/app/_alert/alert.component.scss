@@ -1,0 +1,101 @@
+/* Container positions */
+.alert-container {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &.top-right   { top: 16px; right: 16px; }
+  &.top-left    { top: 16px; left: 16px; }
+  &.bottom-right{ bottom: 16px; right: 16px; }
+  &.bottom-left { bottom: 16px; left: 16px; }
+}
+
+/* Card base – colors driven by CSS vars set by the theme mixin */
+.alert-card {
+  pointer-events: auto;
+  min-width: 280px;
+  max-width: min(92vw, 420px);
+
+  background: var(--alert-surface);
+  color: var(--alert-on-surface);
+  border-radius: 12px;
+  border: 1px solid var(--alert-outline);
+  box-shadow: 0 10px 30px var(--alert-shadow), 0 2px 10px var(--alert-shadow);
+  overflow: hidden;
+
+  /* Accent strip + subtle tint using the accent color */
+  border-left: 4px solid var(--alert-accent);
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--alert-accent) 10%, transparent), transparent);
+}
+
+.alert-content {
+  display: grid;
+  grid-template-columns: 20px 1fr 28px;
+  align-items: start;
+  gap: 10px;
+  padding: 12px 12px 10px 12px;
+}
+
+.alert-icon {
+  line-height: 0;
+  color: var(--alert-accent);
+}
+
+.alert-message {
+  font-size: 14px;
+  line-height: 1.25rem;
+  word-break: break-word;
+}
+
+/* Close button */
+.alert-close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--alert-on-surface) 65%, transparent);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 6px;
+
+  &:hover {
+    color: var(--alert-on-surface);
+    background: color-mix(in srgb, var(--alert-on-surface) 10%, transparent);
+  }
+  &:focus {
+    outline: 2px solid color-mix(in srgb, var(--alert-on-surface) 35%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+/* Auto-close progress bar, tinted to accent */
+.alert-progress {
+  height: 2px;
+  width: 100%;
+  background: var(--alert-accent);
+  opacity: .9;
+  transform-origin: left;
+  animation-name: alertProgressShrink;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes alertProgressShrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .alert-progress { animation: none; display: none; }
+}
+
+/* Tiny in-button spinners you already added elsewhere */
+mat-progress-spinner {
+  margin-right: 4px;
+  vertical-align: middle;
+}

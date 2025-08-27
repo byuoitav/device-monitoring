@@ -1,4 +1,27 @@
-<div *ngFor="let alert of alerts" class="{{cssClass(alert)}}">
-    <div [innerHTML]="alert.message"></div>
-    <button type="button" class="btn-close" (click)="removeAlert(alert)"></button>
+<!-- Container fixed to the corner -->
+<div class="alert-container top-right" role="region" aria-label="Notifications">
+  <div
+    *ngFor="let alert of alerts"
+    class="alert-card"
+    [ngClass]="typeClass(alert)"
+    [@slideInOut]="alert.fade ? 'in' : 'in'"
+    [attr.role]="alertRole(alert)"
+    [attr.aria-live]="ariaLive(alert)"
+  >
+    <div class="alert-content">
+      <span class="alert-icon" [innerHTML]="iconFor(alert)"></span>
+      <div class="alert-message" [innerHTML]="alert.message"></div>
+
+      <button type="button" class="alert-close" (click)="removeAlert(alert)" aria-label="Close">
+        ✕
+      </button>
+    </div>
+
+    <!-- thin progress bar for auto-close -->
+    <div
+      class="alert-progress"
+      *ngIf="alert.autoClose"
+      [style.animation-duration.ms]="autoCloseMs"
+    ></div>
+  </div>
 </div>

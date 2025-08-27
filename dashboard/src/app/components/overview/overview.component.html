@@ -87,8 +87,14 @@
         {{ maintenanceMode ? "Exit" : "Enter" }} Maintenance
       </button>
       -->
-      <button mat-raised-button color="accent" (click)="api.flushDNS()">
-        <mat-icon>dns</mat-icon> 
+
+      <button mat-raised-button color="accent" (click)="handleFlushDNS()" [disabled]="isBusy.flush">
+        <mat-icon *ngIf="!isBusy.flush">dns</mat-icon>
+        <mat-progress-spinner
+          *ngIf="isBusy.flush"
+          diameter="16"
+          mode="indeterminate"
+        ></mat-progress-spinner>
         Flush DNS
       </button>
       
@@ -99,22 +105,38 @@
       </button>
 
       <!--Add ReSync DB (Swab) button-->
-      <button mat-raised-button color="accent" (click)="api.reSyncDB(); alertService.success('Successfully ReSync DB!', options)">
-        <mat-icon>sync</mat-icon>
+      <button mat-raised-button color="accent" (click)="handleResyncDB()" [disabled]="isBusy.resync">
+        <mat-icon *ngIf="!isBusy.resync">sync</mat-icon>
+        <mat-progress-spinner
+          *ngIf="isBusy.resync"
+          diameter="16"
+          mode="indeterminate"
+        ></mat-progress-spinner>
         ReSync
       </button>
 
       <!--Add ReFresh (Float) Containers button-->
-      <button mat-raised-button color="accent" (click)="api.refreshContainers(); alertService.success('Successfully Refreshed Containers', options)">
-        <mat-icon>refresh</mat-icon>
+      <button mat-raised-button color="accent" (click)="handleRefreshContainers()" [disabled]="isBusy.refresh">
+        <mat-icon *ngIf="!isBusy.refresh">refresh</mat-icon>
+        <mat-progress-spinner
+          *ngIf="isBusy.refresh"
+          diameter="16"
+          mode="indeterminate"
+        ></mat-progress-spinner>
         Refresh Containers
       </button>
 
-      <button mat-raised-button color="warn" (click)="api.reboot()">
-        <mat-icon>power_settings_new</mat-icon>
+
+      <button mat-raised-button color="warn" (click)="handleReboot()" [disabled]="isBusy.reboot">
+        <mat-icon *ngIf="!isBusy.reboot">power_settings_new</mat-icon>
+        <mat-progress-spinner
+          *ngIf="isBusy.reboot"
+          diameter="16"
+          mode="indeterminate"
+        ></mat-progress-spinner>
         Reboot
       </button>
-      
+
     </mat-card-actions>
   </mat-card>
 

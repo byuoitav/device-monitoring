@@ -53,20 +53,27 @@ export class APIService {
     );
   }
 
-  public async reboot(): Promise<string | void> {
+  public async reboot(): Promise<"success" | "fail"> {
     try {
+      // optional: keep your dialog
       this.dialog.open(RebootComponent, { disableClose: true });
+
       const text = await firstValueFrom(
         this.http.put(this.api("device/reboot"), null, { responseType: "text" as const })
       );
-      return text;
-    } catch (e: any) {
-      // Preserve historical behavior in case the backend returns text-but-marked-as-error
-      if (e?.status === 200 && e?.error?.text) {
-        console.log(e.error.text);
-        return e.error.text;
+
+      // treat any 200 as success; some backends just return plain text
+      if (typeof text === "string" && text.trim().length >= 0) {
+        return "success";
       }
-      throw new Error('error rebooting device: ' + (e?.message ?? e));
+      return "fail";
+    } catch (e: any) {
+      // Some backends send the payload via the "error" field with 200 status
+      if (e?.status === 200 && typeof e?.error === "string") {
+        return "success";
+      }
+      console.error("error rebooting device:", e);
+      return "fail";
     }
   }
 
@@ -244,41 +251,57 @@ export class APIService {
   }
 
 
-  public async flushDNS() {
-    this.http.get(this.api("/dns")).subscribe((data: any) => {
-      if (data == "success") {
+  public async flushDNS(): Promise<"success" | "fail"> {
+    try {
+      const data = await firstValueFrom(
+        this.http.get(this.api("/dns"), { responseType: "text" as const })
+      );
+      if (typeof data === "string" && data.toLowerCase().includes("success")) {
         console.log("%c successfully flushed the dns cache", "color: green; font-size: 20px");
-      } else {
-        console.log("%c failed to flush the dns cache", "color: red; font-size: 20px");
+        return "success";
       }
-    });
+      console.log("%c failed to flush the dns cache", "color: red; font-size: 20px");
+      return "fail";
+    } catch (e) {
+      console.error("error flushing dns:", e);
+      return "fail";
+    }
   }
 
+
   // reSyncDB (Swab)
-  public async reSyncDB(): Promise<void> {
+  public async reSyncDB(): Promise<"success" | "fail"> {
     try {
-      const data = await firstValueFrom(this.http.get(this.api("/resyncDB"), { responseType: "text" as const }));
-      if (data === 'success') {
-        console.log('%c successfully resynced the database', 'color: green; font-size: 20px');
-      } else {
-        console.log('%c failed to resync the database', 'color: red; font-size: 20px');
+      const data = await firstValueFrom(
+        this.http.get(this.api("/resyncDB"), { responseType: "text" as const })
+      );
+      if (data && data.toLowerCase().includes("success")) {
+        console.log("%c successfully resynced the database", "color: green; font-size: 20px");
+        return "success";
       }
-    } catch {
-      console.log('%c failed to resync the database', 'color: red; font-size: 20px');
+      console.log("%c failed to resync the database", "color: red; font-size: 20px");
+      return "fail";
+    } catch (e) {
+      console.log("%c failed to resync the database", "color: red; font-size: 20px");
+      return "fail";
     }
   }
 
   // refreshContainers (Float)
-  public async refreshContainers(): Promise<void> {
+  public async refreshContainers(): Promise<"success" | "fail"> {
     try {
-      const data = await firstValueFrom(this.http.get(this.api("/refreshContainers"), { responseType: "text" as const }));
-      if (data === 'success') {
-        console.log('%c successfully refreshed the containers', 'color: green; font-size: 20px');
-      } else {
-        console.log('%c failed to refresh the containers', 'color: red; font-size: 20px');
+      const data = await firstValueFrom(
+        this.http.get(this.api("/refreshContainers"), { responseType: "text" as const })
+      );
+      if (data && data.toLowerCase().includes("success")) {
+        console.log("%c successfully refreshed the containers", "color: green; font-size: 20px");
+        return "success";
       }
-    } catch {
-      console.log('%c failed to refresh the containers', 'color: red; font-size: 20px');
+      console.log("%c failed to refresh the containers", "color: red; font-size: 20px");
+      return "fail";
+    } catch (e) {
+      console.log("%c failed to refresh the containers", "color: red; font-size: 20px");
+      return "fail";
     }
   }
 }

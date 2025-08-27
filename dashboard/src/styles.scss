@@ -3,12 +3,14 @@
 // For more information: https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 @use './app/themes' as *;
+@use './app/_alert/_alert-theme' as alertTheme;
 
 // Required once
 @include mat.core();
 
 // Emit the app's default theme globally
 @include mat.all-component-themes($default);
+@include alertTheme.theme($default);
 
 // Optional: extra status palette scope (example usage: wrap status components)
 #status-theme {
@@ -18,6 +20,10 @@
 // Optional dark theme behind a class on <html> or <body>
 .dark-theme {
   @include mat.all-component-colors($dark);
+  @include alertTheme.theme($dark);
+}
+html {
+  @include mat.theme($default);
 }
 
 /* Global base styles */
