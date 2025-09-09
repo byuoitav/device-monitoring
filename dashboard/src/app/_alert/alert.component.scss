@@ -61,6 +61,8 @@
   cursor: pointer;
   padding: 2px;
   border-radius: 6px;
+  /* Align button to the right */
+  margin-left: auto;
 
   &:hover {
     color: var(--alert-on-surface);

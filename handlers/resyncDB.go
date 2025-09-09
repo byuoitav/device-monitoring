@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os/exec"
 	"time"
@@ -14,24 +15,31 @@ import (
 func ResyncDB(ctx *gin.Context) {
 	// to resync the database, we need to perform the replication
 	// curl -X GET http://localhost:7012/replication/start
-	localhost := "http://localhost:7012"
-	rplUrl := fmt.Sprintf("%s/replication/start", localhost)
+	swabBase := "http://127.0.0.1:7012"
+	uiBase := "http://127.0.0.1:8888"
 
+	rplURL := swabBase + "/replication/start"
+	uiURL := uiBase + "/refresh"
+
+	slog.Info("Starting database replication", slog.String("url", rplURL))
 	// create the request
-	req, err := http.NewRequestWithContext(ctx.Request.Context(), http.MethodGet, rplUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, rplURL, nil)
 	if err != nil {
+		slog.Error("Failed to create replication request", slog.String("error", err.Error()))
 		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to create replication request: %v", err))
 		return
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to start replication: %v", err))
+		slog.Error("Failed to do replication", slog.String("error", err.Error()))
+		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to do replication: %v", err))
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		slog.Error("Failed to start replication", slog.String("status", resp.Status))
 		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to start replication: %s", resp.Status))
 		return
 	}
@@ -45,9 +53,8 @@ func ResyncDB(ctx *gin.Context) {
 	}
 
 	// refresh UI URL
-	uiUrl := fmt.Sprintf("%s:8888/refresh", localhost)
 	// refresh the UI
-	req, err = http.NewRequestWithContext(ctx.Request.Context(), http.MethodPut, uiUrl, nil)
+	req, err = http.NewRequestWithContext(ctx.Request.Context(), http.MethodPut, uiURL, nil)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to create refresh UI request: %v", err))
 		return

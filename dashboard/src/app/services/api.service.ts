@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { firstValueFrom } from "rxjs";
+import { firstValueFrom, timeout } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 
 import {
@@ -254,7 +254,9 @@ export class APIService {
   public async flushDNS(): Promise<"success" | "fail"> {
     try {
       const data = await firstValueFrom(
-        this.http.get(this.api("/dns"), { responseType: "text" as const })
+        this.http
+          .get(this.api("/dns"), { responseType: "text" as const })
+          .pipe(timeout(2500))
       );
       if (typeof data === "string" && data.toLowerCase().includes("success")) {
         console.log("%c successfully flushed the dns cache", "color: green; font-size: 20px");
@@ -264,7 +266,7 @@ export class APIService {
       return "fail";
     } catch (e) {
       console.error("error flushing dns:", e);
-      return "fail";
+      throw e; // let UI decide optimistic vs error
     }
   }
 
@@ -273,7 +275,9 @@ export class APIService {
   public async reSyncDB(): Promise<"success" | "fail"> {
     try {
       const data = await firstValueFrom(
-        this.http.get(this.api("/resyncDB"), { responseType: "text" as const })
+        this.http
+          .get(this.api("/resyncDB"), { responseType: "text" as const })
+          .pipe(timeout(2500))
       );
       if (data && data.toLowerCase().includes("success")) {
         console.log("%c successfully resynced the database", "color: green; font-size: 20px");
@@ -282,26 +286,28 @@ export class APIService {
       console.log("%c failed to resync the database", "color: red; font-size: 20px");
       return "fail";
     } catch (e) {
-      console.log("%c failed to resync the database", "color: red; font-size: 20px");
-      return "fail";
+      console.log("%c resync likely in progress / service restarting", "color: orange; font-size: 14px");
+      throw e; // optimistic in UI
     }
   }
 
   // refreshContainers (Float)
   public async refreshContainers(): Promise<"success" | "fail"> {
-    try {
+      try {
       const data = await firstValueFrom(
-        this.http.get(this.api("/refreshContainers"), { responseType: "text" as const })
+        this.http
+          .get(this.api("/refreshContainers"), { responseType: "text" as const })
+          .pipe(timeout(2500))
       );
       if (data && data.toLowerCase().includes("success")) {
         console.log("%c successfully refreshed the containers", "color: green; font-size: 20px");
         return "success";
       }
-      console.log("%c failed to refresh the containers", "color: red; font-size: 20px");
+      console.log("%c refresh containers returned non-success", "color: red; font-size: 20px");
       return "fail";
     } catch (e) {
-      console.log("%c failed to refresh the containers", "color: red; font-size: 20px");
-      return "fail";
+      console.log("%c refresh likely triggered; connection dropped during restart", "color: orange; font-size: 14px");
+      throw e; // optimistic in UI
     }
   }
 }

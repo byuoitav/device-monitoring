@@ -2,13 +2,13 @@ import { Component, OnInit } from "@angular/core";
 
 import { APIService } from "../../services/api.service";
 import { DeviceInfo, PingResult } from "../../objects";
-import { AlertService } from "../../_alert";
+import { FeedbackService } from "../../services/feedback.service";
 
 @Component({
-    selector: "overview",
-    templateUrl: "./overview.component.html",
-    styleUrls: ["./overview.component.scss"],
-    standalone: false
+  selector: "overview",
+  templateUrl: "./overview.component.html",
+  styleUrls: ["./overview.component.scss"],
+  standalone: false
 })
 export class OverviewComponent implements OnInit {
   public hasDividerSensors: boolean;
@@ -16,51 +16,32 @@ export class OverviewComponent implements OnInit {
   public pingResult: Map<string, PingResult>;
   public dividerSensorStatus: string;
   public dividerSensorAddr: string;
-  // public maintenanceMode: boolean;
 
   public isBusy = { resync: false, refresh: false, reboot: false, flush: false };
 
-  options = {
-    autoClose: true,
-    keepAfterRouteChange: true 
-  };
-
-  constructor(public api: APIService, public alertService: AlertService) {}
+  constructor(
+    public api: APIService,
+    private feedback: FeedbackService
+  ) {}
 
   async ngOnInit() {
     try {
       this.deviceInfo = await this.api.getDeviceInfo();
     } catch (e) {
       console.error("error getting device info", e);
-      this.alertService.error("Failed to load device info.", this.options);
+      this.feedback.error("Failed to load device info.");
     }
 
     this.pingResult = await this.api.getRoomPing();
-    console.log("ping result", this.pingResult);
     this.hasDividerSensors = this.getDividerSensors();
-    console.log("hasDividerSensors", this.hasDividerSensors);
+
     if (this.hasDividerSensors) {
       this.connected();
-      console.log("dividerSensorStatus", this.dividerSensorStatus);
     }
-
-    /*
-    this.maintenanceMode = await this.api.getMaintenanceMode();
-    console.log("maintenanceMode", this.maintenanceMode);
-     */
   }
 
   public isDefined(test: any): boolean {
     return typeof test !== "undefined" && test !== null;
-  }
-
-  public async toggleMaintenanceMode() {
-    /*
-    console.log("toggling maintenance mode");
-
-    this.maintenanceMode = await this.api.toggleMaintenanceMode();
-    console.log("maintenanceMode", this.maintenanceMode);
-     */
   }
 
   public reachable(): number {
@@ -109,75 +90,77 @@ export class OverviewComponent implements OnInit {
   }
 
   // ---------- Button handlers ----------
-   public async handleResyncDB(): Promise<void> {
-    if (this.isBusy.resync) return;
-    this.isBusy.resync = true;
-    try {
-      const result = await this.api.reSyncDB();
-      if (result === "success") {
-        this.alertService.success("Successfully ReSync DB!", this.options);
-      } else {
-        this.alertService.error("Failed to ReSync DB.", this.options);
+  public async handleResyncDB(): Promise<void> {
+    await this.feedback.run(
+      async () => {
+        const result = await this.api.reSyncDB();
+        if (result === "fail") throw new Error("resync failed");
+        return result;
+      },
+      v => (this.isBusy.resync = v),
+      {
+        start: "Resyncing database…",
+        success: "Database resynced ✓",
+        softSuccess: "Resync started. Reconnecting…",
+        error: "Resync failed.",
+        optimisticOnNetworkError: true,
+        onFinally: () => setTimeout(() => this.api.refresh(), 1500)
       }
-    } catch (e) {
-      console.error(e);
-      this.alertService.error("Error during ReSync DB.", this.options);
-    } finally {
-      this.isBusy.resync = false;
-    }
+    );
   }
 
   public async handleRefreshContainers(): Promise<void> {
-    if (this.isBusy.refresh) return;
-    this.isBusy.refresh = true;
-    try {
-      const result = await this.api.refreshContainers(); // returns "success" | "fail"
-      if (result === "success") {
-        this.alertService.success("Successfully refreshed containers.", this.options);
-      } else {
-        this.alertService.error("Failed to refresh containers.", this.options);
+    await this.feedback.run(
+      async () => {
+        const result = await this.api.refreshContainers();
+        if (result === "fail") throw new Error("refresh failed");
+        return result;
+      },
+      v => (this.isBusy.refresh = v),
+      {
+        start: "Refreshing containers…",
+        success: "Containers refreshed ✓",
+        softSuccess: "Refresh initiated. Reconnecting…",
+        error: "Failed to refresh containers.",
+        optimisticOnNetworkError: true,
+        onFinally: () => setTimeout(() => this.api.refresh(), 1500)
       }
-    } catch (e) {
-      console.error(e);
-      this.alertService.error("Error while refreshing containers.", this.options);
-    } finally {
-      this.isBusy.refresh = false;
-    }
+    );
   }
 
   public async handleReboot(): Promise<void> {
-    if (this.isBusy.reboot) return;
-    this.isBusy.reboot = true;
-    try {
-      const result = await this.api.reboot(); // "success" | "fail"
-      if (result === "success") {
-        this.alertService.success("Reboot requested. Device will restart shortly.", this.options);
-      } else {
-        this.alertService.error("Failed to request reboot.", this.options);
+    await this.feedback.run(
+      async () => {
+        const result = await this.api.reboot();
+        if (result === "fail") throw new Error("reboot failed");
+        return result;
+      },
+      v => (this.isBusy.reboot = v),
+      {
+        start: "Rebooting…",
+        success: "Reboot command sent ✓",
+        softSuccess: "Rebooting now. Reconnecting…",
+        error: "Failed to request reboot.",
+        optimisticOnNetworkError: true,
+        onFinally: () => setTimeout(() => this.api.refresh(), 3000)
       }
-    } catch (e) {
-      console.error(e);
-      this.alertService.error("Error requesting reboot.", this.options);
-    } finally {
-      this.isBusy.reboot = false;
-    }
+    );
   }
 
   public async handleFlushDNS(): Promise<void> {
-    if (this.isBusy.flush) return;
-    this.isBusy.flush = true;
-    try {
-      const result = await this.api.flushDNS(); // "success" | "fail"
-      if (result === "success") {
-        this.alertService.success("Successfully flushed DNS cache.", this.options);
-      } else {
-        this.alertService.error("Failed to flush DNS cache.", this.options);
+    await this.feedback.run(
+      async () => {
+        const result = await this.api.flushDNS();
+        if (result === "fail") throw new Error("flush failed");
+        return result;
+      },
+      v => (this.isBusy.flush = v),
+      {
+        start: "Flushing DNS…",
+        success: "DNS cache flushed ✓",
+        error: "Couldn’t flush DNS.",
+        optimisticOnNetworkError: false
       }
-    } catch (e) {
-      console.error(e);
-      this.alertService.error("Error flushing DNS cache.", this.options);
-    } finally {
-      this.isBusy.flush = false;
-    }
+    );
   }
 }

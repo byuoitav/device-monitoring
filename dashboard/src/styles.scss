@@ -3,14 +3,12 @@
 // For more information: https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 @use './app/themes' as *;
-@use './app/_alert/_alert-theme' as alertTheme;
 
 // Required once
 @include mat.core();
 
 // Emit the app's default theme globally
 @include mat.all-component-themes($default);
-@include alertTheme.theme($default);
 
 // Optional: extra status palette scope (example usage: wrap status components)
 #status-theme {
@@ -20,7 +18,6 @@
 // Optional dark theme behind a class on <html> or <body>
 .dark-theme {
   @include mat.all-component-colors($dark);
-  @include alertTheme.theme($dark);
 }
 html {
   @include mat.theme($default);
@@ -31,3 +28,7 @@ html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 body { outline: 6px solid red !important; } /* test marker */
+
+.snack-info    { --mdc-snackbar-container-color: #2d3748; --mdc-snackbar-supporting-text-color: #e2e8f0; }  // slate bg
+.snack-success { --mdc-snackbar-container-color: #065f46; --mdc-snackbar-supporting-text-color: #ecfdf5; }  // green bg
+.snack-error   { --mdc-snackbar-container-color: #7f1d1d; --mdc-snackbar-supporting-text-color: #fee2e2; }  // red bg

@@ -11,7 +11,9 @@
     <div class="alert-content">
       <span class="alert-icon" [innerHTML]="iconFor(alert)"></span>
       <div class="alert-message" [innerHTML]="alert.message"></div>
-
+    
+      <!--Align button to the left-->
+      
       <button type="button" class="alert-close" (click)="removeAlert(alert)" aria-label="Close">
         ✕
       </button>

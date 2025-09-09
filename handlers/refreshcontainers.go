@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
@@ -17,44 +18,33 @@ import (
 var (
 	WSO2Client        wso2.Client
 	errDeviceNotFound = errors.New("unable to find specified device in the database")
+	// ABC-123-AB2 style
+	deviceHostnameRegex = regexp.MustCompile(`^[[:alnum:]]+-[[:alnum:]]+-[[:alnum:]]+$`)
 )
 
 // RefreshContainers (Float)
 func RefreshContainers(ctx *gin.Context) {
 	ip := ctx.ClientIP()
-	slog.Info("Starting float attempt", slog.String("ip", ip))
+	slog.Info("Float attempt (incoming request)", slog.String("peer_ip", ip))
 
-	// reverse DNS lookup
-	names, err := net.LookupAddr(ip)
-	if err != nil {
-		msg := fmt.Sprintf("error resolving hostname for ip: %s", ip)
-		slog.Error(msg, slog.Any("error", err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+	// Require local caller (loopback only)
+	if !isLoopback(ip) {
+		msg := "refresh endpoint is local-only"
+		slog.Warn(msg, slog.String("peer_ip", ip))
+		ctx.JSON(http.StatusForbidden, gin.H{"error": msg})
 		return
 	}
-	slog.Info("Reverse DNS result", slog.Any("names", names))
 
-	// find a valid device hostname (ABC-123-AB2 format)
-	name := ""
-	deviceHostnameRegex := regexp.MustCompile("^[[:alnum:]]+-[[:alnum:]]+-[[:alnum:]]+$")
-	for _, n := range names {
-		short := strings.SplitN(n, ".", 2)[0]
-		if deviceHostnameRegex.MatchString(short) {
-			name = short
-			break
-		}
-	}
-
-	if name == "" {
-		msg := fmt.Sprintf("no valid device hostname found for IP: %s", ip)
+	// Derive the device name from the local machine
+	name, err := selfDeviceName()
+	if err != nil {
+		msg := fmt.Sprintf("failed to determine local device name: %v", err)
 		slog.Error(msg)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
-	slog.Info("Resolved hostname", slog.String("hostname", name))
+	slog.Info("Resolved local hostname", slog.String("hostname", name))
 
-	// try prd, then stg
-	// try prd, then stg
 	if err := floatDevice(&WSO2Client, name, "prd"); err != nil {
 		if errors.Is(err, errDeviceNotFound) {
 			slog.Info("Device not found in prd, trying stg", slog.String("hostname", name))
@@ -104,4 +94,23 @@ func handleFloatError(ctx *gin.Context, err error, name string) {
 		return
 	}
 	ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+}
+
+func isLoopback(ipStr string) bool {
+	ip := net.ParseIP(ipStr)
+	return ip != nil && ip.IsLoopback()
+}
+
+// selfDeviceName returns the local device hostname in ABC-123-AB2 format
+func selfDeviceName() (string, error) {
+	host, err := os.Hostname()
+	if err != nil {
+		return "", fmt.Errorf("error getting hostname: %w", err)
+	}
+
+	// Validate and format the hostname
+	if !deviceHostnameRegex.MatchString(host) {
+		return "", fmt.Errorf("invalid hostname format: %s", host)
+	}
+	return host, nil
 }

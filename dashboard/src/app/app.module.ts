@@ -31,6 +31,7 @@ import { DeviceInfoComponent } from './device-info/device-info.component';
 
 import { AlertModule } from "./_alert/alert.module";
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 
 const routes: Routes = [
   {
@@ -91,7 +92,8 @@ const routes: Routes = [
     MatDialogModule,
     MatProgressSpinnerModule,
     RouterModule.forRoot(routes),
-    AlertModule
+    AlertModule,
+    MatSnackBarModule
   ],
   providers: [
     APIService,
