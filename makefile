@@ -86,9 +86,13 @@ build-binaries:
 		OUT=$(BUILD_DIR)/$(NAME)-$$OS-$$ARCH; \
 		[ "$$OS" = "windows" ] && OUT=$$OUT.exe; \
 		echo "  -> $$OS/$$ARCH => $$OUT"; \
-		if [ "$$ARCH" = "arm" ]; then GOARM_ENV="GOARM=$${GOARM:-7}"; else GOARM_ENV=""; fi; \
-		GOOS=$$OS GOARCH=$$ARCH $$GOARM_ENV CGO_ENABLED=$${CGO_ENABLED:-0} \
-		  $(GOBUILD) $(COMMON_BUILD_FLAGS) -o $$OUT -v $(MAIN_PKG) || exit 1; \
+		if [ "$$ARCH" = "arm" ]; then \
+		  GOOS=$$OS GOARCH=$$ARCH GOARM=$${GOARM:-7} CGO_ENABLED=$${CGO_ENABLED:-0} \
+		    $(GOBUILD) $(COMMON_BUILD_FLAGS) -o "$$OUT" -v $(MAIN_PKG) || exit 1; \
+		else \
+		  GOOS=$$OS GOARCH=$$ARCH CGO_ENABLED=$${CGO_ENABLED:-0} \
+		    $(GOBUILD) $(COMMON_BUILD_FLAGS) -o "$$OUT" -v $(MAIN_PKG) || exit 1; \
+		fi; \
 	done
 
 build-web:
