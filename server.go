@@ -24,32 +24,33 @@ import (
 )
 
 func main() {
-	// ---- CLI Flags with Environment Defaults ----
-	defaultGatewayURL := os.Getenv("WSO2_GATEWAY_URL")
-	defaultClientID := os.Getenv("WSO2_CLIENT_ID")
-	defaultClientSecret := os.Getenv("WSO2_CLIENT_SECRET")
+	// ===========================
+	// Flags (PRD required; STG optional)
+	// ===========================
+	// Flight-Deck REST API bases
+	prdAPIBase := pflag.String("fd-prd-api-base", "https://api.byu.edu/domains/av/flight-deck/v2", "Flight-Deck PRD API base")
+	stgAPIBase := pflag.String("fd-stg-api-base", "", "Flight-Deck STG API base (optional fallback)")
 
-	var (
-		gatewayURL   string
-		clientID     string
-		clientSecret string
-	)
+	// WSO2 issuer/gateway + OAuth client per env
+	prdGatewayURL := pflag.String("prd-gateway-url", "", "WSO2 PRD gateway URL (issuer/gateway base, e.g. https://api.byu.edu)")
+	prdClientID := pflag.String("prd-client-id", "", "WSO2 PRD client id")
+	prdClientSecret := pflag.String("prd-client-secret", "", "WSO2 PRD client secret")
 
-	pflag.StringVar(&gatewayURL, "gateway-url", defaultGatewayURL, "WSO2 API Gateway URL")
-	pflag.StringVar(&clientID, "client-id", defaultClientID, "WSO2 Client ID")
-	pflag.StringVar(&clientSecret, "client-secret", defaultClientSecret, "WSO2 Client Secret")
+	stgGatewayURL := pflag.String("stg-gateway-url", "", "WSO2 STG gateway URL")
+	stgClientID := pflag.String("stg-client-id", "", "WSO2 STG client id")
+	stgClientSecret := pflag.String("stg-client-secret", "", "WSO2 STG client secret")
+
 	pflag.Parse()
 
-	// ---- Validate Credentials ----
-	if gatewayURL == "" || clientID == "" || clientSecret == "" {
-		slog.Error("WSO2 credentials are required. Use flags or set environment variables.")
+	// ---- Validate PRD flags (required) ----
+	if *prdGatewayURL == "" || *prdClientID == "" || *prdClientSecret == "" || *prdAPIBase == "" {
+		slog.Error("Missing required PRD flags. Provide: --prd-gateway-url --prd-client-id --prd-client-secret --fd-prd-api-base")
 		os.Exit(1)
 	}
 
-	// ---- Initialize global WSO2 client ----
-	handlers.WSO2Client = *wso2.New(clientID, clientSecret, gatewayURL, "device-monitoring")
-
-	// set up logging
+	// ===========================
+	// Logging
+	// ===========================
 	w := os.Stderr
 	handler := tint.NewHandler(w, &tint.Options{
 		Level:      slog.LevelDebug,
@@ -57,9 +58,11 @@ func main() {
 		NoColor:    false,
 	})
 	slog.SetDefault(slog.New(handler))
-
 	slog.Info("Starting device-monitoring server")
 
+	// ===========================
+	// External deps checks
+	// ===========================
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -69,30 +72,58 @@ func main() {
 	}
 	slog.Info("Successfully connected to CouchDB")
 
-	// start the action manager
+	// ===========================
+	// Initialize Flight-Deck clients for RefreshContainers
+	// ===========================
+	fdCfg := handlers.FDConfig{
+		PRD: handlers.FDEnvConfig{
+			APIBase:      *prdAPIBase,    // e.g. https://api.byu.edu/domains/av/flight-deck/v2
+			GatewayURL:   *prdGatewayURL, // e.g. https://api.byu.edu
+			ClientID:     *prdClientID,
+			ClientSecret: *prdClientSecret,
+			// Scopes: []string{"flight-deck.refloat"}, // uncomment if your wso2.Client needs explicit scopes
+		},
+	}
+	// Wire STG only if all four provided
+	if *stgAPIBase != "" && *stgGatewayURL != "" && *stgClientID != "" && *stgClientSecret != "" {
+		fdCfg.STG = handlers.FDEnvConfig{
+			APIBase:      *stgAPIBase,
+			GatewayURL:   *stgGatewayURL,
+			ClientID:     *stgClientID,
+			ClientSecret: *stgClientSecret,
+		}
+	}
+
+	if err := handlers.InitFlightDeck(fdCfg); err != nil {
+		slog.Error("InitFlightDeck failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	// Keep legacy global WSO2 client (PRD) for other handlers that still reference handlers.WSO2Client
+	handlers.WSO2Client = *wso2.New(*prdClientID, *prdClientSecret, *prdGatewayURL, "device-monitoring")
+
+	// ===========================
+	// Start action manager
+	// ===========================
 	go actions.ActionManager().Start(context.TODO())
 	messenger.Get().Register(model.ChanEventConverter(actions.ActionManager().EventStream))
 
-	// create Gin router
+	// ===========================
+	// Gin router
+	// ===========================
 	port := ":10000"
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
-	// redirect from /dash to /dashboard
-	router.GET("/dash", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/dashboard")
-	})
+	// redirects
+	router.GET("/dash", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard") })
+	router.GET("/", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard") })
 
-	// redirect from :10000 to /dashboard
-	router.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/dashboard")
-	})
-
+	// static dashboard
 	router.Static("/dashboard", "./dashboard")
 
-	// HTML5 fallback for SPA (if requested file doesn't exist)
+	// SPA fallback under /dashboard
 	router.NoRoute(func(c *gin.Context) {
-		// if request starts with /dashboard, serve index.html
 		if len(c.Request.URL.Path) >= 10 && c.Request.URL.Path[:10] == "/dashboard" {
 			c.File(filepath.Join("dashboard", "index.html"))
 			return
@@ -100,10 +131,7 @@ func main() {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
 	})
 
-	// ping endpoint for health checks
-	// this is used by the load balancer to check if the service is up
-	// and running, and it should return a 200 OK response.
-	// It can also be used to check if the service is reachable.
+	// health
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "Don't meddle in the affairs of Wizards, for they are subtle and quick to anger.")
 	})
@@ -126,40 +154,28 @@ func main() {
 	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
 	router.GET("/room/health", handlers.RoomHealth)
 
-	// action endpoints
-	// TODO: check is this work with shipwright
+	// actions
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
 	router.POST("/event", handlers.SendEvent)
 
 	// divider sensors
-	// TODO: send actual feedback message
 	router.GET("/divider/state", handlers.GetDividerState)
 	router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
 
 	// action manager
-	router.GET("/actions", func(c *gin.Context) {
-		c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Info))
-	})
-
+	router.GET("/actions", func(c *gin.Context) { c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Info)) })
 	router.GET("/actions/trigger/:trigger", func(c *gin.Context) {
 		c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Config.ActionsByTrigger))
 	})
 
-	// flush dns cache
+	// utilities
 	router.GET("/dns", handlers.FlushDNS)
-
-	// reSyncDB (old SWAB)
 	router.GET("/resyncDB", handlers.ResyncDB)
+	router.GET("/refreshContainers", handlers.RefreshContainers) // hardened handler
 
-	// refreshContainers (old refloat)
-	// TODO: fix this, it was response from flight-deck {"error":"Not Authorized"}
-	router.GET("/refreshContainers", handlers.RefreshContainers) //{"error":"Not Authorized"} response from flight-deck
-
-	// New Router Group for the API with versioning /api/v1 or /api/v2 etc.
-	// This is where you would add your API endpoints
+	// API group
 	api := router.Group("/api")
-	// returns JSON of all the devices and their health
 	api.GET("/v1/monitoring", handlers.GetDeviceHealth)
 
 	// run!
@@ -167,20 +183,13 @@ func main() {
 }
 
 // echoToGin adapts an Echo handler to a Gin handler (this is hacky and needs to be fixed)
-// This is a workaround to use Echo handlers in Gin, which is not ideal but works for now.
-// Needs to be fixed in shipwright or replaced with Gin handlers.
 func echoToGin(eh func(echo.Context) error) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// create a minimal Echo context
 		eCtx := echo.New().NewContext(c.Request, c.Writer)
-
-		// copy params (optional, if Info() uses them)
 		for _, param := range c.Params {
 			eCtx.SetParamNames(param.Key)
 			eCtx.SetParamValues(param.Value)
 		}
-
-		// execute the Echo handler
 		if err := eh(eCtx); err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 		}

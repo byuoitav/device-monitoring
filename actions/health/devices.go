@@ -66,7 +66,7 @@ func GetDeviceAPIHealth(ctx context.Context) (map[string]string, error) {
 func isDeviceAPIHealthy(ctx context.Context, device model.Device) string {
 	// build the command
 	address, err := device.BuildCommandURL(healthyCommandID)
-	slog.Debug("Building command URL", slog.String("device_id", device.ID), slog.String("address", address))
+	//slog.Debug("Building command URL", slog.String("device_id", device.ID), slog.String("address", address))
 	if err != nil {
 		return fmt.Sprintf("unable to check if API is healthy: %s", err.Error())
 	}

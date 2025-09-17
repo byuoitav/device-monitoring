@@ -1,8 +1,11 @@
 package handlers
 
 import (
-	"fmt"
+	"context"
+	"errors"
+	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os/exec"
 	"time"
@@ -11,77 +14,101 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ResyncDB (Swab)
-func ResyncDB(ctx *gin.Context) {
-	// to resync the database, we need to perform the replication
-	// curl -X GET http://localhost:7012/replication/start
-	swabBase := "http://127.0.0.1:7012"
-	uiBase := "http://127.0.0.1:8888"
+// proxy-free, bounded client for internal calls
+var internalHTTP = &http.Client{
+	Timeout: 15 * time.Second,
+	Transport: &http.Transport{
+		Proxy: nil, // ignore HTTP(S)_PROXY env vars
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          10,
+		IdleConnTimeout:       30 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	},
+}
 
+func ResyncDB(ctx *gin.Context) {
+	swabBase := "http://127.0.0.1:7012"
+	uiAPIBase := "http://127.0.0.1:8888"
 	rplURL := swabBase + "/replication/start"
-	uiURL := uiBase + "/refresh"
+	uiURL := uiAPIBase + "/refresh"
+
+	// Kick off replication with its own context (not tied to the client)
+	internalCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 
 	slog.Info("Starting database replication", slog.String("url", rplURL))
-	// create the request
-	req, err := http.NewRequest(http.MethodGet, rplURL, nil)
+	status, body, err := do(internalCtx, http.MethodGet, rplURL)
 	if err != nil {
-		slog.Error("Failed to create replication request", slog.String("error", err.Error()))
-		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to create replication request: %v", err))
+		if errors.Is(err, context.DeadlineExceeded) {
+			slog.Error("Replication request timed out", slog.String("url", rplURL))
+		} else {
+			slog.Error("Replication call failed", slog.String("error", err.Error()))
+		}
+		ctx.String(http.StatusInternalServerError, "replication call failed: %v", err)
 		return
 	}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		slog.Error("Failed to do replication", slog.String("error", err.Error()))
-		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to do replication: %v", err))
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		slog.Error("Failed to start replication", slog.String("status", resp.Status))
-		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to start replication: %s", resp.Status))
+	// Accept any 2xx and 409=already running
+	if status/100 != 2 && status != http.StatusConflict {
+		slog.Error("Replication returned non-success",
+			slog.Int("status", status),
+			slog.String("body", body),
+		)
+		ctx.String(http.StatusInternalServerError, "failed to start replication: %d %s", status, body)
 		return
 	}
 
-	// replication waiting
+	// Optional tiny wait
 	select {
-	case <-time.After(10 * time.Second):
+	case <-time.After(2 * time.Second):
 	case <-ctx.Request.Context().Done():
-		ctx.String(http.StatusInternalServerError, "context cancelled")
-		return
+		// client left; continue best-effort anyway
 	}
 
-	// refresh UI URL
-	// refresh the UI
-	req, err = http.NewRequestWithContext(ctx.Request.Context(), http.MethodPut, uiURL, nil)
-	if err != nil {
-		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to create refresh UI request: %v", err))
-		return
+	// UI refresh
+	if uiURL != "" {
+		if s2, b2, err2 := do(internalCtx, http.MethodPut, uiURL); err2 != nil {
+			slog.Warn("UI refresh call errored", slog.String("error", err2.Error()))
+		} else if s2/100 != 2 {
+			slog.Warn("UI refresh returned non-2xx", slog.Int("status", s2), slog.String("body", b2))
+		} else {
+			slog.Info("UI refresh OK", slog.Int("status", s2))
+		}
 	}
 
-	resp, err = http.DefaultClient.Do(req)
+	// Reply to client first
+	ctx.String(http.StatusAccepted, "Replication scheduled")
+
+	// Restart asynchronously so the response isn’t killed mid-flight
+	go func() {
+		time.Sleep(300 * time.Millisecond) // let response flush
+
+		out, err := exec.Command("sudo", "-n", "systemctl", "restart", "device-monitoring.service").CombinedOutput()
+		if err != nil {
+			slog.Error("Failed to restart device-monitoring.service",
+				slog.String("error", err.Error()),
+				slog.String("output", string(out)),
+			)
+			return
+		}
+		color.Green("Resynced DB / service restarted: %s", string(out))
+	}()
+}
+
+// do performs an internal HTTP call with proxy-free transport and returns status + up to 4KB body
+func do(ctx context.Context, method, url string) (int, string, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, nil)
 	if err != nil {
-		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to refresh UI: %v", err))
-		return
+		return 0, "", err
+	}
+	resp, err := internalHTTP.Do(req)
+	if err != nil {
+		return 0, "", err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to refresh UI: %s", resp.Status))
-		return
-	}
-
-	// restart the device monitoring service (dmm) with systemctl
-	// after this the dmm goes offliine for a few seconds so we need to wait for it to come back online
-	cmd := exec.Command("sudo", "systemctl", "restart", "device-monitoring.service")
-	output, err := cmd.Output()
-	if err != nil {
-		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to restart device-monitoring.service: %v", err))
-		return
-	}
-
-	color.Green("Resynced DB: %s", string(output))
-
-	ctx.String(http.StatusOK, "Resyncing DB")
+	b, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+	return resp.StatusCode, string(b), nil
 }
