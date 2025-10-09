@@ -6,69 +6,36 @@ import (
 )
 
 func main() {
-	// Example usage
-	inputPin := NewGPIO(24)
-	outputPin := NewGPIO(4)
+	in := NewGPIO(24) // <-- change if needed
+	out := NewGPIO(4) // <-- change if needed
 
-	// Check initial state of all GPIO pins
-	fmt.Println("Initial GPIO states:")
-	if err := CheckAllGPIOStates(); err != nil {
-		fmt.Println("Error checking GPIO states:", err)
-		return
+	// Open lines
+	if err := in.OpenInput(); err != nil {
+		panic(fmt.Errorf("open input: %w", err))
 	}
+	defer in.Close()
 
-	// Setup
-	if err := inputPin.Export(); err != nil {
-		fmt.Println("Error exporting input pin:", err)
-		return
+	if err := out.OpenOutput(LOW); err != nil {
+		panic(fmt.Errorf("open output: %w", err))
 	}
-	if err := outputPin.Export(); err != nil {
-		fmt.Println("Error exporting output pin:", err)
-		return
-	}
+	defer out.Close()
 
-	defer inputPin.Unexport()
-	defer outputPin.Unexport()
-
-	// Set direction
-	if err := inputPin.SetDirection(IN); err != nil {
-		fmt.Println("Error setting input pin direction:", err)
-		return
-	}
-
-	if err := outputPin.SetDirection(OUT); err != nil {
-		fmt.Println("Error setting output pin direction:", err)
-		return
-	}
-
-	// Check state after setup
-	fmt.Println("\nGPIO States after setup:")
-	if err := CheckAllGPIOStates(); err != nil {
-		fmt.Println("Error checking GPIO states:", err)
-		return
-	}
-
-	// Loop and write to output pin
+	fmt.Println("Toggling output and reading input (10 cycles):")
 	for i := 0; i < 10; i++ {
-		if err := outputPin.Write(i % 2); err != nil {
-			fmt.Println("Error writing to output pin:", err)
-			return
+		val := i % 2
+		if err := out.Write(val); err != nil {
+			panic(fmt.Errorf("write: %w", err))
 		}
-		value, err := inputPin.Read()
+		// small settle time
+		time.Sleep(50 * time.Millisecond)
+
+		r, err := in.Read()
 		if err != nil {
-			fmt.Println("Error reading from input pin:", err)
-			return
+			panic(fmt.Errorf("read: %w", err))
 		}
-		fmt.Printf("Reading %d from GPIO %d\n", value, inputPin.pin)
+		fmt.Printf("out=%d -> in=%d\n", val, r)
 
-		// Sleep to see the output
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(450 * time.Millisecond)
 	}
-
-	// Check state after loop
-	fmt.Println("\nFinal GPIO States:")
-	if err := CheckAllGPIOStates(); err != nil {
-		fmt.Println("Error checking GPIO states:", err)
-		return
-	}
+	fmt.Println("Done.")
 }

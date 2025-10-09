@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/spf13/pflag"
 
+	"github.com/byuoitav/device-monitoring/actions/gpio"
 	"github.com/lmittmann/tint"
 
 	_ "github.com/byuoitav/device-monitoring/actions/then"
@@ -39,6 +41,8 @@ func main() {
 	stgGatewayURL := pflag.String("stg-gateway-url", "", "WSO2 STG gateway URL")
 	stgClientID := pflag.String("stg-client-id", "", "WSO2 STG client id")
 	stgClientSecret := pflag.String("stg-client-secret", "", "WSO2 STG client secret")
+
+	gpioConfigPath := pflag.String("gpio-config", "", "Path to GPIO pins JSON (optional). If omitted, divider endpoints return empty.")
 
 	pflag.Parse()
 
@@ -101,6 +105,20 @@ func main() {
 
 	// Keep legacy global WSO2 client (PRD) for other handlers that still reference handlers.WSO2Client
 	handlers.WSO2Client = *wso2.New(*prdClientID, *prdClientSecret, *prdGatewayURL, "device-monitoring")
+
+	if *gpioConfigPath == "" {
+		slog.Warn("No --gpio-config provided; /divider/state will be empty until configured")
+	} else {
+		pins, err := loadPinsFromJSON(*gpioConfigPath)
+		if err != nil {
+			slog.Error("Failed to load GPIO pins from JSON", slog.Any("error", err))
+		} else {
+			gpio.SetPins(pins)
+			gpio.StartAllMonitors()
+			time.Sleep(250 * time.Millisecond) // give monitors a moment to start and read initial states
+			slog.Info("GPIO monitors started", slog.Int("pinCount", len(pins)))
+		}
+	}
 
 	// ===========================
 	// Start action manager
@@ -194,4 +212,17 @@ func echoToGin(eh func(echo.Context) error) gin.HandlerFunc {
 			c.String(http.StatusInternalServerError, err.Error())
 		}
 	}
+}
+
+// loadPinsFromJSON loads GPIO pin configurations from a JSON file
+func loadPinsFromJSON(path string) ([]gpio.Pin, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var pins []gpio.Pin
+	if err := json.Unmarshal(b, &pins); err != nil {
+		return nil, err
+	}
+	return pins, nil
 }

@@ -10,8 +10,7 @@ import (
 // GetDividerState returns the state of the dividers
 func GetDividerState(c *gin.Context) {
 	pins := gpio.GetPins()
-
-	resp := make(map[string][]string)
+	resp := map[string][]string{"connected": {}, "disconnected": {}}
 	for _, p := range pins {
 		if p.Connected {
 			resp["connected"] = append(resp["connected"], p.BlueberryPresets)
@@ -19,7 +18,6 @@ func GetDividerState(c *gin.Context) {
 			resp["disconnected"] = append(resp["disconnected"], p.BlueberryPresets)
 		}
 	}
-
 	c.JSON(http.StatusOK, resp)
 }
 

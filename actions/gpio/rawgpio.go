@@ -2,10 +2,8 @@ package gpio
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
+
+	gpiocdev "github.com/warthog618/go-gpiocdev"
 )
 
 const (
@@ -17,103 +15,83 @@ const (
 )
 
 type GPIO struct {
-	pin int
+	chip string
+	pin  int
+	line *gpiocdev.Line
 }
 
 func NewGPIO(pin int) *GPIO {
-	return &GPIO{pin: pin}
+	return &GPIO{chip: "gpiochip0", pin: pin}
 }
 
-// Export exports the pin to userspace.
-func (g *GPIO) Export() error {
-	return writeFile("/sys/class/gpio/export", strconv.Itoa(g.pin))
-}
-
-// Unexport unexports the pin from userspace.
-func (g *GPIO) Unexport() error {
-	return writeFile("/sys/class/gpio/unexport", strconv.Itoa(g.pin))
-}
-
-func (g *GPIO) SetDirection(direction int) error {
-	var dir string
-	if direction == IN {
-		dir = "in"
-	} else {
-		dir = "out"
-	}
-
-	return writeFile(fmt.Sprintf("/sys/class/gpio/gpio%d/direction", g.pin), dir)
-}
-
-func (g *GPIO) Read() (int, error) {
-	data, err := os.ReadFile(fmt.Sprintf("/sys/class/gpio/gpio%d", g.pin))
+// OpenInput requests the line as input and keeps it open.
+func (g *GPIO) OpenInput() error {
+	l, err := gpiocdev.RequestLine(g.chip, g.pin, gpiocdev.AsInput)
 	if err != nil {
-		return 0, err
+		return fmt.Errorf("request input %s/%d: %w", g.chip, g.pin, err)
 	}
-	return strconv.Atoi(string(data[:len(data)-1]))
-}
-
-func (g *GPIO) Write(value int) error {
-	var val string
-	if value == LOW {
-		val = "0"
-	} else {
-		val = "1"
-	}
-	return writeFile(fmt.Sprintf("/sys/class/gpio/gpio%d/value", g.pin), val)
-}
-
-func writeFile(filepath, data string) error {
-	return os.WriteFile(filepath, []byte(data), 0644)
-}
-
-func (g *GPIO) CheckState() (bool, string, error) {
-	// Check if the pin is exported
-	_, err := os.Stat(fmt.Sprintf("/sys/class/gpio/gpio%d", g.pin))
-	if os.IsNotExist(err) {
-		return false, "", nil // Pin is not exported
-	}
-	if err != nil {
-		return false, "", err
-	}
-
-	// Pin is exported, check direction
-	dirData, err := os.ReadFile(fmt.Sprintf("/sys/class/gpio/gpio%d/direction", g.pin))
-	if err != nil {
-		return true, "", fmt.Errorf("error reading direction: %v", err)
-	}
-	direction := strings.TrimSpace(string(dirData))
-
-	return true, direction, nil
-}
-
-func CheckAllGPIOStates() error {
-	files, err := filepath.Glob("/sys/class/gpio/gpio*")
-	if err != nil {
-		return fmt.Errorf("error listing GPIO pins: %v", err)
-	}
-
-	for _, file := range files {
-		pinStr := strings.TrimPrefix(filepath.Base(file), "gpio")
-		pin, err := strconv.Atoi(pinStr)
-		if err != nil {
-			fmt.Printf("error converting pin number %q to int: %v\n", pinStr, err)
-			continue
-		}
-
-		g := NewGPIO(pin)
-		exported, direction, err := g.CheckState()
-		if err != nil {
-			fmt.Printf("error checking state of pin %d: %v\n", pin, err)
-			continue
-		}
-
-		if exported {
-			fmt.Printf("Pin %d is exported and set to %q\n", pin, direction)
-		} else {
-			fmt.Printf("Pin %d is not exported\n", pin)
-		}
-	}
-
+	g.line = l
 	return nil
 }
+
+// OpenOutput requests the line as output with an initial value (0/1) and keeps it open.
+func (g *GPIO) OpenOutput(initial int) error {
+	init := 0
+	if initial != 0 {
+		init = 1
+	}
+	l, err := gpiocdev.RequestLine(g.chip, g.pin, gpiocdev.AsOutput(init))
+	if err != nil {
+		return fmt.Errorf("request output %s/%d: %w", g.chip, g.pin, err)
+	}
+	g.line = l
+	return nil
+}
+
+func (g *GPIO) Close() error {
+	if g.line != nil {
+		err := g.line.Close()
+		g.line = nil
+		return err
+	}
+	return nil
+}
+
+// Read returns 0/1 from an already-open INPUT line.
+// If not yet open, it will try to open as input first.
+func (g *GPIO) Read() (int, error) {
+	if g.line == nil {
+		if err := g.OpenInput(); err != nil {
+			return 0, err
+		}
+	}
+	v, err := g.line.Value()
+	if err != nil {
+		return 0, fmt.Errorf("read value: %w", err)
+	}
+	if v != 0 {
+		return 1, nil
+	}
+	return 0, nil
+}
+
+// Write sets 0/1 on an already-open OUTPUT line.
+// If not yet open, it will try to open as output with provided value.
+func (g *GPIO) Write(value int) error {
+	if g.line == nil {
+		return g.OpenOutput(value)
+	}
+	v := 0
+	if value != 0 {
+		v = 1
+	}
+	if err := g.line.SetValue(v); err != nil {
+		return fmt.Errorf("set value: %w", err)
+	}
+	return nil
+}
+
+// --- Legacy sysfs shims kept as no-ops so higher-level code compiles ---
+func (g *GPIO) Export() error            { return nil }
+func (g *GPIO) Unexport() error          { return g.Close() }
+func (g *GPIO) SetDirection(_ int) error { return nil }

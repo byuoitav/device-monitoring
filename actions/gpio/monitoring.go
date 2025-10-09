@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"sync"
 	"text/template"
 	"time"
 
@@ -40,65 +39,74 @@ type request struct {
 	Body   interface{} `json:"body"`
 }
 
-var (
-	once sync.Once
-	pins []Pin
-)
-
 // Monitor starts monitoring the signal on a pin
 func (p *Pin) Monitor() {
 	gpio := NewGPIO(p.Pin)
-	gpio.Export()
-	gpio.SetDirection(IN)
-
-	// get read duration
-	readDuration, err := time.ParseDuration(p.ReadFrequency)
-	if err != nil {
-		log.Warn().Msgf("Invalid read frequency: '%s'. Defaulting to 200ms", p.ReadFrequency)
-		readDuration = 200 * time.Millisecond
+	if err := gpio.OpenInput(); err != nil {
+		log.Warn().Err(err).Msgf("open gpio line %d", p.Pin)
 	}
-	log.Info().Msgf("Monitoring pin %v every %v", p.Pin, readDuration.String())
+	defer gpio.Close()
 
-	// get true up duration
-	trueUpDuration, err := time.ParseDuration(p.TrueUpFrequency)
+	rd, err := time.ParseDuration(p.ReadFrequency)
 	if err != nil {
-		log.Warn().Msgf("Invalid true up frequency: '%s'. Defaulting to 5m", p.TrueUpFrequency)
-		trueUpDuration = 5 * time.Minute
+		rd = 200 * time.Millisecond
+	}
+	td, err := time.ParseDuration(p.TrueUpFrequency)
+	if err != nil {
+		td = 5 * time.Minute
+	}
+
+	// Initial read
+	if val, err := gpio.Read(); err == nil {
+		connected := val == 1
+		if p.Flip {
+			connected = !connected
+		}
+		mu.Lock()
+		p.Connected = connected
+		mu.Unlock()
 	}
 
 	newStateCount := 0
-	readTick := time.NewTicker(readDuration)
-	trueUpTick := time.NewTicker(trueUpDuration)
+	readTick := time.NewTicker(rd)
+	trueUpTick := time.NewTicker(td)
 
+	// Monitor loop
 	for {
 		select {
 		case <-readTick.C:
-			read, err := gpio.Read()
+			val, err := gpio.Read()
 			if err != nil {
-				log.Warn().Msgf("Unable to read pin %v: %s", p.Pin, err)
+				log.Warn().Err(err).Msgf("read pin %d", p.Pin)
 				continue
 			}
 
-			connected := read == 1
+			connected := val == 1
 			if p.Flip {
 				connected = !connected
 			}
 
-			if connected != p.Connected {
+			mu.RLock()
+			cur := p.Connected
+			mu.RUnlock()
+
+			if connected != cur {
 				newStateCount++
 				if newStateCount >= p.ReadsBeforeChange {
 					newStateCount = 0
+					mu.Lock()
 					p.Connected = connected
-					log.Info().Msgf("Changed state to %v", p.Connected)
+					mu.Unlock()
 
+					log.Info().Msgf("pin %d state changed -> %v", p.Pin, connected)
 					for i := range p.ChangeRequests {
 						go p.ChangeRequests[i].execute(p)
 					}
 				}
 			}
+			// NOTE: parity with old behavior — we do NOT reset newStateCount when equal
 
 		case <-trueUpTick.C:
-			log.Info().Msg("Sending true-up requests.")
 			for i := range p.TrueUpRequests {
 				go p.TrueUpRequests[i].execute(p)
 			}
@@ -117,12 +125,18 @@ func (r *request) execute(pin *Pin) {
 	body := ""
 
 	if r.Body != nil {
-		bytes, err := json.Marshal(r.Body)
+		// Marshal to JSON first, then allow {{.Field}} and pin methods in the JSON string.
+		raw, err := json.Marshal(r.Body)
 		if err != nil {
 			log.Warn().Msgf("Unable to execute request against %s: %s", url, err)
 			return
 		}
-		body = string(bytes)
+		body, err = pin.fillTemplate(string(raw))
+		if err != nil {
+			log.Warn().Msgf("Unable to execute request against %s: %s", url, err)
+			return
+		}
+		log.Debug().Msgf("Request body for %s: %s", url, body)
 	}
 
 	req, err := http.NewRequest(r.Method, url, bytes.NewReader([]byte(body)))
@@ -141,46 +155,38 @@ func (r *request) execute(pin *Pin) {
 	}
 	defer resp.Body.Close()
 
-	bytes, err := io.ReadAll(resp.Body)
+	reply, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Warn().Msgf("Unable to read response from %s: %s", url, err)
 		return
 	}
-
-	log.Info().Msgf("Response from %s: %s", url, bytes)
+	log.Info().Msgf("Response from %s: %s", url, reply)
 }
 
 func (p *Pin) fillTemplate(source string) (string, error) {
 	t, err := template.New("pin").Parse(source)
 	if err != nil {
-		return "", fmt.Errorf("Unable to fill template: %s", err)
+		return "", fmt.Errorf("unable to fill template: %s", err)
 	}
 
 	buf := &bytes.Buffer{}
 	err = t.Execute(buf, *p)
 	if err != nil {
-		return "", fmt.Errorf("Unable to fill template: %s", err)
+		return "", fmt.Errorf("unable to fill template: %s", err)
 	}
 
 	return buf.String(), nil
 }
 
-// SetPins sets the list of pins
-func SetPins(p []Pin) {
-	pins = p
-}
-
-// GetPins gets the list of pins
-func GetPins() []Pin {
-	return pins
-}
-
 func (p Pin) CurrentPreset(hostname string) string {
-	for i := range p.ChangeRequests {
-		if p.ChangeRequests[i].URL == hostname {
-			return p.ChangeRequests[i].Method
+	if p.Connected {
+		if v, ok := p.Presets.Connected[hostname]; ok {
+			return v
+		}
+	} else {
+		if v, ok := p.Presets.Disconnected[hostname]; ok {
+			return v
 		}
 	}
-
-	return ""
+	return "not a valid hostname"
 }
