@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -42,14 +43,12 @@ func main() {
 	stgClientID := pflag.String("stg-client-id", "", "WSO2 STG client id")
 	stgClientSecret := pflag.String("stg-client-secret", "", "WSO2 STG client secret")
 
-	gpioConfigPath := pflag.String("gpio-config", "", "Path to GPIO pins JSON (optional). If omitted, divider endpoints return empty.")
-
 	pflag.Parse()
 
 	// ---- Validate PRD flags (required) ----
 	if *prdGatewayURL == "" || *prdClientID == "" || *prdClientSecret == "" || *prdAPIBase == "" {
 		slog.Error("Missing required PRD flags. Provide: --prd-gateway-url --prd-client-id --prd-client-secret --fd-prd-api-base")
-		os.Exit(1)
+		// os.Exit(1) TODO: re-enable later
 	}
 
 	// ===========================
@@ -100,25 +99,24 @@ func main() {
 
 	if err := handlers.InitFlightDeck(fdCfg); err != nil {
 		slog.Error("InitFlightDeck failed", slog.String("error", err.Error()))
-		os.Exit(1)
+		// os.Exit(1)
 	}
 
 	// Keep legacy global WSO2 client (PRD) for other handlers that still reference handlers.WSO2Client
 	handlers.WSO2Client = *wso2.New(*prdClientID, *prdClientSecret, *prdGatewayURL, "device-monitoring")
 
-	if *gpioConfigPath == "" {
-		slog.Warn("No --gpio-config provided; /divider/state will be empty until configured")
+	pins, err := loadPinsFromJSON(couchdb.GetMonitoringConfig(ctx))
+	if err != nil {
+		slog.Error("Failed to load GPIO pins from JSON", slog.Any("error", err))
 	} else {
-		pins, err := loadPinsFromJSON(*gpioConfigPath)
-		if err != nil {
-			slog.Error("Failed to load GPIO pins from JSON", slog.Any("error", err))
-		} else {
-			gpio.SetPins(pins)
-			gpio.StartAllMonitors()
-			time.Sleep(250 * time.Millisecond) // give monitors a moment to start and read initial states
-			slog.Info("GPIO monitors started", slog.Int("pinCount", len(pins)))
-		}
+		gpio.SetPins(pins)
+		gpio.StartAllMonitors()
+		time.Sleep(250 * time.Millisecond) // give monitors a moment to start and read initial states
+		slog.Info("GPIO monitors started", slog.Int("pinCount", len(pins)))
 	}
+
+	fmt.Println(pins)
+	os.Exit(0) // TODO: remove this line after debugging
 
 	// ===========================
 	// Start action manager
@@ -214,15 +212,52 @@ func echoToGin(eh func(echo.Context) error) gin.HandlerFunc {
 	}
 }
 
-// loadPinsFromJSON loads GPIO pin configurations from a JSON file
-func loadPinsFromJSON(path string) ([]gpio.Pin, error) {
-	b, err := os.ReadFile(path)
+// loadPinsFromJSON loads GPIO pin configurations from a couchDoc
+func loadPinsFromJSON(cfg map[string]any, err error) ([]gpio.Pin, error) {
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get couch config: %w", err)
 	}
+
+	// Marshal the generic map back to JSON so we can unmarshal into
+	// strongly-typed structs that include []Pin.
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal couch config: %w", err)
+	}
+
+	// Shape of the CouchDB document, but we only care about the parts
+	// that lead to the pin configuration.
+	type couchDoc struct {
+		Actions []struct {
+			Name string `json:"name"`
+			Then []struct {
+				Do   string     `json:"do"`
+				With []gpio.Pin `json:"with"`
+			} `json:"then"`
+		} `json:"actions"`
+	}
+
+	var doc couchDoc
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal couch config: %w", err)
+	}
+
 	var pins []gpio.Pin
-	if err := json.Unmarshal(b, &pins); err != nil {
-		return nil, err
+
+	// Find the "monitor-dividers" action (the one that contains the pin config)
+	for _, action := range doc.Actions {
+		if action.Name != "monitor-dividers" {
+			continue
+		}
+
+		for _, step := range action.Then {
+			pins = append(pins, step.With...)
+		}
 	}
+
+	if len(pins) == 0 {
+		return nil, fmt.Errorf("no pin configuration found in couch config")
+	}
+
 	return pins, nil
 }

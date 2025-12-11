@@ -19,6 +19,7 @@ var (
 	clientErr error
 	once      sync.Once
 	dbName    string
+	systemID  string
 )
 
 func initClient() {
@@ -26,6 +27,7 @@ func initClient() {
 	password := os.Getenv("DB_PASSWORD")
 	address := os.Getenv("DB_ADDRESS") // should be something like "http://localhost:5984"
 	dbName = os.Getenv("COUCHDB_DB")
+	systemID = os.Getenv("SYSTEM_ID")
 
 	if dbName == "" {
 		dbName = "devices"
@@ -38,10 +40,10 @@ func initClient() {
 
 	// Trim possible scheme prefix from address for later parsing
 	address = strings.TrimPrefix(address, "http://")
-	fullURL := fmt.Sprintf("http://%s:%s@%s", username, password, address)
+	fullURL := fmt.Sprintf("https://%s:%s@%s", username, password, address)
 
 	// Mask password for logging
-	maskedURL := fmt.Sprintf("http://%s:*****@%s", username, address)
+	maskedURL := fmt.Sprintf("https://%s:*****@%s", username, address) //TODO: revert these two to http
 	slog.Info("Initializing CouchDB client", slog.String("addr", maskedURL), slog.String("db", dbName))
 
 	// Create the Kivik client
@@ -160,4 +162,32 @@ func ValidateConnection(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func GetMonitoringConfig(ctx context.Context) (map[string]any, error) {
+	client, err := getClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get couchdb client: %w", err)
+	}
+
+	if systemID == "" {
+		return nil, fmt.Errorf("SYSTEM_ID environment variable is not set")
+	}
+
+	db := client.DB("device-monitoring")
+	if err := db.Err(); err != nil {
+		return nil, fmt.Errorf("failed to open device-monitoring database: %w", err)
+	}
+
+	row := db.Get(ctx, systemID)
+	if row.Err() != nil {
+		return nil, fmt.Errorf("failed to get monitoring config for system %s: %w", systemID, row.Err())
+	}
+
+	var cfg map[string]any
+	if err := row.ScanDoc(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to scan monitoring config for system %s: %w", systemID, err)
+	}
+
+	return cfg, nil
 }
