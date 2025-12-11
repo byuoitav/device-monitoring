@@ -99,7 +99,7 @@ build-web:
 	@echo "Building Angular dashboard..."
 	. $$HOME/.nvm/nvm.sh && nvm use 20.19.0 \
 	  && cd dashboard \
-	  && $(NPM) install \
+	  && $(NPM) install --legacy-peer-deps \
 	  && ./node_modules/.bin/ng build --configuration production --base-href /dashboard/
 	@echo "Copying built web assets..."
 	mkdir -p files/$(NG1)
