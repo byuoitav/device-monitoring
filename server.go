@@ -48,7 +48,7 @@ func main() {
 	// ---- Validate PRD flags (required) ----
 	if *prdGatewayURL == "" || *prdClientID == "" || *prdClientSecret == "" || *prdAPIBase == "" {
 		slog.Error("Missing required PRD flags. Provide: --prd-gateway-url --prd-client-id --prd-client-secret --fd-prd-api-base")
-		// os.Exit(1) TODO: re-enable later
+		os.Exit(1)
 	}
 
 	// ===========================
@@ -99,7 +99,7 @@ func main() {
 
 	if err := handlers.InitFlightDeck(fdCfg); err != nil {
 		slog.Error("InitFlightDeck failed", slog.String("error", err.Error()))
-		// os.Exit(1)
+		os.Exit(1)
 	}
 
 	// Keep legacy global WSO2 client (PRD) for other handlers that still reference handlers.WSO2Client
@@ -116,7 +116,6 @@ func main() {
 	}
 
 	fmt.Println(pins)
-	os.Exit(0) // TODO: remove this line after debugging
 
 	// ===========================
 	// Start action manager

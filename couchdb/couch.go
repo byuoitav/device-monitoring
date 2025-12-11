@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -38,12 +39,14 @@ func initClient() {
 		return
 	}
 
+	password = url.QueryEscape(password)
+
 	// Trim possible scheme prefix from address for later parsing
 	address = strings.TrimPrefix(address, "http://")
-	fullURL := fmt.Sprintf("https://%s:%s@%s", username, password, address)
+	fullURL := fmt.Sprintf("http://%s:%s@%s", username, password, address)
 
 	// Mask password for logging
-	maskedURL := fmt.Sprintf("https://%s:*****@%s", username, address) //TODO: revert these two to http
+	maskedURL := fmt.Sprintf("http://%s:*****@%s", username, address)
 	slog.Info("Initializing CouchDB client", slog.String("addr", maskedURL), slog.String("db", dbName))
 
 	// Create the Kivik client
