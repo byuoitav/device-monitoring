@@ -59,9 +59,12 @@ span {
     color: black;
     background-color: #ffffff;
     width: 30vw;
+    max-width: 320px;
+    min-width: 240px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    transition: width 0.25s ease;
 }
 
 .nav-items {
@@ -106,10 +109,9 @@ span {
 }
 
 .component-container {
-    flex-grow: 1;
+    flex: 1;
     background-color: #f5f5f5;
     overflow-y: auto;
-    width: 70vw;
     height: 87vh;
 }
 
@@ -177,3 +179,34 @@ span {
     color: #757575;
 }
 
+.nav-menu.collapsed {
+    width: 64px;
+    min-width: 64px;
+}
+
+.nav-menu.collapsed .nav-items {
+    align-items: center;
+}
+
+.nav-menu.collapsed .nav-item {
+    justify-content: center;
+    padding: 12px 0;
+    width: 100%;
+}
+
+.nav-menu.collapsed .nav-item p,
+.nav-menu.collapsed .collapse-sidebar p {
+    display: none;
+}
+
+.nav-menu.collapsed .collapse-sidebar {
+    justify-content: center;
+}
+
+.nav-menu.collapsed .nav-icon {
+    justify-content: center;
+}
+
+.nav-menu.collapsed .collapse-sidebar .nav-icon svg {
+    transform: rotate(180deg);
+}

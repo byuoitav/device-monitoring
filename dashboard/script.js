@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('Dashboard loaded');
 
     setupNavigation();
+    setupSidebarToggle();
 
     const defaultNavItem = document.querySelector('.nav-item.nav-item-selected') || document.querySelector('.nav-item');
     if (defaultNavItem?.dataset.component) {
@@ -22,6 +23,17 @@ function setupNavigation() {
             if (!componentName || componentName === currentComponent) return;
             await switchComponent(componentName, item);
         });
+    });
+}
+
+function setupSidebarToggle() {
+    const navMenu = document.querySelector('.nav-menu');
+    const toggle = document.querySelector('.collapse-sidebar');
+    if (!navMenu || !toggle) return;
+
+    toggle.addEventListener('click', () => {
+        const collapsed = navMenu.classList.toggle('collapsed');
+        toggle.setAttribute('aria-expanded', (!collapsed).toString());
     });
 }
 
