@@ -1,0 +1,27 @@
+.status-icons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.device-card {
+    cursor: pointer;
+}
+
+.drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: .9rem;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: max-height 0.25s ease, opacity 0.2s ease, transform 0.25s ease;
+}
+
+.device-card.drawer-open .drawer {
+    max-height: 500px;
+    opacity: 1;
+    transform: translateY(0);
+}
