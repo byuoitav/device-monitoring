@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <script src="./services/api.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="utf-8" />
     <meta name="description" content="Device Monitoring Dashboard" />
@@ -31,13 +32,17 @@
     <div class="dashboard-body">
         <div class="nav-menu">
             <div class="nav-items">
-                <div class="nav-item" data-component="overview">
+                <div class="nav-item nav-item-selected" data-component="overview">
                     <span class="nav-icon" data-icon="home" > </span>
                     <p>Overview</p>
                 </div>
-                <div class="nav-item nav-item-selected" data-component="reachableDevices">
+                <div class="nav-item" data-component="reachableDevices">
                     <span class="nav-icon" data-icon="reachable-devices" > </span>
                     <p>Reachable Devices</p>
+                </div>
+                <div class="nav-item" data-component="deviceInfo">
+                    <span class="nav-icon" data-icon="info" > </span>
+                    <p>Device Info</p>
                 </div>
             </div>
 

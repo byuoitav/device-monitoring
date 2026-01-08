@@ -1,3 +1,4 @@
+window.ApiService = new APIService();
 let currentComponent = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -12,6 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await injectIcons();
+    await refreshListener();
 });
 
 function setupNavigation() {
@@ -23,6 +25,16 @@ function setupNavigation() {
             if (!componentName || componentName === currentComponent) return;
             await switchComponent(componentName, item);
         });
+    });
+}
+
+function refreshListener() {
+    const refreshButton = document.querySelector('.refresh-icon');
+    if (!refreshButton) return;
+
+    refreshButton.addEventListener('click', async () => {
+        console.log('Refreshing window');
+        await ApiService.refresh();
     });
 }
 
@@ -72,6 +84,8 @@ async function cleanupCurrentComponent() {
         module.cleanup();
     }
 }
+
+
 
 async function injectIcons(root = document) {
     console.log('Injecting icons...');

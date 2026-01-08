@@ -8,10 +8,30 @@
     cursor: pointer;
 }
 
+.device-card .device-id {
+    font-weight: 700;
+}
+
+.status-icons .connectivity.status-ok svg {
+    fill: #2e7d32;
+    stroke: #2e7d32;
+}
+
+.status-icons .connectivity.status-bad svg {
+    fill: #c62828;
+    stroke: #c62828;
+}
+
+.status-icons .power.status-bad svg {
+    fill: #c62828;
+    stroke: #c62828;
+}
+
 .drawer {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-top: 10px;
     font-size: .9rem;
     max-height: 0;
     overflow: hidden;

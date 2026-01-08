@@ -1,0 +1,42 @@
+.device-info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px;
+}
+
+.device-info-card {
+    cursor: pointer;
+}
+
+.device-info-card .sub-heading {
+    font-weight: 600;
+}
+
+.device-info-card .info-title {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.device-info-card .sub-value {
+    color: #374151;
+}
+
+.drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: .9rem;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: max-height 0.25s ease, opacity 0.2s ease, transform 0.25s ease;
+}
+
+.device-info-card.drawer-open .drawer {
+    max-height: 400px;
+    opacity: 1;
+    transform: translateY(0);
+}

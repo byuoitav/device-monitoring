@@ -1,40 +1,66 @@
 <div class="system-info content-box loading">
+    <button class="card-refresh" data-refresh="device-info" aria-label="Refresh system information">
+        <img src="assets/refresh.svg" alt="" />
+    </button>
+
     <p class="content-heading">System Information</p>
+
     <div class="content-box-sub">
         <p class="sub-heading">Hostname</p>
-        <p class="sub-value">ITB-JAMES-CP1</p>
+        <p class="sub-value" data-field="hostname">-</p>
     </div>
+
     <div class="content-box-sub">
         <p class="sub-heading">ID</p>
-        <p class="sub-value">1234567890</p>
+        <p class="sub-value" data-field="id">-</p>
     </div>
+
     <div class="content-box-sub">
         <p class="sub-heading">IP</p>
-        <p class="sub-value">0.0.0.0</p>
+        <p class="sub-value" data-field="ip">-</p>
     </div>
+
     <div class="content-box-sub">
         <p class="sub-heading">Internet Connectivity</p>
-        <p class="sub-value">Connected</p>
+        <p class="sub-value" data-field="internet-connectivity">-</p>
     </div>
+
     <div class="content-box-sub">
         <p class="sub-heading">DHCP Enabled</p>
-        <p class="sub-value">Yes</p>
+        <p class="sub-value" data-field="dhcp.enabled">-</p>
     </div>
 
     <div class="system-buttons">
-        <button class="system-button return-btn"><span data-icon="back-arrow"> </span> <p>Back to UI</p></button>
-        <button class="system-button reboot-btn"><span data-icon="power"></span>Reboot</button>
+        <button class="system-button return-btn" data-action="switchToUI"><span data-icon="back-arrow"> </span>
+            <p>Back to UI</p>
+        </button>
+        <button class="system-button return-btn" data-action="flushDNS"><span data-icon="dns"> </span>
+            <p>Flush DNS</p>
+        </button>
+        <button class="system-button return-btn" data-action="reSyncDB"><span data-icon="resync"> </span>
+            <p>ReSync</p>
+        </button>
     </div>
+    <div class="system-buttons">
+        <button class="system-button return-btn" data-action="refreshContainers"><span data-icon="refresh"> </span>
+            <p>Refresh Containers</p>
+        </button>
+        <button class="system-button reboot-btn" data-action="reboot"><span data-icon="power"></span>Reboot</button>
+    </div>
+
 </div>
 
-<div class="room-status content-box">
+<div class="room-status content-box loading">
+    <button class="card-refresh" data-refresh="room-status" aria-label="Refresh room status">
+        <img src="assets/refresh.svg" alt="" />
+    </button>
     <p class="content-heading">Room Status</p>
     <div class="content-box-sub">
         <p class="sub-heading">Devices Reachable</p>
-        <p class="sub-value">15</p>
+        <p class="sub-value" data-field="room.reachable">-</p>
     </div>
     <div class="content-box-sub">
         <p class="sub-heading">Devices Unreachable</p>
-        <p class="sub-value">2</p>
+        <p class="sub-value" data-field="room.unreachable">-</p>
     </div>
 </div>
