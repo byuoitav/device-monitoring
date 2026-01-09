@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupNavigation();
     setupSidebarToggle();
+    setupDragScroll();
 
     const defaultNavItem = document.querySelector('.nav-item.nav-item-selected') || document.querySelector('.nav-item');
     if (defaultNavItem?.dataset.component) {
@@ -47,6 +48,59 @@ function setupSidebarToggle() {
         const collapsed = navMenu.classList.toggle('collapsed');
         toggle.setAttribute('aria-expanded', (!collapsed).toString());
     });
+}
+
+function setupDragScroll() {
+    const container = document.querySelector('.component-container');
+    if (!container) return;
+
+    container.addEventListener('selectstart', (event) => {
+        event.preventDefault();
+    });
+
+    container.addEventListener('dragstart', (event) => {
+        event.preventDefault();
+    });
+
+    let isDragging = false;
+    let dragStartY = 0;
+    let dragStartScroll = 0;
+    let dragged = false;
+    const dragThreshold = 6;
+
+    container.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0 && event.pointerType !== 'touch') return;
+        isDragging = false;
+        dragged = false;
+        dragStartY = event.clientY;
+        dragStartScroll = container.scrollTop;
+    });
+
+    container.addEventListener('pointermove', (event) => {
+        const delta = event.clientY - dragStartY;
+        if (!dragged && Math.abs(delta) > dragThreshold) {
+            dragged = true;
+            isDragging = true;
+            container.setPointerCapture(event.pointerId);
+            container.classList.add('is-dragging');
+        }
+        if (!isDragging) return;
+        container.scrollTop = dragStartScroll - delta;
+        event.preventDefault();
+    });
+
+    const stopDrag = (event) => {
+        if (!isDragging && !dragged) return;
+        isDragging = false;
+        if (container.hasPointerCapture(event.pointerId)) {
+            container.releasePointerCapture(event.pointerId);
+        }
+        container.classList.remove('is-dragging');
+    };
+
+    container.addEventListener('pointerup', stopDrag);
+    container.addEventListener('pointercancel', stopDrag);
+    container.addEventListener('pointerleave', stopDrag);
 }
 
 async function switchComponent(componentName, navItem) {

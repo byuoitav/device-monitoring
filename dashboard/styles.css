@@ -1,9 +1,13 @@
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
     font-size: 20px;
     color: white;
     font-family: 'Arial', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
 }
 
 p {
@@ -11,8 +15,8 @@ p {
 }
 
 span {
-  display: flex;
-  align-items: center;
+    display: flex;
+    align-items: center;
 }
 
 .header {
@@ -50,7 +54,7 @@ span {
 .dashboard-body {
     width: 100vw;
     height: 87vh;
-    background-color: #fafafa;    
+    background-color: #fafafa;
     display: flex;
     flex-direction: row;
 }
@@ -89,11 +93,11 @@ span {
 }
 
 .nav-icon svg {
-   fill: black;
+    fill: black;
 }
 
 .nav-item-selected .nav-icon svg {
-    fill:  white;
+    fill: white;
 }
 
 .collapse-sidebar {
@@ -105,7 +109,7 @@ span {
     font-size: .8rem;
     align-items: center;
     margin-bottom: 8px;
-    
+
 }
 
 .component-container {
@@ -113,6 +117,25 @@ span {
     background-color: #f5f5f5;
     overflow-y: auto;
     height: 87vh;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: pan-y;
+    box-sizing: border-box;
+    padding-bottom: 10px;
+}
+
+.component-container * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -ms-user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.component-container.is-dragging {
+    cursor: grabbing;
 }
 
 /* Component container styles */
@@ -132,6 +155,7 @@ span {
     from {
         background-position: -100% 0;
     }
+
     to {
         background-position: 100% 0;
     }
