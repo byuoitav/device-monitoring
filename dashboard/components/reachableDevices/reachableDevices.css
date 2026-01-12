@@ -6,6 +6,8 @@
 
 .device-card {
     cursor: pointer;
+    font-size: 16px;
+    padding: 10px;
 }
 
 .device-card .device-id {

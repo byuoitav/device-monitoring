@@ -12,11 +12,8 @@ window.components.deviceInfo = {
 }
 
 async function loadDeviceInfo() {
-    const loadingCard = document.querySelector('.component-container .device-info-loading');
-    if (loadingCard) {
-        loadingCard.classList.add('loading');
-        loadingCard.style.display = '';
-    }
+    const loadingCards = document.querySelectorAll('.component-container .device-info-card[data-loading="true"]');
+    loadingCards.forEach((card) => card.classList.add('loading'));
 
     try {
         const data = await ApiService.getHardwareInfo();
@@ -25,10 +22,7 @@ async function loadDeviceInfo() {
         console.error("Failed to load hardware info:", error);
         applyHardwareInfo({});
     } finally {
-        if (loadingCard) {
-            loadingCard.classList.remove('loading');
-            loadingCard.remove();
-        }
+        loadingCards.forEach((card) => card.classList.remove('loading'));
         initializeDeviceInfoDrawers();
     }
 }
@@ -45,7 +39,6 @@ function applyHardwareInfo(data) {
 
     renderCpuTemperatures(root, data?.host?.temperature);
     renderCpuUsage(root, data?.cpu?.usage);
-    renderDockerContainers(root, data?.docker?.stats);
     updateUsageBars(root, data);
 }
 
@@ -186,30 +179,6 @@ function renderCpuUsage(root, usage) {
         const displayLabel = label === 'avg' ? 'AVG' : label.toUpperCase();
         row.querySelector('.sub-heading').textContent = displayLabel;
         row.querySelector('.sub-value').textContent = formatPercent(value);
-        container.appendChild(row);
-    });
-}
-
-function renderDockerContainers(root, containers) {
-    const container = root.querySelector('[data-section="docker-containers"]');
-    const template = document.getElementById('device-info-row-template');
-    if (!container || !template) return;
-
-    container.innerHTML = '';
-    const list = Array.isArray(containers) ? containers : [];
-    if (!list.length) {
-        const row = template.content.firstElementChild.cloneNode(true);
-        row.querySelector('.sub-heading').textContent = 'No containers reported';
-        row.querySelector('.sub-value').textContent = '-';
-        container.appendChild(row);
-        return;
-    }
-
-    list.forEach((item) => {
-        const row = template.content.firstElementChild.cloneNode(true);
-        const status = [item?.running ? 'running' : 'stopped', item?.status].filter(Boolean).join(' ');
-        row.querySelector('.sub-heading').textContent = item?.name ?? 'unknown';
-        row.querySelector('.sub-value').textContent = status || '-';
         container.appendChild(row);
     });
 }

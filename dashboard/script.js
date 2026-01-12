@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupNavigation();
     setupSidebarToggle();
     setupDragScroll();
+    populateHeaderDeviceName();
 
     const defaultNavItem = document.querySelector('.nav-item.nav-item-selected') || document.querySelector('.nav-item');
     if (defaultNavItem?.dataset.component) {
@@ -203,4 +204,17 @@ async function loadComponent(componentName, divQuerySelector = `.component-conta
         script.onerror = reject;
         document.body.appendChild(script);
     });
+}
+
+async function populateHeaderDeviceName() {
+    const el = document.querySelector('[data-field="device.hostname"]');
+    if (!el) return;
+
+    try {
+        const info = await ApiService.getDeviceInfo();
+        el.textContent = info?.hostname || info?.device?.hostname || '-';
+    } catch (error) {
+        console.error('Failed to load device hostname:', error);
+        el.textContent = '-';
+    }
 }

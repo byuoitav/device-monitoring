@@ -1,6 +1,5 @@
-<div class="content-box loading device-info-loading"></div>
 <div class="device-info-grid">
-    <div class="content-box device-info-card">
+    <div class="content-box device-info-card" data-loading="true">
         <div class="sub-heading">
             <p class="info-title">Host</p>
         </div>
@@ -36,7 +35,7 @@
         </div>
     </div>
 
-    <div class="content-box device-info-card">
+    <div class="content-box device-info-card" data-loading="true">
         <div class="sub-heading">
             <p class="info-title">Memory</p>
             <p class="sub-value" data-field="memory.virtual.usedPercent">-</p>
@@ -80,7 +79,7 @@
         </div>
     </div>
 
-    <div class="content-box device-info-card">
+    <div class="content-box device-info-card" data-loading="true">
         <div class="sub-heading">
             <p class="info-title">CPU Usage</p>
             <p class="sub-value" data-field="cpu.temperature.primary">-</p>
@@ -95,7 +94,7 @@
         </div>
     </div>
 
-    <div class="content-box device-info-card">
+    <div class="content-box device-info-card" data-loading="true">
         <div class="sub-heading">
             <p class="info-title">Disk Usage</p>
             <p class="sub-value" data-field="disk.usage.summary">-</p>
@@ -127,14 +126,6 @@
         </div>
     </div>
 
-    <div class="content-box device-info-card">
-        <div class="sub-heading">
-            <p class="info-title">Docker Containers</p>
-        </div>
-        <div class="drawer">
-            <div data-section="docker-containers"></div>
-        </div>
-    </div>
 </div>
 
 <template id="device-info-row-template">

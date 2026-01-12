@@ -69,6 +69,8 @@ span {
     flex-direction: column;
     justify-content: space-between;
     transition: width 0.25s ease;
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.08);
+    z-index: 1;
 }
 
 .nav-items {
