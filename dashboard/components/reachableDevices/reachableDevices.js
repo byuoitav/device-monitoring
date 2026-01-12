@@ -81,7 +81,7 @@ async function loadReachableDevices() {
         setCardField(card, 'packets-lost', formatValue(lost));
         setCardField(card, 'average-round-trip', avgRoundTrip);
 
-        updateConnectivityStatus(card, sent, received, lost);
+        updateConnectivityStatus(card, ping, sent, received, lost);
 
         if (healthMap.has(deviceId)) {
             const healthRow = buildHealthRow(health);
@@ -154,21 +154,20 @@ function buildHealthRow(health) {
     return row;
 }
 
-function updateConnectivityStatus(card, sent, received, lost) {
+function updateConnectivityStatus(card, ping, sent, received, lost) {
     const icon = card.querySelector('.connectivity');
     if (!icon) return;
 
     icon.classList.remove('status-ok', 'status-bad');
+    icon.dataset.icon = 'wifi';
 
-    if (Number.isFinite(lost) && lost > 0) {
+    if (ping?.error) {
         icon.classList.add('status-bad');
-        icon.dataset.icon = 'thumb_down';
         return;
     }
 
     if (Number.isFinite(sent) && Number.isFinite(received) && sent === received) {
         icon.classList.add('status-ok');
-        icon.dataset.icon = 'thumb_up';
     }
 }
 
@@ -178,9 +177,17 @@ function updateHealthStatus(card, health) {
 
     const normalized = typeof health === 'string' ? health.trim().toLowerCase() : '';
     if (!normalized || normalized === 'healthy') {
-        icon.classList.remove('status-bad');
+        icon.classList.remove('status-ok', 'status-bad');
+        if (!normalized) {
+            icon.dataset.icon = 'hot-tub';
+            return;
+        }
+        icon.dataset.icon = 'thumb_up';
+        icon.classList.add('status-ok');
         return;
     }
 
+    icon.dataset.icon = 'thumb_down';
+    icon.classList.remove('status-ok');
     icon.classList.add('status-bad');
 }

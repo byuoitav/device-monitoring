@@ -24,6 +24,11 @@
     stroke: #c62828;
 }
 
+.status-icons .power.status-ok svg {
+    fill: #2e7d32;
+    stroke: #2e7d32;
+}
+
 .status-icons .power.status-bad svg {
     fill: #c62828;
     stroke: #c62828;
