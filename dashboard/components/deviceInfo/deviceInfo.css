@@ -43,6 +43,35 @@
     background: #d1d5db;
 }
 
+.temp-indicator {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.temp-indicator-fill {
+    display: block;
+    height: 100%;
+    width: 100%;
+    background: #9ca3af;
+    transition: background-color 0.2s ease;
+}
+
+.temp-indicator.temp-ok .temp-indicator-fill {
+    background: #22c55e;
+}
+
+.temp-indicator.temp-warn .temp-indicator-fill {
+    background: #f59e0b;
+}
+
+.temp-indicator.temp-hot .temp-indicator-fill {
+    background: #ef4444;
+}
+
 .drawer {
     display: flex;
     flex-direction: column;

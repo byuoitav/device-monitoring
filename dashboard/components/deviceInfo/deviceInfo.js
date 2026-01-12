@@ -40,6 +40,7 @@ function applyHardwareInfo(data) {
     renderCpuTemperatures(root, data?.host?.temperature);
     renderCpuUsage(root, data?.cpu?.usage);
     updateUsageBars(root, data);
+    updateCpuTemperatureIndicator(root, data?.host?.temperature);
 }
 
 function initializeDeviceInfoDrawers() {
@@ -161,6 +162,33 @@ function renderCpuTemperatures(root, temps) {
         row.querySelector('.sub-value').textContent = formatTemperature(value);
         container.appendChild(row);
     });
+}
+
+function updateCpuTemperatureIndicator(root, temps) {
+    const indicator = root.querySelector('[data-temp-indicator="true"]');
+    if (!indicator) return;
+
+    indicator.classList.remove('temp-ok', 'temp-warn', 'temp-hot');
+    const entries = Object.values(temps ?? {});
+    const primaryTemp = entries.length ? Number(entries[0]) : NaN;
+
+    if (!Number.isFinite(primaryTemp)) {
+        return;
+    }
+
+    const fill = indicator.querySelector('.temp-indicator-fill');
+    if (fill) {
+        const clamped = Math.max(0, Math.min(100, primaryTemp));
+        fill.style.width = `${clamped.toFixed(2)}%`;
+    }
+
+    if (primaryTemp > 80) {
+        indicator.classList.add('temp-hot');
+    } else if (primaryTemp > 70) {
+        indicator.classList.add('temp-warn');
+    } else {
+        indicator.classList.add('temp-ok');
+    }
 }
 
 function renderCpuUsage(root, usage) {

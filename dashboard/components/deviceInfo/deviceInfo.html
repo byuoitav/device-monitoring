@@ -82,11 +82,17 @@
     <div class="content-box device-info-card" data-loading="true">
         <div class="sub-heading">
             <p class="info-title">CPU Usage</p>
-            <p class="sub-value" data-field="cpu.temperature.primary">-</p>
             <p class="sub-value" data-field="cpu.usage.avg">-</p>
         </div>
         <div class="usage-bar" data-bar="cpu.usage.avg">
             <span class="usage-bar-fill"></span>
+        </div>
+        <div class="sub-heading" style="margin-top: 15px;">
+            <p class="info-title" >CPU Temperature</p>
+            <p class="sub-value" data-field="cpu.temperature.primary">-</p>
+        </div>
+        <div class="temp-indicator" data-temp-indicator="true">
+            <span class="temp-indicator-fill"></span>
         </div>
         <div class="drawer">
             <div data-section="cpu-temperatures"></div>
