@@ -52,9 +52,17 @@ function setupSidebarToggle() {
 }
 
 function setupDragScroll() {
-    const container = document.querySelector('.component-container');
-    if (!container) return;
+    const targets = document.querySelectorAll('.component-container, .drag-scroll');
+    if (!targets.length) return;
 
+    targets.forEach((container) => attachDragScroll(container));
+}
+
+function attachDragScroll(container) {
+    if (container.dataset.dragScrollBound === 'true') {
+        return;
+    }
+    container.dataset.dragScrollBound = 'true';
     container.addEventListener('selectstart', (event) => {
         event.preventDefault();
     });
@@ -71,6 +79,9 @@ function setupDragScroll() {
 
     container.addEventListener('pointerdown', (event) => {
         if (event.button !== 0 && event.pointerType !== 'touch') return;
+        if (container.classList.contains('component-container') && event.target.closest('.drag-scroll')) {
+            return;
+        }
         isDragging = false;
         dragged = false;
         dragStartY = event.clientY;
@@ -198,6 +209,7 @@ async function loadComponent(componentName, divQuerySelector = `.component-conta
                     currentComponent = componentName;
                 }
             }
+            setupDragScroll();
             componentContainer.classList.remove('loading');
             resolve();
         };

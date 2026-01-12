@@ -28,6 +28,7 @@
     flex: 1;
     margin: 0;
     overflow-y: auto;
+    touch-action: pan-y;
 }
 
 .docker-containers-card .info-title {
