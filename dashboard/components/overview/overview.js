@@ -2,11 +2,11 @@ window.components = window.components || {};
 
 window.components.overview = {
     loadPage: async function() {
+        bindOverviewButtons();
+        bindOverviewRefreshButtons();
         console.log("Overview component loaded");
         await loadOverviewDeviceInfo();
         await loadOverviewRoomPing();
-        bindOverviewButtons();
-        bindOverviewRefreshButtons();
     },
 
     cleanup: function() {
@@ -73,23 +73,32 @@ function applyOverviewRoomStatus(counts) {
 }
 
 function bindOverviewButtons() {
-    const buttons = document.querySelectorAll('.component-container .system-button[data-action]');
-    buttons.forEach((button) => {
-        button.addEventListener('click', async () => {
-            const action = button.dataset.action;
-            if (!action || typeof ApiService?.[action] !== "function") return;
+    const container = document.querySelector('.component-container');
+    if (!container) return;
 
-            button.disabled = true;
-            try {
-                await ApiService[action]();
-            } catch (error) {
-                console.error(`Failed to run ${action}:`, error);
-            } finally {
-                button.disabled = false;
-            }
-        });
+    if (container.dataset.buttonsBound === 'true') return;
+    container.dataset.buttonsBound = 'true';
+
+    container.addEventListener('click', async (event) => {
+        const button = event.target.closest('.system-button[data-action]');
+        if (!button) return;
+
+        const action = button.dataset.action;
+        if (typeof ApiService?.[action] !== "function") return;
+
+        if (button.disabled) return;
+
+        button.disabled = true;
+        try {
+            await ApiService[action]();
+        } catch (err) {
+            console.error(`Failed to run ${action}:`, err);
+        } finally {
+            button.disabled = false;
+        }
     });
 }
+
 
 async function loadOverviewDeviceInfo() {
     const container = document.querySelector('.component-container');

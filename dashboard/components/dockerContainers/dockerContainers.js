@@ -55,8 +55,13 @@ function renderDockerContainers(data) {
     list.forEach((item) => {
         const row = template.content.firstElementChild.cloneNode(true);
         const status = [item?.running ? 'running' : 'stopped', item?.status].filter(Boolean).join(' ');
-        row.querySelector('.sub-heading').textContent = item?.name ?? 'unknown';
+        row.querySelector('.sub-heading').textContent = formatDockerName(item?.image) ?? 'unknown';
         row.querySelector('.sub-value').textContent = status || '-';
         container.appendChild(row);
     });
+}
+
+function formatDockerName(name) {
+    // grab only the string after the last /
+    return name?.split('/').pop() || name;
 }

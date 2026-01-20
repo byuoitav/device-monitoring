@@ -79,9 +79,7 @@ function attachDragScroll(container) {
 
     container.addEventListener('pointerdown', (event) => {
         if (event.button !== 0 && event.pointerType !== 'touch') return;
-        if (container.classList.contains('component-container') && event.target.closest('.drag-scroll')) {
-            return;
-        }
+
         isDragging = false;
         dragged = false;
         dragStartY = event.clientY;
