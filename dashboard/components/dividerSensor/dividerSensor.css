@@ -1,0 +1,44 @@
+.divider-sensor-card {
+    color: black;
+}
+
+.divider-sensor-address {
+    margin-top: 12px;
+}
+
+.divider-sensor-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.divider-sensor-box {
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 16px 12px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.divider-sensor-box .box-title {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.divider-sensor-box .box-value {
+    font-size: .95rem;
+    font-weight: 400;
+    color: #111827;
+}
+
+@media (max-width: 700px) {
+    .divider-sensor-stats {
+        grid-template-columns: 1fr;
+    }
+}

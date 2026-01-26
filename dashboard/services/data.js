@@ -11,3 +11,11 @@ class device {
   }
 }
 
+class dividerSensorInfo {
+  constructor(data = {}) {
+    this.address = data.address ?? "";
+    this.status = data.status ?? "unknown";
+    this.preset = data.preset ?? "unknown";
+    this.pin = data.pin ?? "";
+  }
+}

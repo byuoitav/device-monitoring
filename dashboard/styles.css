@@ -89,6 +89,10 @@ span {
     align-items: center;
 }
 
+.nav-item[hidden] {
+    display: none !important;
+}
+
 .nav-item-selected {
     color: white;
     background-color: #607d8b;

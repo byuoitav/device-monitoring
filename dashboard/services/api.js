@@ -184,4 +184,80 @@ class APIService {
       throw e;
     }
   }
-}
+
+  async hasDividerSensor() {
+    const address = await this.getDividerSensorAddress();
+    return !!address;
+  }
+  
+  async getDividerSensorAddress() {
+    // get the hostname
+    const info = await this.getDeviceInfo();
+    const hostname = info?.hostname;
+    if (!hostname) {
+      return;
+    }
+
+    const building = hostname.split("-")[0];
+    const number = hostname.split("-")[1];
+    if (!building || !number) {
+      return;
+    }
+
+    const uiConfigUrl = `http://${location.hostname}:8000/buildings/${building}/rooms/${number}/configuration`;
+    const res = await this.request(uiConfigUrl);
+    const jsonResponse = await res.json();
+    console.log("Response", jsonResponse);
+
+    const devices = [...(jsonResponse?.devices || [])];
+    for (const device of devices) {
+      const roles = [...(device?.roles || [])];
+      for (const role of roles) {
+        if (role._id === "DividerSensor") {
+          return device.address;
+        }
+      }
+    }
+  }
+
+  async getDividerSensorPreset(address) {
+    const hostname = await this.getDeviceInfo().then(info => info?.hostname);
+    const res = await this.request(`http://${address}:10000/divider/preset/` + hostname); 
+    const data = await res.text();
+    return data;
+  }
+
+  async getDividerPin(address) {
+    // get the system ID from the address
+    const systemID = address.split(".")[0];
+
+    const res = await this.request(this.api(`/divider/pins/${systemID}`));
+    const data = await res.json();
+    return data[0]?.pin;
+  }
+
+  async getDividerSensorInfo() {
+    try {
+      // check to see if there is a divider sensor
+      const address = await this.getDividerSensorAddress();
+      if (!address) {
+        throw new Error("Divider sensor address not found");
+      }
+      const status = await this.getDividerSensorsStatus(address);
+      const preset = await this.getDividerSensorPreset(address);
+      const pin = await this.getDividerPin(address);
+
+      const dividerSensorData = {
+        address: address,
+        status: status !== undefined ? (status ? "connected" : "disconnected") : "unknown",
+        preset: preset || "unknown",
+        pin: pin || "unknown",
+      };
+      console.log("Divider Sensor Info:", dividerSensorData);
+      return new dividerSensorInfo(dividerSensorData);
+    } catch (e) {
+      console.error("Error getting divider sensor info:", e);
+      return undefined;
+    }
+  }
+} 

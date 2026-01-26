@@ -8,14 +8,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupSidebarToggle();
     setupDragScroll();
     populateHeaderDeviceName();
+    await setupDividerSensorNav();
 
-    const defaultNavItem = document.querySelector('.nav-item.nav-item-selected') || document.querySelector('.nav-item');
+    const defaultNavItem = document.querySelector('.nav-item.nav-item-selected:not([hidden])') || document.querySelector('.nav-item:not([hidden])');
     if (defaultNavItem?.dataset.component) {
         await switchComponent(defaultNavItem.dataset.component, defaultNavItem);
     }
 
     await injectIcons();
     await refreshListener();
+    const add = await ApiService.getDividerSensorInfo();
+    console.log(add);
 });
 
 function setupNavigation() {
@@ -127,6 +130,21 @@ function updateNavSelection(selectedItem) {
         item.classList.toggle('nav-item-selected', item === selectedItem);
     });
 }
+
+async function setupDividerSensorNav() {
+    const dividerNav = document.querySelector('.nav-item[data-component="dividerSensor"]');
+    if (!dividerNav) return;
+
+    try {
+        const hasDividerSensor = await ApiService.hasDividerSensor();
+        if (hasDividerSensor) {
+            dividerNav.removeAttribute('hidden');
+        }
+    } catch (error) {
+        console.warn('Failed to check divider sensor availability:', error);
+    }
+}
+
 
 function removeComponentAssets() {
     const stylesheet = document.getElementById('component-stylesheet');
