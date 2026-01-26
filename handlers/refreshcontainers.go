@@ -98,6 +98,11 @@ func buildWSO2From(e FDEnvConfig) (*wso2.Client, error) {
 		return nil, fmt.Errorf("missing gateway or client credentials")
 	}
 
+	// if the last character of e.GatewayURL is not a slash, add it
+	if !strings.HasSuffix(e.GatewayURL, "/") {
+		e.GatewayURL += "/"
+	}
+
 	// Create via constructor (fields are unexported)
 	cli := wso2.New(e.ClientID, e.ClientSecret, e.GatewayURL, "device-monitoring")
 
