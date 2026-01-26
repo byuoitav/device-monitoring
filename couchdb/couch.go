@@ -167,13 +167,20 @@ func ValidateConnection(ctx context.Context) error {
 	return nil
 }
 
-func GetMonitoringConfig(ctx context.Context) (map[string]any, error) {
+// Retrieves the monitoring configuration document for this system from CouchDB.
+// If a customSystemID is provided, it will be used instead of the SYSTEM_ID env var.
+func GetMonitoringConfig(ctx context.Context, customSystemID string) (map[string]any, error) {
 	client, err := getClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get couchdb client: %w", err)
 	}
 
-	if systemID == "" {
+	id := systemID
+	if customSystemID != "" {
+		id = customSystemID
+	}
+
+	if id == "" {
 		return nil, fmt.Errorf("SYSTEM_ID environment variable is not set")
 	}
 
@@ -182,14 +189,14 @@ func GetMonitoringConfig(ctx context.Context) (map[string]any, error) {
 		return nil, fmt.Errorf("failed to open device-monitoring database: %w", err)
 	}
 
-	row := db.Get(ctx, systemID)
+	row := db.Get(ctx, id)
 	if row.Err() != nil {
-		return nil, fmt.Errorf("failed to get monitoring config for system %s: %w", systemID, row.Err())
+		return nil, fmt.Errorf("failed to get monitoring config for system %s: %w", id, row.Err())
 	}
 
 	var cfg map[string]any
 	if err := row.ScanDoc(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to scan monitoring config for system %s: %w", systemID, err)
+		return nil, fmt.Errorf("failed to scan monitoring config for system %s: %w", id, err)
 	}
 
 	return cfg, nil

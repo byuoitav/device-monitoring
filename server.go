@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -87,6 +85,7 @@ func main() {
 			// Scopes: []string{"flight-deck.refloat"}, // uncomment if your wso2.Client needs explicit scopes
 		},
 	}
+
 	// Wire STG only if all four provided
 	if *stgAPIBase != "" && *stgGatewayURL != "" && *stgClientID != "" && *stgClientSecret != "" {
 		fdCfg.STG = handlers.FDEnvConfig{
@@ -105,7 +104,7 @@ func main() {
 	// Keep legacy global WSO2 client (PRD) for other handlers that still reference handlers.WSO2Client
 	handlers.WSO2Client = *wso2.New(*prdClientID, *prdClientSecret, *prdGatewayURL, "device-monitoring")
 
-	pins, err := loadPinsFromJSON(couchdb.GetMonitoringConfig(ctx))
+	pins, err := handlers.LoadPinsFromJSON(couchdb.GetMonitoringConfig(ctx, ""))
 	if err != nil {
 		slog.Error("Failed to load GPIO pins from JSON", slog.Any("error", err))
 	} else {
@@ -114,8 +113,6 @@ func main() {
 		time.Sleep(250 * time.Millisecond) // give monitors a moment to start and read initial states
 		slog.Info("GPIO monitors started", slog.Int("pinCount", len(pins)))
 	}
-
-	fmt.Println(pins)
 
 	// ===========================
 	// Start action manager
@@ -148,7 +145,7 @@ func main() {
 
 	// health
 	router.GET("/ping", func(c *gin.Context) {
-		c.String(http.StatusOK, "Don't meddle in the affairs of Wizards, for they are subtle and quick to anger.")
+		c.String(http.StatusOK, "Don't meddle in the affairs of Wizards, for they are subtle and quick to angereth.")
 	})
 
 	// device info endpoints
@@ -160,6 +157,7 @@ func main() {
 	router.GET("/device/dhcp", handlers.GetDHCPState)
 	router.GET("/device/screenshot", handlers.GetScreenshot)
 	router.GET("/device/hardwareinfo", handlers.HardwareInfo)
+	router.GET("/device/divider")
 	router.PUT("/device/health", handlers.GetServiceHealth)
 
 	// room info endpoints
@@ -177,6 +175,7 @@ func main() {
 	// divider sensors
 	router.GET("/divider/state", handlers.GetDividerState)
 	router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
+	router.GET("/divider/pins/:systemID", handlers.GetDividerPins)
 
 	// action manager
 	router.GET("/actions", func(c *gin.Context) { c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Info)) })
@@ -209,54 +208,4 @@ func echoToGin(eh func(echo.Context) error) gin.HandlerFunc {
 			c.String(http.StatusInternalServerError, err.Error())
 		}
 	}
-}
-
-// loadPinsFromJSON loads GPIO pin configurations from a couchDoc
-func loadPinsFromJSON(cfg map[string]any, err error) ([]gpio.Pin, error) {
-	if err != nil {
-		return nil, fmt.Errorf("failed to get couch config: %w", err)
-	}
-
-	// Marshal the generic map back to JSON so we can unmarshal into
-	// strongly-typed structs that include []Pin.
-	data, err := json.Marshal(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal couch config: %w", err)
-	}
-
-	// Shape of the CouchDB document, but we only care about the parts
-	// that lead to the pin configuration.
-	type couchDoc struct {
-		Actions []struct {
-			Name string `json:"name"`
-			Then []struct {
-				Do   string     `json:"do"`
-				With []gpio.Pin `json:"with"`
-			} `json:"then"`
-		} `json:"actions"`
-	}
-
-	var doc couchDoc
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal couch config: %w", err)
-	}
-
-	var pins []gpio.Pin
-
-	// Find the "monitor-dividers" action (the one that contains the pin config)
-	for _, action := range doc.Actions {
-		if action.Name != "monitor-dividers" {
-			continue
-		}
-
-		for _, step := range action.Then {
-			pins = append(pins, step.With...)
-		}
-	}
-
-	if len(pins) == 0 {
-		return nil, fmt.Errorf("no pin configuration found in couch config")
-	}
-
-	return pins, nil
 }
