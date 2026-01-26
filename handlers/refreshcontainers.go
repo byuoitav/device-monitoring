@@ -168,7 +168,7 @@ func RefreshContainers(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Successfully Floated %s", name)})
+	ctx.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Successfully Floated %s. Will take a couple minutes to complete", name)})
 }
 
 // floatDeviceWithRetry performs a refloat once, then on 401 rebuilds the client and retries once.
