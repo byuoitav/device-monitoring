@@ -140,11 +140,10 @@ class APIService {
       });
       const text = await res.text();
 
-      if (text.toLowerCase().includes("success")) {
+      if (text?.toLowerCase().includes("success")) {
         console.log("successfully flushed the dns cache");
-        return "success";
       }
-      return "fail";
+      return text || "No response";
     } catch (e) {
       console.error("error flushing dns:", e);
       throw e;
@@ -154,16 +153,25 @@ class APIService {
   async reSyncDB() {
     try {
       const controller = new AbortController();
-      setTimeout(() => controller.abort(), 2500);
+      setTimeout(() => controller.abort(), 4500);
 
       const res = await this.request(this.api("/resyncDB"), {
         signal: controller.signal,
       });
       const text = await res.text();
 
-      return text.toLowerCase().includes("success") ? "success" : "fail";
+      if (text) {
+        return text;
+      }
+      if (res.status === 202) {
+        return "Accepted (202)";
+      }
+      return "No response";
     } catch (e) {
       console.log("resync likely in progress / service restarting");
+      if (e?.name === "AbortError") {
+        return "Timed out locally; resync may still be in progress";
+      }
       throw e;
     }
   }
@@ -178,9 +186,12 @@ class APIService {
       });
       const text = await res.text();
 
-      return text.toLowerCase().includes("success") ? "success" : "fail";
+      return text || "No response";
     } catch (e) {
       console.log("refresh likely triggered; connection dropped during restart");
+      if (e?.name === "AbortError") {
+        return "Timed out locally; refresh may still be in progress";
+      }
       throw e;
     }
   }

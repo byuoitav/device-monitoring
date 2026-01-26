@@ -4,6 +4,7 @@ window.components.overview = {
     loadPage: async function() {
         bindOverviewButtons();
         bindOverviewRefreshButtons();
+        bindSystemActionPopup();
         console.log("Overview component loaded");
         await loadOverviewDeviceInfo();
         await loadOverviewRoomPing();
@@ -89,14 +90,103 @@ function bindOverviewButtons() {
         if (button.disabled) return;
 
         button.disabled = true;
+        const commandLabel = getSystemActionLabel(button, action);
+        showSystemActionPopup(commandLabel, "Sending...", "");
         try {
-            await ApiService[action]();
+            const result = await ApiService[action]();
+            const response = formatSystemActionResponse(result);
+            const status = deriveSystemActionStatus(result);
+            showSystemActionPopup(commandLabel, status, response);
         } catch (err) {
             console.error(`Failed to run ${action}:`, err);
+            const response = formatSystemActionResponse(err?.message || err);
+            showSystemActionPopup(commandLabel, "Failed", response);
         } finally {
             button.disabled = false;
         }
     });
+}
+
+function bindSystemActionPopup() {
+    const popup = document.querySelector('.system-action-popup');
+    if (!popup || popup.dataset.bound === 'true') return;
+    popup.dataset.bound = 'true';
+
+    const closeButton = popup.querySelector('.system-action-popup__close');
+    const backdrop = popup.querySelector('.system-action-popup__backdrop');
+    const content = popup.querySelector('.system-action-popup__content');
+
+    const closePopup = () => {
+        popup.classList.remove('is-visible');
+        popup.setAttribute('aria-hidden', 'true');
+    };
+
+    const stopScrollDrag = (event) => {
+        event.stopPropagation();
+    };
+
+    popup.addEventListener('pointerdown', stopScrollDrag);
+    content?.addEventListener('pointerdown', stopScrollDrag);
+
+    closeButton?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        closePopup();
+    });
+
+    backdrop?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        closePopup();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        if (!popup.classList.contains('is-visible')) return;
+        closePopup();
+    });
+}
+
+function showSystemActionPopup(command, status, response) {
+    const popup = document.querySelector('.system-action-popup');
+    if (!popup) return;
+
+    const commandEl = popup.querySelector('[data-field="system-action-command"]');
+    const statusEl = popup.querySelector('[data-field="system-action-status"]');
+    const responseEl = popup.querySelector('[data-field="system-action-response"]');
+    if (commandEl) commandEl.textContent = command || "Unknown command";
+    if (statusEl) statusEl.textContent = status || "Pending";
+    if (responseEl) responseEl.textContent = response || "No response";
+
+    popup.classList.add('is-visible');
+    popup.setAttribute('aria-hidden', 'false');
+}
+
+function getSystemActionLabel(button, action) {
+    const label = button.querySelector('p')?.textContent?.trim()
+        || button.textContent?.trim()
+        || action;
+    return label;
+}
+
+function formatSystemActionResponse(response) {
+    if (response === undefined || response === null || response === "") {
+        return "No response";
+    }
+    if (typeof response === "string") {
+        return response;
+    }
+    try {
+        return JSON.stringify(response);
+    } catch (error) {
+        console.warn("Failed to stringify response:", error);
+        return String(response);
+    }
+}
+
+function deriveSystemActionStatus(result) {
+    if (typeof result === "string" && result.toLowerCase().includes("success")) {
+        return "Success";
+    }
+    return "Request sent";
 }
 
 

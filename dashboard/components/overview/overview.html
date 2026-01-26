@@ -50,6 +50,19 @@
 
 </div>
 
+<div class="system-action-popup" aria-hidden="true">
+    <div class="system-action-popup__backdrop"></div>
+    <div class="system-action-popup__content" role="dialog" aria-modal="true" aria-labelledby="system-action-title">
+        <p class="system-action-popup__title" id="system-action-title">Command Sent</p>
+        <p class="system-action-popup__command" data-field="system-action-command">-</p>
+        <p class="system-action-popup__status-label">Status</p>
+        <p class="system-action-popup__status" data-field="system-action-status">-</p>
+        <p class="system-action-popup__response-label">Response</p>
+        <p class="system-action-popup__response" data-field="system-action-response">-</p>
+        <button class="system-action-popup__close" type="button">Close</button>
+    </div>
+</div>
+
 <div class="room-status content-box loading">
     <button class="card-refresh" data-refresh="room-status" aria-label="Refresh room status">
         <img src="assets/refresh.svg" alt="" />
