@@ -126,6 +126,17 @@ func main() {
 	port := ":10000"
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
+	router.Use(func(c *gin.Context) {
+		// Basic CORS for the web dashboard calls.
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	})
 
 	// redirects
 	router.GET("/dash", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard") })
