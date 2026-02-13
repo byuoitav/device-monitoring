@@ -1,0 +1,53 @@
+.status-icons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.device-card {
+    cursor: pointer;
+    font-size: 16px;
+    padding: 10px;
+}
+
+.device-card .device-id {
+    font-weight: 700;
+}
+
+.status-icons .connectivity.status-ok svg {
+    fill: #2e7d32;
+    stroke: #2e7d32;
+}
+
+.status-icons .connectivity.status-bad svg {
+    fill: #c62828;
+    stroke: #c62828;
+}
+
+.status-icons .power.status-ok svg {
+    fill: #2e7d32;
+    stroke: #2e7d32;
+}
+
+.status-icons .power.status-bad svg {
+    fill: #c62828;
+    stroke: #c62828;
+}
+
+.drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 15px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: max-height 0.25s ease, opacity 0.2s ease, transform 0.25s ease;
+}
+
+.device-card.drawer-open .drawer {
+    max-height: 500px;
+    opacity: 1;
+    transform: translateY(0);
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <script src="./services/data.js"></script>
+    <script src="./services/api.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta name="description" content="Device Monitoring Dashboard" />
+    <title>System Health Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- <link rel="icon" href="/favicon.ico" /> -->
+    <script src="script.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400
+&display=swap" rel="stylesheet">
+
+     
+</head>
+
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="assets/refresh.svg" class="refresh-icon">
+            <p class="heading">System Health Dashboard</h1>
+        </div>
+        <div class="header-right">
+            <p class="device-name" data-field="device.hostname">-</p>
+        </div>
+    </div>
+
+    <div class="dashboard-body">
+        <div class="nav-menu">
+            <div class="nav-items">
+                <div class="nav-item nav-item-selected" data-component="overview">
+                    <span class="nav-icon" data-icon="home" > </span>
+                    <p>Overview</p>
+                </div>
+                <div class="nav-item" data-component="reachableDevices">
+                    <span class="nav-icon" data-icon="reachable-devices" > </span>
+                    <p>Reachable Devices</p>
+                </div>
+                <div class="nav-item" data-component="deviceInfo">
+                    <span class="nav-icon" data-icon="info" > </span>
+                    <p>Device Info</p>
+                </div>
+                <div class="nav-item" data-component="dockerContainers">
+                    <span class="nav-icon" data-icon="docker" > </span>
+                    <p>Docker Containers</p>
+                </div>
+                <div class="nav-item" data-component="dividerSensor" hidden>
+                    <span class="nav-icon" data-icon="divider-sensor" > </span>
+                    <p>Divider Sensor</p>
+                </div>
+            </div>
+
+            <div class="collapse-sidebar">
+                <span class="nav-icon" data-icon="left-arrow" > </span>
+                <p>Collapse Sidebar</p>
+            </div>
+        </div>
+
+        <div class="component-container">
+
+        </div>
+
+    </div>
+
+
+</body>
+
+</html>

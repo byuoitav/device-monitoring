@@ -1,0 +1,142 @@
+<div class="device-info-grid">
+    <div class="content-box device-info-card" data-loading="true">
+        <div class="sub-heading">
+            <p class="info-title">Host</p>
+        </div>
+        <div class="drawer">
+            <div class="content-box-sub">
+                <p class="sub-heading">Host ID</p>
+                <p class="sub-value" data-field="host.os.hostid">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Hostname</p>
+                <p class="sub-value" data-field="host.os.hostname">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Kernel Version</p>
+                <p class="sub-value" data-field="host.os.kernelVersion">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">OS</p>
+                <p class="sub-value" data-field="host.os.os">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Platform</p>
+                <p class="sub-value" data-field="host.os.platform">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Platform Version</p>
+                <p class="sub-value" data-field="host.os.platformVersion">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Uptime</p>
+                <p class="sub-value" data-field="host.os.uptime">-</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-box device-info-card" data-loading="true">
+        <div class="sub-heading">
+            <p class="info-title">Memory</p>
+            <p class="sub-value" data-field="memory.virtual.usedPercent">-</p>
+        </div>
+        <div class="usage-bar" data-bar="memory.virtual.usedPercent">
+            <span class="usage-bar-fill"></span>
+        </div>
+        <div class="drawer">
+            <div class="content-box-sub">
+                <p class="sub-heading">Swap Free</p>
+                <p class="sub-value" data-field="memory.swap.free">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Swap Total</p>
+                <p class="sub-value" data-field="memory.swap.total">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Swap Used</p>
+                <p class="sub-value" data-field="memory.swap.used">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Swap Used Percent</p>
+                <p class="sub-value" data-field="memory.swap.usedPercent">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Virtual Free</p>
+                <p class="sub-value" data-field="memory.virtual.free">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Virtual Total</p>
+                <p class="sub-value" data-field="memory.virtual.total">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Virtual Used</p>
+                <p class="sub-value" data-field="memory.virtual.used">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Virtual Used Percent</p>
+                <p class="sub-value" data-field="memory.virtual.usedPercent">-</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-box device-info-card" data-loading="true">
+        <div class="sub-heading">
+            <p class="info-title">CPU Usage</p>
+            <p class="sub-value" data-field="cpu.usage.avg">-</p>
+        </div>
+        <div class="usage-bar" data-bar="cpu.usage.avg">
+            <span class="usage-bar-fill"></span>
+        </div>
+        <div class="sub-heading" style="margin-top: 15px;">
+            <p class="info-title" >CPU Temperature</p>
+            <p class="sub-value" data-field="cpu.temperature.primary">-</p>
+        </div>
+        <div class="temp-indicator" data-temp-indicator="true">
+            <span class="temp-indicator-fill"></span>
+        </div>
+        <div class="drawer">
+            <div data-section="cpu-temperatures"></div>
+            <div data-section="cpu-usage"></div>
+        </div>
+    </div>
+
+    <div class="content-box device-info-card" data-loading="true">
+        <div class="sub-heading">
+            <p class="info-title">Disk Usage</p>
+            <p class="sub-value" data-field="disk.usage.summary">-</p>
+        </div>
+        <div class="usage-bar" data-bar="disk.usage.usedPercent">
+            <span class="usage-bar-fill"></span>
+        </div>
+        <div class="drawer">
+            <div class="content-box-sub">
+                <p class="sub-heading">Free</p>
+                <p class="sub-value" data-field="disk.usage.free">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Total</p>
+                <p class="sub-value" data-field="disk.usage.total">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Used</p>
+                <p class="sub-value" data-field="disk.usage.used">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Used Percent</p>
+                <p class="sub-value" data-field="disk.usage.usedPercent">-</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Write Count</p>
+                <p class="sub-value" data-field="disk.io.writeCount">-</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<template id="device-info-row-template">
+    <div class="content-box-sub">
+        <p class="sub-heading">Label</p>
+        <p class="sub-value">Value</p>
+    </div>
+</template>

@@ -2,10 +2,10 @@ package socket
 
 import (
 	"encoding/json"
+	"log/slog"
 	"time"
 
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/model"
 	"github.com/gorilla/websocket"
 )
 
@@ -25,7 +25,7 @@ var (
 type Client struct {
 	manager  *Manager
 	conn     *websocket.Conn
-	sendChan chan events.Event
+	sendChan chan model.Event
 }
 
 func (c *Client) readPump() {
@@ -42,17 +42,22 @@ func (c *Client) readPump() {
 	})
 
 	// read messages from client forever
-	var event events.Event
+	var event model.Event
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			log.L.Warnf("error reading from %s's websocket: %v", c.conn.RemoteAddr(), err)
+			slog.Warn("error reading from websocket",
+				slog.String("address",
+					c.conn.RemoteAddr().String()),
+				slog.String("error", err.Error()))
 			break
 		}
 
 		err = json.Unmarshal(message, &event)
 		if err != nil {
-			log.L.Warnf("unable to unmarshal event from client %s: %v", c.conn.RemoteAddr(), err)
+			slog.Warn("unable to unmarshal event from client",
+				slog.String("address", c.conn.RemoteAddr().String()),
+				slog.String("error", err.Error()))
 			break
 		}
 
@@ -91,7 +96,7 @@ func (c *Client) writePump() {
 			w.Write(bytes)
 
 			n := len(c.sendChan)
-			for i := 0; i < n; i++ {
+			for range n {
 				w.Write(newline)
 
 				bytes, err := json.Marshal(<-c.sendChan)

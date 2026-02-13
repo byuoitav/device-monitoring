@@ -1,100 +1,153 @@
-# vars
-ORG=$(shell echo $(CIRCLE_PROJECT_USERNAME))
-BRANCH=$(shell echo $(CIRCLE_BRANCH))
-NAME=$(shell echo $(CIRCLE_PROJECT_REPONAME))
+# =============================
+# Build & Deploy Only
+# =============================
+SHELL := /bin/bash
 
+# Metadata
+ORG    ?= $(shell echo $(CIRCLE_PROJECT_USERNAME))
+NAME   ?= $(shell echo $(CIRCLE_PROJECT_REPONAME))
+BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 ifeq ($(NAME),)
 NAME := $(shell basename "$(PWD)")
 endif
-
 ifeq ($(ORG),)
-ORG=byuoitav
+ORG := byuoitav
 endif
 
-ifeq ($(BRANCH),)
-BRANCH:= $(shell git rev-parse --abbrev-ref HEAD)
+
+# Tools
+GOCMD   = go
+GOBUILD = $(GOCMD) build
+NPM     = npm
+NG1     = dashboard
+
+# Outputs
+BUILD_DIR  = dist
+BIN_OUTPUT = $(BUILD_DIR)/$(NAME)
+
+# Cross-build matrix for build-binaries
+PLATFORMS = linux/amd64 linux/arm
+
+
+# Go build flags (all optional, override on make cmdline)
+GOOS        ?=
+GOARCH      ?=
+GOARM       ?=
+CGO_ENABLED ?=
+TAGS        ?=
+LDFLAGS     ?=
+GCFLAGS     ?=
+ASMFLAGS    ?=
+BUILD_FLAGS ?=
+MAIN_PKG    ?= .
+
+# Compose go build flags
+COMMON_BUILD_FLAGS :=
+ifneq ($(strip $(TAGS)),)
+  COMMON_BUILD_FLAGS += -tags '$(TAGS)'
+endif
+ifneq ($(strip $(LDFLAGS)),)
+  COMMON_BUILD_FLAGS += -ldflags '$(LDFLAGS)'
+endif
+ifneq ($(strip $(GCFLAGS)),)
+  COMMON_BUILD_FLAGS += -gcflags '$(GCFLAGS)'
+endif
+ifneq ($(strip $(ASMFLAGS)),)
+  COMMON_BUILD_FLAGS += -asmflags '$(ASMFLAGS)'
+endif
+ifneq ($(strip $(BUILD_FLAGS)),)
+  COMMON_BUILD_FLAGS += $(BUILD_FLAGS)
 endif
 
-# go
-GOCMD=go
-GOBUILD=$(GOCMD) build
-GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
-VENDOR=gvt fetch -branch $(BRANCH)
+# =============================
+# Targets
+# =============================
+.PHONY: all build-local build-binaries build-web clean deploy
 
-# angular
-NPM=npm
-NPM_INSTALL=$(NPM) install
-NPM_BUILD=npm run-script build
-NG1=dashboard
+all: build-web build-local
 
-all: deploy clean
+ci: deps all test
 
-ci: deps all
+# Default local build targets linux/arm (GOARM=7)
+build-local:
+	@echo "Building $(NAME) for linux/arm (GOARM=7) — override with GOOS/GOARCH/GOARM/CGO_ENABLED as needed..."
+	@mkdir -p $(BUILD_DIR)
+	@GOOS=$${GOOS:-linux} \
+	 GOARCH=$${GOARCH:-arm} \
+	 GOARM=$${GOARM:-7} \
+	 CGO_ENABLED=$${CGO_ENABLED:-0} \
+	 $(GOBUILD) $(COMMON_BUILD_FLAGS) -o $(BIN_OUTPUT) -v $(MAIN_PKG)
 
-build: build-web
-	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(NAME) -v
+build-binaries:
+	@echo "Building binaries for: $(PLATFORMS)"
+	@mkdir -p $(BUILD_DIR)
+	@for platform in $(PLATFORMS); do \
+		OS=$${platform%/*}; ARCH=$${platform#*/}; \
+		OUT=$(BUILD_DIR)/$(NAME)-$$OS-$$ARCH; \
+		[ "$$OS" = "windows" ] && OUT=$$OUT.exe; \
+		echo "  -> $$OS/$$ARCH => $$OUT"; \
+		if [ "$$ARCH" = "arm" ]; then \
+		  GOOS=$$OS GOARCH=$$ARCH GOARM=$${GOARM:-7} CGO_ENABLED=$${CGO_ENABLED:-0} \
+		    $(GOBUILD) $(COMMON_BUILD_FLAGS) -o "$$OUT" -v $(MAIN_PKG) || exit 1; \
+		else \
+		  GOOS=$$OS GOARCH=$$ARCH CGO_ENABLED=$${CGO_ENABLED:-0} \
+		    $(GOBUILD) $(COMMON_BUILD_FLAGS) -o "$$OUT" -v $(MAIN_PKG) || exit 1; \
+		fi; \
+	done
 
-build-web: $(NG1)
-	cd $(NG1) && $(NPM_INSTALL) && $(NPM_BUILD)
-	mkdir files
-	mv $(NG1)/dist/$(NG1) files/$(NG1)
-
-test:
-	$(GOTEST) -v -race $(go list ./... | grep -v /vendor/)
+build-web:
+	@echo "Preparing static dashboard assets..."
+	@mkdir -p files/$(NG1)
+	@rsync -a --delete \
+	  --exclude node_modules \
+	  --exclude dist \
+	  dashboard/ files/$(NG1)/
 
 clean:
-ifeq "$(BRANCH)" "master"
-	$(eval BRANCH=development)
-endif
-	$(GOCLEAN)
-	rm -f $(NAME)
-	rm -f $(BRANCH).tar.gz
-	rm -rf files/
-	rm -rf vendor/
-ifeq "$(BRANCH)" "development"
-	$(eval BRANCH=master)
-endif
+	@echo "Cleaning build artifacts..."
+	rm -rf $(BUILD_DIR) files vendor *.tar.gz dist
 
 deps:
-	# TODO remove whenever this npm bug is fixed
-	# https://github.com/npm/npm/issues/20861
 	npm config set unsafe-perm true
 	$(NPM_INSTALL) -g @angular/cli
-ifneq "$(BRANCH)" "master"
-	# put vendored packages in here
-	# e.g. $(VENDOR) github.com/byuoitav/event-router-microservice
-	gvt fetch -tag v3.3.10 github.com/labstack/echo
-	gvt fetch -tag v6.15.3 github.com/go-redis/redis
+ifneq ($(BRANCH),master)
+	$(VENDOR) github.com/labstack/echo@v3.3.10
+	$(VENDOR) github.com/go-redis/redis@v6.15.3
 	$(VENDOR) github.com/byuoitav/common
 	$(VENDOR) github.com/byuoitav/central-event-system
 	$(VENDOR) github.com/byuoitav/shipwright
 endif
 	$(GOGET) -d -v
 
-deploy: $(NAME) files/$(NG1) version.txt
-ifeq "$(BRANCH)" "master"
+# =============================
+# Deployment
+# =============================
+
+deploy: $(BIN_OUTPUT) files/$(NG1) version.txt
+ifeq ($(BRANCH),master)
 	$(eval BRANCH=development)
 endif
-	@echo Building deployment tarball
+	@echo "Packaging $(BRANCH).tar.gz"
 	@cp version.txt files/
 	@cp service-config.json files/
-
-	@tar -czf $(BRANCH).tar.gz $(NAME) files
-
-	@echo Getting current doc revision
+	@tar -czf $(BRANCH).tar.gz \
+	  -C $(CURDIR) files \
+	  -C $(BUILD_DIR) $(NAME)
+	@echo "Fetching current CouchDB doc revision…"
 	$(eval rev=$(shell curl -s -n -X GET -u ${DB_USERNAME}:${DB_PASSWORD} "${DB_ADDRESS}/deployment-information/$(NAME)" | cut -d, -f2 | cut -d\" -f4))
-
-	@echo Pushing zip up to couch
-	@curl -X PUT -u ${DB_USERNAME}:${DB_PASSWORD} -H "Content-Type: application/gzip" -H "If-Match: $(rev)" ${DB_ADDRESS}/deployment-information/$(NAME)/$(BRANCH).tar.gz --data-binary @$(BRANCH).tar.gz
-ifeq "$(BRANCH)" "development"
+	@echo "Uploading tarball to CouchDB…"
+	@curl -X PUT -u ${DB_USERNAME}:${DB_PASSWORD} \
+	  -H "Content-Type: application/gzip" \
+	  -H "If-Match: $(rev)" \
+	  ${DB_ADDRESS}/deployment-information/$(NAME)/$(BRANCH).tar.gz \
+	  --data-binary @$(BRANCH).tar.gz
+ifeq ($(BRANCH),development)
 	$(eval BRANCH=master)
 endif
 
-### deps
-$(NAME):
-	$(MAKE) build
+# Build triggers
+$(BIN_OUTPUT):
+	$(MAKE) build-local
 
 files/$(NG1):
 	$(MAKE) build-web

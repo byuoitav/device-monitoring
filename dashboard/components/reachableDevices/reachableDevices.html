@@ -1,0 +1,42 @@
+<div class="content-box loading reachable-devices-loading"></div>
+<div class="reachable-devices-list"></div>
+
+<template id="reachable-device-card-template">
+    <div class="content-box device-card">
+        <div class="sub-heading">
+            <p class="device-id" data-field="device-name">Device</p>
+            <p class="sub-value" data-field="device-ip">0.0.0.0</p>
+            <div class="status-icons">
+                <span class="connectivity" data-icon="wifi"> </span>
+                <span class="power" data-icon="hot-tub"> </span>
+            </div>
+        </div>
+
+        <div class="drawer">
+            <div class="content-box-sub">
+                <p class="sub-heading">Device ID</p>
+                <p class="sub-value" data-field="drawer-device-id">Device</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Resolved IP</p>
+                <p class="sub-value" data-field="drawer-device-ip">0.0.0.0</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Packets Sent</p>
+                <p class="sub-value" data-field="packets-sent">0</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Packets Received</p>
+                <p class="sub-value" data-field="packets-received">0</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Packets Lost</p>
+                <p class="sub-value" data-field="packets-lost">0</p>
+            </div>
+            <div class="content-box-sub">
+                <p class="sub-heading">Average Round Trip Time</p>
+                <p class="sub-value" data-field="average-round-trip">0ms</p>
+            </div>
+        </div>
+    </div>
+</template>

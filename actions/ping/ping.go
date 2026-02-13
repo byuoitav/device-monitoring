@@ -3,15 +3,14 @@ package ping
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/byuoitav/common/db"
-	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/localsystem"
-	"go.uber.org/zap"
 )
 
 // Config .
@@ -38,30 +37,35 @@ type Result struct {
 }
 
 // Room pings the room and returns the results
-func Room(ctx context.Context, roomID string, config Config, log *zap.SugaredLogger) (map[string]*Result, *nerr.E) {
+func Room(
+	ctx context.Context,
+	roomID string,
+	config Config,
+	logger *slog.Logger,
+) (map[string]*Result, error) {
 	// get devices from db
-	devices, err := db.GetDB().GetDevicesByRoom(roomID)
+	devices, err := couchdb.GetDevicesByRoom(ctx, roomID)
 	if err != nil {
-		return map[string]*Result{}, nerr.Translate(err).Addf("unable to get devices in room %v", localsystem.MustRoomID())
+		return nil, fmt.Errorf("unable to list devices in room %q: %w", localsystem.MustRoomID(), err)
 	}
 
-	hosts := []Host{}
-	for i := range devices {
-		if len(devices[i].Address) == 0 || strings.EqualFold(devices[i].Address, "0.0.0.0") {
+	// build the host list, skipping devices with no address
+	hosts := make([]Host, 0, len(devices))
+	for _, d := range devices {
+		if d.Address == "" || strings.EqualFold(d.Address, "0.0.0.0") {
 			continue
 		}
-
-		hosts = append(hosts, Host{
-			ID:   devices[i].ID,
-			Addr: devices[i].Address,
-		})
+		hosts = append(hosts, Host{ID: d.ID, Addr: d.Address})
 	}
 
-	log.Infof("Pinging %v devices in %s", len(hosts), roomID)
+	logger.Info("Pinging devices in room",
+		slog.String("room_id", roomID),
+		slog.Int("host_count", len(hosts)),
+	)
 
 	pinger, err := NewPinger()
 	if err != nil {
-		return map[string]*Result{}, nerr.Translate(err).Addf("failed to ping devices")
+		return nil, fmt.Errorf("failed to initialize pinger: %w", err)
 	}
 	defer pinger.Close()
 
@@ -103,7 +107,7 @@ func (p *Pinger) Ping(ctx context.Context, config Config, hosts ...Host) map[str
 		if ip == nil {
 			resultsMu.Lock()
 			results[hosts[i].ID] = &Result{
-				Error: fmt.Sprintf("no ipv4 address found"),
+				Error: "no ipv4 address found",
 			}
 			resultsMu.Unlock()
 

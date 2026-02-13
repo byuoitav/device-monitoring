@@ -2,10 +2,10 @@ package socket
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/v2/events"
+	"github.com/byuoitav/device-monitoring/model"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo"
 )
@@ -15,11 +15,11 @@ type (
 	EventHandler interface {
 		// OnClientConnect is called once each time a new client is connected.
 		// use sendToClient to send events to the new client.
-		OnClientConnect(sendToClient chan events.Event)
+		OnClientConnect(sendToClient chan model.Event)
 
 		// OnEventReceived will be called each time _any_ client sends an event.
 		// event is the event recieved, and events can be sent back to _all_ clients using sendToAll.
-		OnEventReceived(event events.Event, sendToAll chan events.Event)
+		OnEventReceived(event model.Event, sendToAll chan model.Event)
 	}
 
 	// A Manager manages a group of websocket connections
@@ -28,7 +28,7 @@ type (
 		register   chan *Client
 		unregister chan *Client
 
-		broadcast    chan events.Event
+		broadcast    chan model.Event
 		eventHandler EventHandler
 	}
 )
@@ -40,7 +40,7 @@ func NewManager() *Manager {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 
-		broadcast: make(chan events.Event),
+		broadcast: make(chan model.Event),
 	}
 
 	go m.run()
@@ -56,7 +56,7 @@ func (m *Manager) run() {
 	for {
 		select {
 		case client := <-m.register:
-			log.L.Infof("Registering %s to websocket manager", client.conn.RemoteAddr())
+			slog.Info("Registering client %s to websocket manager", slog.String("address", client.conn.RemoteAddr().String()))
 			m.clients[client] = true
 
 			if m.eventHandler != nil {
@@ -64,12 +64,15 @@ func (m *Manager) run() {
 			}
 		case client := <-m.unregister:
 			if _, ok := m.clients[client]; ok {
-				log.L.Infof("Removing %s from websocket manager", client.conn.RemoteAddr())
+				slog.Info("Removing client %s from websocket manager", slog.String("address", client.conn.RemoteAddr().String()))
 				close(client.sendChan)
 				delete(m.clients, client)
 			}
 		case message := <-m.broadcast:
-			log.L.Debugf("broadcasting message to %v clients: %s", len(m.clients), message)
+			slog.Debug("Received broadcasting message to %v clients: %s",
+				slog.String("clients", fmt.Sprintf("%v", len(m.clients))),
+				slog.String("message", fmt.Sprintf("%+v", message)))
+
 			for client := range m.clients {
 				select {
 				case client.sendChan <- message:
@@ -93,7 +96,7 @@ var upgrader = websocket.Upgrader{
 // UpgradeToWebsocket upgrades a connection to a websocket and creates a client for the connection
 func UpgradeToWebsocket(manager *Manager) func(ctx echo.Context) error {
 	return func(ctx echo.Context) error {
-		log.L.Infof("Attempting to uppgrading HTTP connection from %s to websocket", ctx.Request().RemoteAddr)
+		slog.Info("Attempting to upgrade HTTP connection to websocket", slog.String("remote_addr", ctx.Request().RemoteAddr))
 		conn, err := upgrader.Upgrade(ctx.Response(), ctx.Request(), nil)
 		if err != nil {
 			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("unable to upgrade connection to a websocket: %s", err))
@@ -102,7 +105,7 @@ func UpgradeToWebsocket(manager *Manager) func(ctx echo.Context) error {
 		client := &Client{
 			manager:  manager,
 			conn:     conn,
-			sendChan: make(chan events.Event, 256),
+			sendChan: make(chan model.Event, 256),
 		}
 		client.manager.register <- client
 

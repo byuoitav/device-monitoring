@@ -1,136 +1,249 @@
 package localsystem
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
-
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
 )
 
-const (
-	dhcpFile = "/etc/dhcpcd.conf"
-)
+const staticConfigPath = "/etc/network/static_config.json"
+
+type StaticConfig struct {
+	Addresses string `json:"addresses"`
+	Gateway   string `json:"gateway"`
+	DNS       string `json:"dns"`
+}
 
 // Hostname returns the hostname of the device
-func Hostname() (string, *nerr.E) {
-	hostname, err := os.Hostname()
+func Hostname() (string, error) {
+	h, err := os.Hostname()
 	if err != nil {
-		return "", nerr.Translate(err).Addf("failed to get hostname.")
+		return "", fmt.Errorf("failed to get hostname: %w", err)
 	}
-
-	return hostname, nil
+	return h, nil
 }
 
 // MustHostname returns the hostname of the device, and panics if it fails
 func MustHostname() string {
-	hostname, err := Hostname()
+	h, err := Hostname()
 	if err != nil {
-		log.L.Fatalf("failed to get hostname: %s", err.Error())
+		log.Fatalf("failed to get hostname: %v", err)
 	}
-
-	return hostname
+	return h
 }
 
 // IPAddress gets the public ip address of the device
-func IPAddress() (net.IP, *nerr.E) {
-	var ip net.IP
+func IPAddress() (net.IP, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return nil, nerr.Translate(err).Addf("failed to get ip address of device")
+		return nil, fmt.Errorf("failed to list network interfaces: %w", err)
 	}
 
-	for _, address := range addrs {
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && strings.Contains(address.String(), "/24") {
-			ip, _, err = net.ParseCIDR(address.String())
-			if err != nil {
-				return nil, nerr.Translate(err).Addf("failed to get ip address of device")
+	var ip net.IP
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok &&
+			!ipnet.IP.IsLoopback() &&
+			strings.Contains(addr.String(), "/24") {
+
+			parsed, _, perr := net.ParseCIDR(addr.String())
+			if perr != nil {
+				return nil, fmt.Errorf("failed to parse IP %q: %w", addr.String(), perr)
 			}
+			ip = parsed
+			break
 		}
 	}
 
 	if ip == nil {
-		return nil, nerr.Create("failed to get ip address of device", "string")
+		return nil, fmt.Errorf("no non‑loopback /24 IP address found")
 	}
 
-	log.L.Infof("My IP address is %v", ip.String())
+	slog.Info("My IP address", slog.String("ip", ip.String()))
 	return ip, nil
 }
 
 // IsConnectedToInternet returns true if the device can reach google's servers.
 func IsConnectedToInternet() bool {
-	_, err := net.Dial("tcp", "google.com:80")
+	conn, err := net.Dial("tcp", "google.com:80")
 	if err != nil {
 		return false
 	}
-
+	_ = conn.Close()
 	return true
 }
 
 // UsingDHCP returns true if the device is using DHCP, and false if it has a static ip set.
-func UsingDHCP() (bool, *nerr.E) {
-	// read dhcpcd.conf file
-	contents, err := ioutil.ReadFile(dhcpFile)
+func UsingDHCP() (bool, error) {
+
+	// Get the active connection name
+	connName, err := getActiveConnectionName()
 	if err != nil {
-		return false, nerr.Translate(err).Addf("unable to read %s", dhcpFile)
+		return false, fmt.Errorf("failed to get active connection name: %w", err)
 	}
 
-	reg := regexp.MustCompile(`(?m)^static ip_address`)
-	matches := reg.Match(contents)
+	// use nmcli to check the ipv4 method of the connection
+	cmd := exec.Command("nmcli", "-t", "-f", "ipv4.method", "connection", "show", connName)
+	var out bytes.Buffer
+	cmd.Stdout = &out
 
-	return !matches, nil
+	if err := cmd.Run(); err != nil {
+		return false, fmt.Errorf("failed to run nmcli command: %w", err)
+	}
+
+	// Parse the output ipv4.method:string method is only after the colon
+	method := strings.TrimSpace(out.String())
+	method = strings.TrimPrefix(method, "ipv4.method:")
+	switch method {
+	case "auto":
+		return true, nil
+	case "manual", "disabled": // manual means static IP, disabled means no IP
+		return false, nil
+	default:
+		return false, fmt.Errorf("unknown ipv4.method value: %s", method)
+	}
 }
 
-// ToggleDHCP turns dhcp on/off by swapping dhcpcd.conf with dhcpcd.conf.other, a file we created when the pi was setup.
-func ToggleDHCP() *nerr.E {
-	// validate the necessary files exist
-	if err := CanToggleDHCP(); err != nil {
+// ToggleDHCP switches between DHCP and static mode. (using nmcli)
+func ToggleDHCP() error {
+	connName, err := getActiveConnectionName()
+	if err != nil {
 		return err
 	}
 
-	tmpFile := fmt.Sprintf("%s.tmp", dhcpFile)
-	otherFile := fmt.Sprintf("%s.other", dhcpFile)
-
-	// swap the files
-	err := os.Rename(dhcpFile, tmpFile)
+	enabled, err := UsingDHCP()
 	if err != nil {
-		return nerr.Translate(err)
+		return fmt.Errorf("failed to determine current DHCP state: %w", err)
 	}
 
-	err = os.Rename(otherFile, dhcpFile)
-	if err != nil {
-		return nerr.Translate(err)
+	if enabled {
+		// DHCP → Static (restore from saved config)
+		cfg, err := loadStaticConfig()
+		if err != nil {
+			return fmt.Errorf("cannot restore static config: %w", err)
+		}
+
+		cmd := exec.Command("nmcli", "connection", "modify", connName,
+			"ipv4.method", "manual",
+			"ipv4.addresses", cfg.Addresses,
+			"ipv4.gateway", cfg.Gateway,
+			"ipv4.dns", cfg.DNS)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("failed to apply static config: %w — %s", err, strings.TrimSpace(string(out)))
+		}
+	} else {
+		// Static → DHCP (save current static config)
+		cfg, err := readCurrentStaticConfig(connName)
+		if err != nil {
+			return fmt.Errorf("cannot save static config: %w", err)
+		}
+		if err := saveStaticConfig(cfg); err != nil {
+			return err
+		}
+
+		cmd := exec.Command("nmcli", "connection", "modify", connName,
+			"ipv4.method", "auto",
+			"ipv4.addresses", "",
+			"ipv4.gateway", "",
+			"ipv4.dns", "")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("failed to switch to DHCP: %w — %s", err, strings.TrimSpace(string(out)))
+		}
 	}
 
-	err = os.Rename(tmpFile, otherFile)
-	if err != nil {
-		return nerr.Translate(err)
+	// Apply changes
+	if out, err := exec.Command("nmcli", "connection", "up", connName).CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to activate connection: %w — %s", err, strings.TrimSpace(string(out)))
 	}
-
-	// restart dhcp service
-	_, err = exec.Command("sh", "-c", "sudo systemctl restart dhcpcd").Output()
-	if err != nil {
-		return nerr.Translate(err).Addf("unable to restart dhcpcd service")
-	}
-
 	return nil
 }
 
 // CanToggleDHCP returns nil if you can toggle DHCP, or an error if you can't
-func CanToggleDHCP() *nerr.E {
-	otherFile := fmt.Sprintf("%s.other", dhcpFile)
-
-	if _, err := os.Stat(dhcpFile); os.IsNotExist(err) {
-		return nerr.Translate(err).Addf("can't toggle dhcp because there is no %s file", dhcpFile)
+func CanToggleDHCP() error {
+	connName, err := getActiveConnectionName()
+	if err != nil {
+		return fmt.Errorf("failed to get active connection name: %w", err)
 	}
-	if _, err := os.Stat(otherFile); os.IsNotExist(err) {
-		return nerr.Translate(err).Addf("can't toggle dhcp because there is no %s.other file", dhcpFile)
+
+	// Check if the connection is modifiable (not locked)
+	cmd := exec.Command("nmcli", "-t", "-f", "connection.permissions", "connection", "show", connName)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run nmcli command: %w", err)
+	}
+
+	permissions := strings.TrimSpace(out.String())
+	if permissions != "" && permissions != "--" {
+		return fmt.Errorf("connection %s is not modifiable, permissions: %s", connName, permissions)
 	}
 
 	return nil
+}
+
+func getActiveConnectionName() (string, error) {
+	cmd := exec.Command("nmcli", "-t", "-f", "NAME", "connection", "show", "--active")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to run nmcli command: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) == 0 || lines[0] == "" {
+		return "", fmt.Errorf("no active network connection found")
+	}
+
+	return lines[0], nil
+}
+
+func saveStaticConfig(cfg StaticConfig) error {
+	f, err := os.Create(staticConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to save static config: %w", err)
+	}
+	defer f.Close()
+
+	return json.NewEncoder(f).Encode(cfg)
+}
+
+func loadStaticConfig() (StaticConfig, error) {
+	var cfg StaticConfig
+	f, err := os.Open(staticConfigPath)
+	if err != nil {
+		return cfg, fmt.Errorf("failed to load static config: %w", err)
+	}
+	defer f.Close()
+
+	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
+		return cfg, fmt.Errorf("invalid static config file: %w", err)
+	}
+	return cfg, nil
+}
+
+func readCurrentStaticConfig(connName string) (StaticConfig, error) {
+	cmd := exec.Command("nmcli", "-t", "-f", "ipv4.addresses,ipv4.gateway,ipv4.dns", "connection", "show", connName)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	if err := cmd.Run(); err != nil {
+		return StaticConfig{}, fmt.Errorf("failed to read current static config: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(out.String()), ":")
+	if len(lines) < 3 {
+		return StaticConfig{}, fmt.Errorf("unexpected nmcli output: %s", out.String())
+	}
+
+	return StaticConfig{
+		Addresses: lines[0],
+		Gateway:   lines[1],
+		DNS:       lines[2],
+	}, nil
 }

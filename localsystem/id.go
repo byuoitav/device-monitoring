@@ -2,12 +2,12 @@ package localsystem
 
 import (
 	"fmt"
+	"log"
+	"log/slog"
 	"os"
 	"strings"
 
-	"github.com/byuoitav/common/log"
-	"github.com/byuoitav/common/nerr"
-	"github.com/byuoitav/common/structs"
+	"github.com/byuoitav/device-monitoring/model"
 )
 
 const (
@@ -21,15 +21,13 @@ var (
 )
 
 // SystemID returns the pi hostname of the device
-func SystemID() (string, *nerr.E) {
-	if len(systemID) == 0 {
-		return "", nerr.Create("SYSTEM_ID not set.", "string")
+func SystemID() (string, error) {
+	if systemID == "" {
+		return "", fmt.Errorf("SYSTEM_ID not set")
 	}
-
-	if !structs.IsDeviceIDValid(systemID) {
-		return "", nerr.Create("SYSTEM_ID is set as %s, which is an invalid hostname.", systemID)
+	if !model.IsDeviceIDValid(systemID) {
+		return "", fmt.Errorf("SYSTEM_ID %q is not a valid device ID", systemID)
 	}
-
 	return systemID, nil
 }
 
@@ -37,60 +35,60 @@ func SystemID() (string, *nerr.E) {
 func MustSystemID() string {
 	id, err := SystemID()
 	if err != nil {
-		log.L.Fatalf("%s", err.Error())
+		log.Fatalf("failed to get system ID: %v", err)
 	}
 
 	return id
 }
 
 // BuildingID returns the room ID of the pi based on the hostname (everything before the last '-')
-func BuildingID() (string, *nerr.E) {
+func BuildingID() (string, error) {
 	id, err := SystemID()
 	if err != nil {
-		return "", err.Addf("failed to get buildingID")
+		return "", fmt.Errorf("failed to get building ID: %w", err)
 	}
-
-	split := strings.Split(id, "-")
-	return split[0], nil
+	parts := strings.SplitN(id, "-", 2)
+	return parts[0], nil
 }
 
 // MustBuildingID returns the buildingID or panics if it fails
 func MustBuildingID() string {
 	id, err := BuildingID()
 	if err != nil {
-		log.L.Fatalf("failed to get buildingID: %s", err.Error())
+		log.Fatalf("failed to get building ID: %v", err)
 	}
 
 	return id
 }
 
 // RoomID returns the room ID of the pi based on the hostname (everything before the last '-')
-func RoomID() (string, *nerr.E) {
+func RoomID() (string, error) {
 	id, err := SystemID()
 	if err != nil {
-		return "", err.Addf("failed to get roomID")
+		return "", fmt.Errorf("failed to get room ID: %w", err)
 	}
-
-	split := strings.Split(id, "-")
-	return split[0] + "-" + split[1], nil
+	parts := strings.SplitN(id, "-", 3)
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid SYSTEM_ID format for room ID: %q", id)
+	}
+	return parts[0] + "-" + parts[1], nil
 }
 
 // MustRoomID returns the buildingID or panics if it fails
 func MustRoomID() string {
 	id, err := RoomID()
 	if err != nil {
-		log.L.Fatalf("failed to get roomID: %s", err.Error())
+		log.Fatalf("failed to get room ID: %v", err)
 	}
 
 	return id
 }
 
 // InstallerID returns the installerID of the pi
-func InstallerID() (string, *nerr.E) {
-	if len(installerID) == 0 {
-		return "", nerr.Create("INSTALLER_ID not set.", "string")
+func InstallerID() (string, error) {
+	if installerID == "" {
+		return "", fmt.Errorf("INSTALLER_ID not set")
 	}
-
 	return installerID, nil
 }
 
@@ -98,32 +96,29 @@ func InstallerID() (string, *nerr.E) {
 func MustInstallerID() string {
 	id, err := InstallerID()
 	if err != nil {
-		log.L.Fatalf("failed to get installerID: %s", err.Error())
+		log.Fatalf("failed to get installer ID: %v", err)
 	}
 
 	return id
 }
 
 // SetInstallerID sets the installer id
-func SetInstallerID(id string) *nerr.E {
-	errMsg := "failed to set installer ID"
-
-	file, err := os.OpenFile(EnvironmentFile, os.O_APPEND|os.O_WRONLY, 0644)
+func SetInstallerID(id string) error {
+	f, err := os.OpenFile(EnvironmentFile, os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
-		return nerr.Translate(err).Add(errMsg)
+		return fmt.Errorf("failed to open %s: %w", EnvironmentFile, err)
+	}
+	defer f.Close()
+
+	line := fmt.Sprintf(`INSTALLER_ID="%s"`+"\n", id)
+	if _, err := f.WriteString(line); err != nil {
+		return fmt.Errorf("failed to write installer ID to %s: %w", EnvironmentFile, err)
 	}
 
-	// TODO do i need to delete an old installer id, or should i just leave it on
-	_, err = file.WriteString(fmt.Sprintf(`INSTALLER_ID="%s"`, id))
-	if err != nil {
-		return nerr.Translate(err).Add(errMsg)
-	}
-	file.Close()
-
-	err = os.Setenv("INSTALLER_ID", id)
-	if err != nil {
-		return nerr.Translate(err).Add(errMsg)
+	if err := os.Setenv("INSTALLER_ID", id); err != nil {
+		return fmt.Errorf("failed to set INSTALLER_ID env var: %w", err)
 	}
 
+	slog.Info("Set INSTALLER_ID", slog.String("installer_id", id))
 	return nil
 }

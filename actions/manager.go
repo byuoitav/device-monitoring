@@ -2,11 +2,11 @@ package actions
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"sync"
 
 	"github.com/byuoitav/common/db/couch"
-	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/shipwright/actions"
 )
@@ -42,7 +42,8 @@ func GetConfig() *actions.ActionConfig {
 	db := couch.NewDB(os.Getenv("DB_ADDRESS"), os.Getenv("DB_USERNAME"), os.Getenv("DB_PASSWORD"))
 
 	if len(systemID) == 0 {
-		log.L.Fatalf("failed to get action config: SYSTEM_ID not set")
+		slog.Error("failed to get action config: SYSTEM_ID not set")
+		// If the system ID is not set, we cannot proceed with fetching the action config.
 	}
 
 	// get device specific jobs
@@ -51,7 +52,8 @@ func GetConfig() *actions.ActionConfig {
 		if _, ok := err.(*couch.NotFound); ok {
 		} else if _, ok := err.(couch.NotFound); ok {
 		} else {
-			log.L.Fatalf("unable to get device monitoring actions: %s", err)
+			slog.Error("uable to get device monitoring actions", slog.String("error", err.Error()))
+			// If the system ID is not set, we cannot proceed with fetching the action config.
 		}
 	} else {
 		return &config
@@ -60,13 +62,19 @@ func GetConfig() *actions.ActionConfig {
 	// get the current device's type
 	dev, err := db.GetDevice(systemID)
 	if err != nil {
-		log.L.Fatalf("unable to get device monitoring actions: unable to get device type: %s", err)
+		slog.Error("unable to get device monitoring actions: unable to get device type",
+			slog.String("system_id", systemID),
+			slog.String("error", err.Error()),
+		)
 	}
 
 	// get the default actions for this device type
 	err = db.MakeRequest("GET", fmt.Sprintf("%v/%v", database, dev.Type.ID), "", nil, &config)
 	if err != nil {
-		log.L.Fatalf("unable to get device monitoring actions for device type '%s': %s", dev.Type.ID, err)
+		slog.Error("unable to get device monitoring actions for device type '%s'",
+			slog.String("device_type", dev.Type.ID),
+			slog.String("error", err.Error()),
+		)
 	}
 
 	return &config

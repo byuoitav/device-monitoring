@@ -5,26 +5,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 )
 
 // ServiceCheckConfig .
 type ServiceCheckConfig struct {
-	Name   string      `json:"name"`
-	URL    string      `json:"url"`
-	Method string      `json:"method"`
-	Body   interface{} `json:"body,omitempty"`
+	Name   string `json:"name"`
+	URL    string `json:"url"`
+	Method string `json:"method"`
+	Body   any    `json:"body,omitempty"`
 }
 
 // ServiceCheckResponse .
 type ServiceCheckResponse struct {
 	ServiceCheckConfig `json:"request"`
 
-	StatusCode int         `json:"status-code,omitempty"`
-	Error      string      `json:"error,omitempty"`
-	Body       interface{} `json:"response-body,omitempty"`
+	StatusCode int    `json:"status-code,omitempty"`
+	Error      string `json:"error,omitempty"`
+	Body       any    `json:"response-body,omitempty"`
 }
 
 // CheckServices .
@@ -86,7 +86,7 @@ func checkService(ctx context.Context, check ServiceCheckConfig) ServiceCheckRes
 
 	sresp.StatusCode = resp.StatusCode
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		sresp.Error = fmt.Sprintf("unable to read response body: %s", err)
 		return sresp

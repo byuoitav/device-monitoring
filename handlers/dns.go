@@ -4,14 +4,15 @@ import (
 	"net/http"
 	"os/exec"
 
-	"github.com/labstack/echo"
+	"github.com/gin-gonic/gin"
 )
 
-func FlushDNS(c echo.Context) error {
+func FlushDNS(c *gin.Context) {
 	cmd := exec.Command("sudo", "systemctl", "restart", "dnsmasq")
 	err := cmd.Run()
 	if err != nil {
-		return c.String(http.StatusInternalServerError, "failure")
+		c.String(http.StatusInternalServerError, "failed to flush DNS: %v", err)
+		return
 	}
-	return c.String(http.StatusOK, "success")
+	c.String(http.StatusOK, "DNS flushed successfully")
 }

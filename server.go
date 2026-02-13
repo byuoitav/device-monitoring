@@ -2,51 +2,162 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
-	"strings"
+	"os"
+	"path/filepath"
+	"time"
 
-	"github.com/byuoitav/common"
+	"github.com/byuoitav/auth/wso2"
 	"github.com/byuoitav/device-monitoring/actions"
+	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/messenger"
+	"github.com/byuoitav/device-monitoring/model"
+	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 	"github.com/spf13/pflag"
+
+	"github.com/byuoitav/device-monitoring/actions/gpio"
+	"github.com/lmittmann/tint"
 
 	_ "github.com/byuoitav/device-monitoring/actions/then"
 )
 
-var uiURL string
-
 func main() {
-	go actions.ActionManager().Start(context.TODO())
-	messenger.Get().Register(actions.ActionManager().EventStream)
+	// ===========================
+	// Flags (PRD required; STG optional)
+	// ===========================
+	// Flight-Deck REST API bases
+	prdAPIBase := pflag.String("fd-prd-api-base", "https://api.byu.edu/domains/av/flight-deck/v2", "Flight-Deck PRD API base")
+	stgAPIBase := pflag.String("fd-stg-api-base", "", "Flight-Deck STG API base (optional fallback)")
 
-	pflag.StringVar(&uiURL, "ui-url", "", "url to redirect to the ui")
+	// WSO2 issuer/gateway + OAuth client per env
+	prdGatewayURL := pflag.String("prd-gateway-url", "", "WSO2 PRD gateway URL (issuer/gateway base, e.g. https://api.byu.edu)")
+	prdClientID := pflag.String("prd-client-id", "", "WSO2 PRD client id")
+	prdClientSecret := pflag.String("prd-client-secret", "", "WSO2 PRD client secret")
+
+	stgGatewayURL := pflag.String("stg-gateway-url", "", "WSO2 STG gateway URL")
+	stgClientID := pflag.String("stg-client-id", "", "WSO2 STG client id")
+	stgClientSecret := pflag.String("stg-client-secret", "", "WSO2 STG client secret")
+
 	pflag.Parse()
-	// subscribe to something?
 
-	// server
+	// ---- Validate PRD flags (required) ----
+	if *prdGatewayURL == "" || *prdClientID == "" || *prdClientSecret == "" || *prdAPIBase == "" {
+		slog.Error("Missing required PRD flags. Provide: --prd-gateway-url --prd-client-id --prd-client-secret --fd-prd-api-base")
+		os.Exit(1)
+	}
+
+	// ===========================
+	// Logging
+	// ===========================
+	w := os.Stderr
+	handler := tint.NewHandler(w, &tint.Options{
+		Level:      slog.LevelDebug,
+		TimeFormat: time.Kitchen,
+		NoColor:    false,
+	})
+	slog.SetDefault(slog.New(handler))
+	slog.Info("Starting device-monitoring server")
+
+	// ===========================
+	// External deps checks
+	// ===========================
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := couchdb.ValidateConnection(ctx); err != nil {
+		slog.Error("Failed to connect to CouchDB", slog.Any("error", err))
+		os.Exit(1)
+	}
+	slog.Info("Successfully connected to CouchDB")
+
+	// ===========================
+	// Initialize Flight-Deck clients for RefreshContainers
+	// ===========================
+	fdCfg := handlers.FDConfig{
+		PRD: handlers.FDEnvConfig{
+			APIBase:      *prdAPIBase,    // e.g. https://api.byu.edu/domains/av/flight-deck/v2
+			GatewayURL:   *prdGatewayURL, // e.g. https://api.byu.edu
+			ClientID:     *prdClientID,
+			ClientSecret: *prdClientSecret,
+			// Scopes: []string{"flight-deck.refloat"}, // uncomment if your wso2.Client needs explicit scopes
+		},
+	}
+
+	// Wire STG only if all four provided
+	if *stgAPIBase != "" && *stgGatewayURL != "" && *stgClientID != "" && *stgClientSecret != "" {
+		fdCfg.STG = handlers.FDEnvConfig{
+			APIBase:      *stgAPIBase,
+			GatewayURL:   *stgGatewayURL,
+			ClientID:     *stgClientID,
+			ClientSecret: *stgClientSecret,
+		}
+	}
+
+	if err := handlers.InitFlightDeck(fdCfg); err != nil {
+		slog.Error("InitFlightDeck failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	// Keep legacy global WSO2 client (PRD) for other handlers that still reference handlers.WSO2Client
+	handlers.WSO2Client = *wso2.New(*prdClientID, *prdClientSecret, *prdGatewayURL, "device-monitoring")
+
+	pins, err := handlers.LoadPinsFromJSON(couchdb.GetMonitoringConfig(ctx, ""))
+	if err != nil {
+		slog.Error("Failed to load GPIO pins from JSON", slog.Any("error", err))
+	} else {
+		gpio.SetPins(pins)
+		gpio.StartAllMonitors()
+		time.Sleep(250 * time.Millisecond) // give monitors a moment to start and read initial states
+		slog.Info("GPIO monitors started", slog.Int("pinCount", len(pins)))
+	}
+
+	// ===========================
+	// Start action manager
+	// ===========================
+	go actions.ActionManager().Start(context.TODO())
+	messenger.Get().Register(model.ChanEventConverter(actions.ActionManager().EventStream))
+
+	// ===========================
+	// Gin router
+	// ===========================
 	port := ":10000"
-	router := common.NewRouter()
-
-	// remove this eventually
-	// redirect from /dash to /dashboard
-	router.GET("/dash", func(context echo.Context) error {
-		return context.Redirect(http.StatusMovedPermanently, "/dashboard")
+	router := gin.New()
+	router.Use(gin.Logger(), gin.Recovery())
+	router.Use(func(c *gin.Context) {
+		// Basic CORS for the web dashboard calls.
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
 	})
 
-	router.GET("/", func(context echo.Context) error {
-		return context.Redirect(http.StatusMovedPermanently, "/dashboard")
+	// redirects
+	router.GET("/dash", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard") })
+	router.GET("/", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard") })
+
+	// static dashboard
+	router.Static("/dashboard", "./dashboard")
+
+	// SPA fallback under /dashboard
+	router.NoRoute(func(c *gin.Context) {
+		if len(c.Request.URL.Path) >= 10 && c.Request.URL.Path[:10] == "/dashboard" {
+			c.File(filepath.Join("dashboard", "index.html"))
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
 	})
 
-	// static webpages
-	router.Group("/dashboard", middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:   "dashboard",
-		Index:  "index.html",
-		HTML5:  true,
-		Browse: true,
-	}))
+	// health
+	router.GET("/ping", func(c *gin.Context) {
+		c.String(http.StatusOK, "Don't meddle in the affairs of Wizards, for they are subtle and quick to angereth.")
+	})
 
 	// device info endpoints
 	router.GET("/device", handlers.GetDeviceInfo)
@@ -57,6 +168,7 @@ func main() {
 	router.GET("/device/dhcp", handlers.GetDHCPState)
 	router.GET("/device/screenshot", handlers.GetScreenshot)
 	router.GET("/device/hardwareinfo", handlers.HardwareInfo)
+	router.GET("/device/divider")
 	router.PUT("/device/health", handlers.GetServiceHealth)
 
 	// room info endpoints
@@ -64,10 +176,9 @@ func main() {
 	router.GET("/room/state", handlers.RoomState)
 	router.GET("/room/activesignal", handlers.ActiveSignal)
 	router.GET("/room/hardwareinfo", handlers.DeviceHardwareInfo)
-	router.GET("/room/viainfo", handlers.ViaInfo)
 	router.GET("/room/health", handlers.RoomHealth)
 
-	// action endpoints
+	// actions
 	router.PUT("/device/reboot", handlers.RebootPi)
 	router.PUT("/device/dhcp/:state", handlers.SetDHCPState)
 	router.POST("/event", handlers.SendEvent)
@@ -75,41 +186,37 @@ func main() {
 	// divider sensors
 	router.GET("/divider/state", handlers.GetDividerState)
 	router.GET("/divider/preset/:hostname", handlers.PresetForHostname)
+	router.GET("/divider/pins/:systemID", handlers.GetDividerPins)
 
-	// flush dns cache
+	// action manager
+	router.GET("/actions", func(c *gin.Context) { c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Info)) })
+	router.GET("/actions/trigger/:trigger", func(c *gin.Context) {
+		c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Config.ActionsByTrigger))
+	})
+
+	// utilities
 	router.GET("/dns", handlers.FlushDNS)
+	router.GET("/resyncDB", handlers.ResyncDB)
+	router.GET("/refreshContainers", handlers.RefreshContainers) // hardened handler
 
-	router.GET("/ui", redirectHandler)
+	// API group
+	api := router.Group("/api")
+	api.GET("/v1/monitoring", handlers.GetDeviceHealth)
 
-	/*
-		// test mode endpoints
-		// router.GET("/maintenance", handlers.IsInMaintMode)
-		// router.PUT("/maintenance", handlers.ToggleMaintMode)
-
-		// provisioning endpoints
-		router.GET("/provisioning/ws", socket.UpgradeToWebsocket(provisioning.SocketManager()))
-		router.GET("/provisioning/id", handlers.GetProvisioningID)
-	*/
-
-	router.GET("/actions", actions.ActionManager().Info)
-	router.GET("/actions/trigger/:trigger", actions.ActionManager().Config.ActionsByTrigger)
-
-	server := http.Server{
-		Addr:           port,
-		MaxHeaderBytes: 1024 * 10,
-	}
-	router.StartServer(&server)
+	// run!
+	router.Run(port)
 }
 
-func redirectHandler(ctx echo.Context) error {
-	if uiURL != "" {
-		return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+uiURL)
+// echoToGin adapts an Echo handler to a Gin handler (this is hacky and needs to be fixed)
+func echoToGin(eh func(echo.Context) error) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		eCtx := echo.New().NewContext(c.Request, c.Writer)
+		for _, param := range c.Params {
+			eCtx.SetParamNames(param.Key)
+			eCtx.SetParamValues(param.Value)
+		}
+		if err := eh(eCtx); err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+		}
 	}
-
-	hostname := strings.Split(ctx.Request().Host, ":")
-	if len(hostname) == 0 {
-		return ctx.Redirect(http.StatusTemporaryRedirect, "/dashboard")
-	}
-
-	return ctx.Redirect(http.StatusTemporaryRedirect, "http://"+hostname[0]+"/")
 }

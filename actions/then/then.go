@@ -7,10 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byuoitav/common/nerr"
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/device-monitoring/actions/activesignal"
-	"github.com/byuoitav/device-monitoring/actions/browser"
 	"github.com/byuoitav/device-monitoring/actions/gpio"
 	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/actions/ping"
@@ -22,28 +20,27 @@ import (
 )
 
 func init() {
-	then.Add("ping-devices", pingDevices)
-	then.Add("active-signal", activeSignal)
-	then.Add("device-health-check", deviceHealthCheck)
-	then.Add("service-health-check", serviceHealthCheck)
-	then.Add("state-update", stateUpdate)
-	then.Add("websocket-browser-check", websocketBrowserCheck)
+	then.Add("ping-devices", toThenFunc(pingDevices))
+	then.Add("active-signal", toThenFunc(activeSignal))
+	then.Add("device-health-check", toThenFunc(deviceHealthCheck))
+	then.Add("service-health-check", toThenFunc(serviceHealthCheck))
+	then.Add("state-update", toThenFunc(stateUpdate))
 
-	then.Add("hardware-info", hardwareInfo)
-	then.Add("device-hardware-info", deviceHardwareInfo)
-	then.Add("monitor-dividers", monitorDividerSensors)
-	then.Add("live-temperature-check", liveTemperatureCheck)
+	then.Add("hardware-info", toThenFunc(hardwareInfo))
+	then.Add("device-hardware-info", toThenFunc(deviceHardwareInfo))
+	then.Add("monitor-dividers", toThenFunc(monitorDividerSensors))
 }
 
-func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+// slog to zap logger
+func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
 	systemID, err := localsystem.SystemID()
 	if err != nil {
-		return err.Addf("unable to ping room")
+		return fmt.Errorf("unable to ping devices: %w", err)
 	}
 
 	roomID, err := localsystem.RoomID()
 	if err != nil {
-		return err.Addf("unable to ping devices")
+		return fmt.Errorf("unable to ping devices: %w", err)
 	}
 	roomInfo := events.GenerateBasicRoomInfo(roomID)
 
@@ -54,9 +51,9 @@ func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr
 	results, err := ping.Room(ctx, roomID, ping.Config{
 		Count: 3,
 		Delay: 1 * time.Second,
-	}, log)
+	}, ZapSugaredToSlog(log))
 	if err != nil {
-		return err.Addf("unable to ping devices")
+		return fmt.Errorf("unable to ping devices: %w", err)
 	}
 
 	// push up results
@@ -91,10 +88,10 @@ func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr
 	return nil
 }
 
-func activeSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+func activeSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
 	systemID, err := localsystem.SystemID()
 	if err != nil {
-		return err.Addf("unable to get active signal")
+		return fmt.Errorf("unable to get active signal: %w", err)
 	}
 
 	// timeout if this takes longer than 30 seconds
@@ -103,7 +100,7 @@ func activeSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) *ner
 
 	active, err := activesignal.GetMap(ctx)
 	if err != nil {
-		return err.Addf("unable to get active signal")
+		return fmt.Errorf("unable to get active signal: %w", err)
 	}
 
 	// key is deviceID, value is true/false
@@ -126,15 +123,15 @@ func activeSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) *ner
 	return nil
 }
 
-func deviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+func deviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
 	systemID, err := localsystem.SystemID()
 	if err != nil {
-		return err.Addf("unable to get active signal")
+		return fmt.Errorf("unable to get active signal: %w", err)
 	}
 
 	roomID, err := localsystem.RoomID()
 	if err != nil {
-		return err.Addf("unable to get active signal")
+		return fmt.Errorf("unable to get active signal: %w", err)
 	}
 	roomInfo := events.GenerateBasicRoomInfo(roomID)
 
@@ -144,7 +141,7 @@ func deviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger)
 
 	statuses, err := health.GetDeviceAPIHealth(ctx)
 	if err != nil {
-		return err.Addf("unable to get active signal")
+		return fmt.Errorf("unable to get device health: %w", err)
 	}
 
 	for id, status := range statuses {
@@ -175,16 +172,16 @@ func deviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger)
 	return nil
 }
 
-func serviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+func serviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
 	var configs []health.ServiceCheckConfig
 	err := then.FillStructFromTemplate(ctx, string(with), &configs)
 	if err != nil {
 		return err.Addf("unable to check services")
 	}
 
-	systemID, err := localsystem.SystemID()
-	if err != nil {
-		return err.Addf("unable to check services")
+	systemID, gerr := localsystem.SystemID()
+	if gerr != nil {
+		return fmt.Errorf("unable to check services: %w", gerr)
 	}
 	deviceInfo := events.GenerateBasicDeviceInfo(systemID)
 
@@ -213,15 +210,15 @@ func serviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger
 	return nil
 }
 
-func stateUpdate(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+func stateUpdate(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
 	systemID, err := localsystem.SystemID()
 	if err != nil {
-		return err.Addf("unable to send state update")
+		return fmt.Errorf("unable to send state update: %w", err)
 	}
 
 	roomID, err := localsystem.RoomID()
 	if err != nil {
-		return err.Addf("unable to send state update")
+		return fmt.Errorf("unable to send state update: %w", err)
 	}
 
 	// timeout if this takes longer than 30 seconds
@@ -230,7 +227,7 @@ func stateUpdate(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr
 
 	state, err := roomstate.Get(ctx, roomID)
 	if err != nil {
-		return err.Addf("unable to send state update")
+		return fmt.Errorf("unable to get room state: %w", err)
 	}
 
 	// base event
@@ -315,16 +312,16 @@ func stateUpdate(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr
 	return nil
 }
 
-func monitorDividerSensors(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
+func monitorDividerSensors(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
 	if ctx != nil {
 		var pins []gpio.Pin
 		err := json.Unmarshal(with, &pins)
 		if err != nil {
-			return nerr.Translate(err).Addf("failed to run divider sensor action")
+			return fmt.Errorf("failed to unmarshal divider sensor pins: %w", err)
 		}
 
 		if len(pins) == 0 {
-			return nerr.Create("empty", "failed to run divider sensor action - no pins configured")
+			return fmt.Errorf("no pins to monitor")
 		}
 
 		gpio.SetPins(pins)
@@ -332,36 +329,6 @@ func monitorDividerSensors(ctx context.Context, with []byte, log *zap.SugaredLog
 		for i := range pins {
 			go pins[i].Monitor()
 		}
-	}
-
-	return nil
-}
-
-func websocketBrowserCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) *nerr.E {
-	var configs []browser.ServiceConfig
-	err := json.Unmarshal(with, &configs)
-	if err != nil {
-		return nerr.Translate(err).Addf("failed to check for websocket errors")
-	}
-
-	restarted, err := browser.CheckWebSocketCount(ctx, configs)
-	if err != nil {
-		return nerr.Translate(err).Addf("failed to check for websocket errors")
-	}
-
-	if restarted {
-		id := localsystem.MustSystemID()
-		deviceInfo := events.GenerateBasicDeviceInfo(id)
-		roomInfo := events.GenerateBasicRoomInfo(deviceInfo.RoomID)
-		var event events.Event
-		event.GeneratingSystem = id
-		event.Timestamp = time.Now()
-		event.EventTags = []string{events.DetailState}
-		event.TargetDevice = deviceInfo
-		event.AffectedRoom = roomInfo
-		event.Key = "chrome-restarted"
-		event.Value = "true"
-		messenger.Get().SendEvent(event)
 	}
 
 	return nil

@@ -3,9 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/byuoitav/common/db"
+	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/localsystem"
-	"github.com/labstack/echo"
+	"github.com/gin-gonic/gin"
 )
 
 // ViaData .
@@ -15,11 +15,12 @@ type ViaData struct {
 }
 
 // ViaInfo .
-func ViaInfo(ectx echo.Context) error {
+func ViaInfo(c *gin.Context) {
 	// get all of the via's out of couch
-	devices, err := db.GetDB().GetDevicesByRoomAndType(localsystem.MustRoomID(), "via-connect-pro")
+	devices, err := couchdb.GetDevicesByRoomAndType(c, localsystem.MustRoomID(), "via-connect-pro")
 	if err != nil {
-		return ectx.String(http.StatusInternalServerError, err.Error())
+		c.String(http.StatusInternalServerError, "failed to get via devices: %v", err)
+		return
 	}
 
 	ret := []ViaData{}
@@ -33,5 +34,5 @@ func ViaInfo(ectx echo.Context) error {
 		ret = append(ret, data)
 	}
 
-	return ectx.JSON(http.StatusOK, ret)
+	c.JSON(http.StatusOK, ret)
 }
