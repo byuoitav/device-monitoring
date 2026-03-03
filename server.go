@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -26,7 +25,6 @@ import (
 )
 
 func main() {
-	fmt.Println("Starting device-monitoring server v0.0.0...")
 	// ===========================
 	// Flags (PRD required; STG optional)
 	// ===========================
