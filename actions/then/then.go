@@ -20,6 +20,7 @@ import (
 )
 
 func init() {
+	fmt.Println("Initializing 'then' actions...")
 	then.Add("ping-devices", toThenFunc(pingDevices))
 	then.Add("active-signal", toThenFunc(activeSignal))
 	then.Add("device-health-check", toThenFunc(deviceHealthCheck))
@@ -71,6 +72,9 @@ func pingDevices(ctx context.Context, with []byte, log *zap.SugaredLogger) error
 			Key:          "online",
 			Data:         result,
 		}
+
+		fmt.Println("Ping result for device", id, "is", result)
+		fmt.Println(event)
 
 		switch {
 		case len(result.Error) > 0 || result.PacketsLost == result.PacketsSent:
@@ -124,6 +128,7 @@ func activeSignal(ctx context.Context, with []byte, log *zap.SugaredLogger) erro
 }
 
 func deviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger) error {
+	fmt.Println("Running device health check...")
 	systemID, err := localsystem.SystemID()
 	if err != nil {
 		return fmt.Errorf("unable to get active signal: %w", err)
@@ -166,6 +171,8 @@ func deviceHealthCheck(ctx context.Context, with []byte, log *zap.SugaredLogger)
 			event.Value = "No Response"
 		}
 
+		fmt.Println("Device health check for device", id, "is", event.Value)
+		fmt.Println(event)
 		messenger.Get().SendEvent(event)
 	}
 

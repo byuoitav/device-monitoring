@@ -1,23 +1,27 @@
 package messenger
 
 import (
+	"net/url"
+	"strings"
 	"sync"
 
 	mess "github.com/byuoitav/central-event-system/messenger"
-	"github.com/byuoitav/device-monitoring/model"
+	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/common/v2/events"
 )
 
 // Messenger .
 type Messenger struct {
 	*mess.Messenger
 
-	registered   []chan model.Event
+	registered   []chan events.Event
 	registeredMu sync.Mutex
+	once         sync.Once
 }
 
 // BuildMessenger .
-func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messenger, error) {
-	msgr, err := mess.BuildMessenger(hubAddress, connectionType, bufferSize)
+func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messenger, *nerr.E) {
+	msgr, err := mess.BuildMessenger(normalizeHubAddress(hubAddress), connectionType, bufferSize)
 
 	m := &Messenger{
 		Messenger: msgr,
@@ -32,7 +36,7 @@ func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messeng
 			// dump the event into each channel and skip ones that are full
 			for i := range m.registered {
 				select {
-				case m.registered[i] <- model.ConvertEvent(event):
+				case m.registered[i] <- event:
 				default:
 				}
 			}
@@ -44,8 +48,25 @@ func BuildMessenger(hubAddress, connectionType string, bufferSize int) (*Messeng
 	return m, err
 }
 
+func normalizeHubAddress(hubAddress string) string {
+	addr := strings.TrimSpace(hubAddress)
+	addr = strings.TrimSuffix(addr, "/")
+
+	if strings.HasPrefix(addr, "ws://") || strings.HasPrefix(addr, "wss://") {
+		parsed, err := url.Parse(addr)
+		if err == nil && parsed.Host != "" {
+			return parsed.Host
+		}
+
+		addr = strings.TrimPrefix(addr, "ws://")
+		addr = strings.TrimPrefix(addr, "wss://")
+	}
+
+	return addr
+}
+
 // Register .
-func (m *Messenger) Register(ch chan model.Event) {
+func (m *Messenger) Register(ch chan events.Event) {
 	m.registeredMu.Lock()
 	defer m.registeredMu.Unlock()
 
@@ -53,7 +74,7 @@ func (m *Messenger) Register(ch chan model.Event) {
 }
 
 // Deregister .
-func (m *Messenger) Deregister(ch chan model.Event) {
+func (m *Messenger) Deregister(ch chan events.Event) {
 	m.registeredMu.Lock()
 	defer m.registeredMu.Unlock()
 
