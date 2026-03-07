@@ -6,16 +6,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
+	"unsafe"
 
 	"github.com/byuoitav/auth/wso2"
 	"github.com/byuoitav/device-monitoring/actions"
 	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/handlers"
 	"github.com/byuoitav/device-monitoring/messenger"
-	"github.com/byuoitav/device-monitoring/model"
 	"github.com/gin-gonic/gin"
-	"github.com/labstack/echo"
 	"github.com/spf13/pflag"
 
 	"github.com/byuoitav/device-monitoring/actions/gpio"
@@ -118,7 +118,7 @@ func main() {
 	// Start action manager
 	// ===========================
 	go actions.ActionManager().Start(context.TODO())
-	messenger.Get().Register(model.ChanEventConverter(actions.ActionManager().EventStream))
+	messenger.Get().Register(actions.ActionManager().EventStream)
 
 	// ===========================
 	// Gin router
@@ -189,9 +189,42 @@ func main() {
 	router.GET("/divider/pins/:systemID", handlers.GetDividerPins)
 
 	// action manager
-	router.GET("/actions", func(c *gin.Context) { c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Info)) })
+	router.GET("/actions", func(c *gin.Context) {
+		am := actions.ActionManager()
+		reqsLen, reqsCap := 0, 0
+		managed := interface{}(nil)
+
+		if v, ok := readUnexportedField(am, "reqs"); ok && v.Kind() == reflect.Chan {
+			reqsLen = v.Len()
+			reqsCap = v.Cap()
+		}
+		if v, ok := readUnexportedField(am, "managedActions"); ok {
+			managed = v.Interface()
+		}
+
+		info := gin.H{
+			"config":  am.Config,
+			"workers": am.Workers,
+			"event-stream": gin.H{
+				"len": len(am.EventStream),
+				"cap": cap(am.EventStream),
+			},
+			"action-reqs": gin.H{
+				"len": reqsLen,
+				"cap": reqsCap,
+			},
+			"managed": managed,
+		}
+
+		c.JSON(http.StatusOK, info)
+	})
 	router.GET("/actions/trigger/:trigger", func(c *gin.Context) {
-		c.JSON(http.StatusOK, echoToGin(actions.ActionManager().Config.ActionsByTrigger))
+		am := actions.ActionManager()
+		if am.Config == nil {
+			c.JSON(http.StatusOK, []interface{}{})
+			return
+		}
+		c.JSON(http.StatusOK, am.Config.GetActionsByTrigger(c.Param("trigger")))
 	})
 
 	// utilities
@@ -207,16 +240,25 @@ func main() {
 	router.Run(port)
 }
 
-// echoToGin adapts an Echo handler to a Gin handler (this is hacky and needs to be fixed)
-func echoToGin(eh func(echo.Context) error) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		eCtx := echo.New().NewContext(c.Request, c.Writer)
-		for _, param := range c.Params {
-			eCtx.SetParamNames(param.Key)
-			eCtx.SetParamValues(param.Value)
-		}
-		if err := eh(eCtx); err != nil {
-			c.String(http.StatusInternalServerError, err.Error())
-		}
+// readUnexportedField uses reflection/unsafe to access unexported fields.
+// This is brittle; prefer a public accessor in shipwright when possible.
+func readUnexportedField(obj interface{}, name string) (reflect.Value, bool) {
+	v := reflect.ValueOf(obj)
+	if v.Kind() != reflect.Ptr || v.IsNil() {
+		return reflect.Value{}, false
 	}
+	elem := v.Elem()
+	if elem.Kind() != reflect.Struct {
+		return reflect.Value{}, false
+	}
+	field := elem.FieldByName(name)
+	if !field.IsValid() {
+		return reflect.Value{}, false
+	}
+	if field.CanInterface() {
+		return field, true
+	}
+	ptr := unsafe.Pointer(field.UnsafeAddr())
+	ro := reflect.NewAt(field.Type(), ptr).Elem()
+	return ro, true
 }
