@@ -43,7 +43,7 @@ func GetDeviceAPIHealth(ctx context.Context) (map[string]string, error) {
 
 	for _, dev := range devices {
 		if len(dev.Address) == 0 ||
-			dev.Address == "0.0.0.0" ||
+			strings.HasPrefix(dev.Address, "0.0.0.") ||
 			!dev.HasCommand(healthyCommandID) {
 			continue
 		}

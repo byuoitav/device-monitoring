@@ -112,6 +112,14 @@ func HostInfo() (map[string]interface{}, error) {
 	}
 	info["os"] = stat
 
+	piModel, osCodename := piModelInfo()
+	if piModel != "" {
+		info["pi-model"] = piModel
+	}
+	if osCodename != "" {
+		info["os-codename"] = osCodename
+	}
+
 	users, err := host.Users()
 	if err != nil {
 		slog.Error("failed to get host users", slog.Any("error", err))

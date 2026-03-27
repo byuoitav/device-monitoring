@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupDragScroll();
     populateHeaderDeviceName();
     await setupDividerSensorNav();
+    await loadVersion();
 
     const defaultNavItem = document.querySelector('.nav-item.nav-item-selected:not([hidden])') || document.querySelector('.nav-item:not([hidden])');
     if (defaultNavItem?.dataset.component) {
@@ -232,6 +233,22 @@ async function loadComponent(componentName, divQuerySelector = `.component-conta
         script.onerror = reject;
         document.body.appendChild(script);
     });
+}
+
+async function loadVersion() {
+    try {
+        const res = await fetch('version.json');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.version) {
+            const suffix = ` - ${data.version}`;
+            document.title += suffix;
+            const heading = document.querySelector('.heading');
+            if (heading) heading.textContent += suffix;
+        }
+    } catch (e) {
+        // version file not present in dev, ignore
+    }
 }
 
 async function populateHeaderDeviceName() {

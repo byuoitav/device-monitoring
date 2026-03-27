@@ -77,6 +77,7 @@ func GetDevicesByRoom(ctx context.Context, roomID string) ([]model.Device, error
 		"selector": map[string]any{
 			"_id": map[string]any{"$regex": pattern},
 		},
+		"limit": 1000,
 	}
 
 	rows := dbase.Find(ctx, query)

@@ -42,7 +42,7 @@ func GetDeviceHealth(ctx context.Context, roomID string) ([]HealthStatus, error)
 
 	for _, dev := range devices {
 		if len(dev.Address) == 0 ||
-			dev.Address == "0.0.0.0" ||
+			strings.HasPrefix(dev.Address, "0.0.0.") ||
 			!dev.HasCommand(healthCheckCmd) {
 			continue
 		}
