@@ -47,7 +47,7 @@ func RoomDevicesInfo(ctx context.Context) (map[string]model.HardwareInfo, error)
 	for i := range devices {
 		// skip the pi's
 		if devices[i].Type.ID == "Pi3" ||
-			devices[i].Address == "0.0.0.0" ||
+			strings.HasPrefix(devices[i].Address, "0.0.0.") ||
 			len(devices[i].Address) == 0 ||
 			!devices[i].HasCommand(hardwareInfoCommandID) {
 			slog.Debug("Skipping device", slog.Any("device", devices[i]))

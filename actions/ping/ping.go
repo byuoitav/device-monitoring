@@ -52,7 +52,7 @@ func Room(
 	// build the host list, skipping devices with no address
 	hosts := make([]Host, 0, len(devices))
 	for _, d := range devices {
-		if d.Address == "" || strings.EqualFold(d.Address, "0.0.0.0") {
+		if d.Address == "" || strings.HasPrefix(d.Address, "0.0.0.") {
 			continue
 		}
 		hosts = append(hosts, Host{ID: d.ID, Addr: d.Address})
