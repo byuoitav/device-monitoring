@@ -52,13 +52,13 @@ if ($BUILD_FLAGS) { $COMMON_BUILD_FLAGS += " $BUILD_FLAGS" }
 # =============================
 
 function All {
-    Write-Output "Running all: build-web then build-local"
+    Write-Host "Running all: build-web then build-local"
     Build-Web
     Build-Local
 }
 
 function Build-Local {
-    Write-Output "Building $NAME for linux/arm (GOARM=7) - override with GOOS/GOARCH/GOARM/CGO_ENABLED env vars as needed..."
+    Write-Host "Building $NAME for linux/arm (GOARM=7) - override with GOOS/GOARCH/GOARM/CGO_ENABLED env vars as needed..."
 
     if (-not (Test-Path -Path $BUILD_DIR)) {
         New-Item -Path $BUILD_DIR -ItemType Directory | Out-Null
@@ -75,7 +75,7 @@ function Build-Local {
         exit 1
     }
 
-    Write-Output "Build complete: $BIN_OUTPUT"
+    Write-Host "Build complete: $BIN_OUTPUT"
 
     # Restore env to Windows defaults
     Set-Item -Path env:GOOS        -Value "windows"
@@ -85,7 +85,7 @@ function Build-Local {
 
 function Build-Binaries {
     $PLATFORMS = @("linux/amd64", "linux/arm")
-    Write-Output "Building binaries for: $($PLATFORMS -join ', ')"
+    Write-Host "Building binaries for: $($PLATFORMS -join ', ')"
 
     if (-not (Test-Path -Path $BUILD_DIR)) {
         New-Item -Path $BUILD_DIR -ItemType Directory | Out-Null
@@ -97,8 +97,8 @@ function Build-Binaries {
         $ARCH = $parts[1]
         $OUT = "$BUILD_DIR/$NAME-$OS-$ARCH"
 
-        Write-Output "*****************************************"
-        Write-Output "Building for $OS/$ARCH => $OUT"
+        Write-Host "*****************************************"
+        Write-Host "Building for $OS/$ARCH => $OUT"
 
         Set-Item -Path env:CGO_ENABLED -Value $CGO_ENABLED
         Set-Item -Path env:GOOS        -Value $OS
@@ -118,7 +118,7 @@ function Build-Binaries {
         }
     }
 
-    Write-Output "All binaries built in ./$BUILD_DIR/"
+    Write-Host "All binaries built in ./$BUILD_DIR/"
 
     # Restore env to Windows defaults
     Set-Item -Path env:GOOS  -Value "windows"
@@ -127,7 +127,7 @@ function Build-Binaries {
 }
 
 function Build-Web {
-    Write-Output "Preparing static dashboard assets..."
+    Write-Host "Preparing static dashboard assets..."
 
     $dest = "files/$NG1"
     if (-not (Test-Path -Path $dest)) {
@@ -143,30 +143,30 @@ function Build-Web {
         $excludePath = Join-Path $dest $dir
         if (Test-Path -Path $excludePath) {
             Remove-Item -Path $excludePath -Recurse -Force
-            Write-Output "  Removed $excludePath"
+            Write-Host "  Removed $excludePath"
         }
     }
 
-    Write-Output "Dashboard assets ready in $dest"
+    Write-Host "Dashboard assets ready in $dest"
 }
 
 function Clean {
-    Write-Output "Cleaning build artifacts..."
+    Write-Host "Cleaning build artifacts..."
 
     $toRemove = @($BUILD_DIR, "files", "vendor")
     foreach ($item in $toRemove) {
         if (Test-Path -Path $item) {
             Remove-Item -Path $item -Recurse -Force
-            Write-Output "  Removed $item/"
+            Write-Host "  Removed $item/"
         }
     }
 
     Get-ChildItem -Filter "*.tar.gz" | Remove-Item -Force
-    Write-Output "Clean complete."
+    Write-Host "Clean complete."
 }
 
 function Deps {
-    Write-Output "Downloading Go dependencies..."
+    Write-Host "Downloading Go dependencies..."
     Invoke-Expression "go mod download"
 }
 
@@ -200,28 +200,68 @@ function Package {
 
 function Deploy-Local {
     $tarball = Package -TagName $TAG
-    Write-Output "Tarball created locally: $tarball"
+    Write-Host "Tarball created locally: $tarball"
 }
 
 function Deploy {
     $tarball = Package -TagName $TAG
 
-    # Upload as a GitHub release asset using the gh CLI
-    Write-Output "Uploading $tarball to GitHub release '$TAG'..."
-    $releaseExists = gh release view $TAG --repo "$OWNER/$NAME" 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Output "Release '$TAG' not found - creating it..."
-        gh release create $TAG $tarball --repo "$OWNER/$NAME" --title $TAG --notes ""
-    }
-    else {
-        gh release upload $TAG $tarball --repo "$OWNER/$NAME" --clobber
-    }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "GitHub release upload failed"
+    # Require a GitHub token
+    $token = $env:GITHUB_TOKEN
+    if (-not $token) {
+        Write-Error "GITHUB_TOKEN environment variable is not set. Export it before running deploy."
         exit 1
     }
 
-    Write-Output "Deploy complete."
+    $headers = @{
+        Authorization          = "Bearer $token"
+        Accept                 = "application/vnd.github+json"
+        "X-GitHub-Api-Version" = "2022-11-28"
+    }
+
+    # Check whether the release already exists
+    Write-Host "Uploading $tarball to GitHub release '$TAG'..."
+    $releaseId = $null
+    try {
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$OWNER/$NAME/releases/tags/$TAG" `
+            -Headers $headers -Method Get -ErrorAction Stop
+        $releaseId = $release.id
+        Write-Host "Release '$TAG' already exists (id=$releaseId)."
+    }
+    catch {
+        if ($_.Exception.Response.StatusCode.value__ -eq 404) {
+            Write-Host "Release '$TAG' not found - creating it..."
+            $body = @{ tag_name = $TAG; name = $TAG; body = "" } | ConvertTo-Json
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$OWNER/$NAME/releases" `
+                -Headers $headers -Method Post -Body $body -ContentType "application/json" -ErrorAction Stop
+            $releaseId = $release.id
+            Write-Host "Created release id=$releaseId."
+        }
+        else {
+            Write-Error "Failed to check release: $_"
+            exit 1
+        }
+    }
+
+    # Delete existing asset with the same name so we can re-upload (clobber)
+    $assets = Invoke-RestMethod -Uri "https://api.github.com/repos/$OWNER/$NAME/releases/$releaseId/assets" `
+        -Headers $headers -Method Get
+    $assetName = Split-Path $tarball -Leaf
+    $existing = $assets | Where-Object { $_.name -eq $assetName }
+    if ($existing) {
+        Write-Host "Deleting existing asset '$assetName'..."
+        Invoke-RestMethod -Uri "https://api.github.com/repos/$OWNER/$NAME/releases/assets/$($existing.id)" `
+            -Headers $headers -Method Delete | Out-Null
+    }
+
+    # Upload the tarball
+    $uploadUrl = "https://uploads.github.com/repos/$OWNER/$NAME/releases/$releaseId/assets?name=$assetName"
+    $fileBytes = [System.IO.File]::ReadAllBytes((Resolve-Path $tarball).Path)
+    Write-Host "Uploading $assetName ($([math]::Round($fileBytes.Length/1MB, 2)) MB)..."
+    Invoke-RestMethod -Uri $uploadUrl -Headers $headers -Method Post `
+        -Body $fileBytes -ContentType "application/octet-stream" -ErrorAction Stop | Out-Null
+
+    Write-Host "Deploy complete: $assetName uploaded to release '$TAG'."
 }
 
 # =============================
@@ -247,6 +287,6 @@ switch ($COMMAND) {
         Write-Output "  clean           Remove dist/, files/, vendor/, *.tar.gz"
         Write-Output "  deps            Download Go module dependencies"
         Write-Output "  deploy-local    Package into a local tar.gz without uploading"
-        Write-Output "  deploy          Package and upload as a GitHub release (requires gh CLI)"
+        Write-Output "  deploy          Package and upload as a GitHub release (requires GITHUB_TOKEN env var)"
     }
 }
