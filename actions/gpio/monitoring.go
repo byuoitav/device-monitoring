@@ -14,6 +14,17 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	// defaultDebounceDuration is the minimum time the pin must hold a new state
+	// before accepting the change. Used as fallback when ReadsBeforeChange is 0.
+	defaultDebounceDuration = 2 * time.Second
+
+	// changeCooldown is the minimum time between firing change requests.
+	// After the first change fires, subsequent changes are suppressed until
+	// this duration elapses. Internal state (p.Connected) still updates.
+	changeCooldown = 2 * time.Minute
+)
+
 // Pin represents a GPIO pin configuration.
 type Pin struct {
 	Pin  int  `json:"pin"`
@@ -58,6 +69,16 @@ func (p *Pin) Monitor() {
 		td = 5 * time.Minute
 	}
 
+	// If ReadsBeforeChange is not set in config, compute from defaultDebounceDuration
+	if p.ReadsBeforeChange <= 0 {
+		p.ReadsBeforeChange = int(defaultDebounceDuration / rd)
+		if p.ReadsBeforeChange < 1 {
+			p.ReadsBeforeChange = 1
+		}
+		log.Info().Msgf("pin %d: reads-before-change not set, defaulting to %d (%.0fs debounce at %v interval)",
+			p.Pin, p.ReadsBeforeChange, defaultDebounceDuration.Seconds(), rd)
+	}
+
 	// Initial read
 	if val, err := gpio.Read(); err == nil {
 		connected := val == 1
@@ -70,6 +91,8 @@ func (p *Pin) Monitor() {
 	}
 
 	newStateCount := 0
+	var lastChangeTime time.Time
+	var stateWhenCooldownStarted bool
 	readTick := time.NewTicker(rd)
 	trueUpTick := time.NewTicker(td)
 
@@ -96,17 +119,49 @@ func (p *Pin) Monitor() {
 				newStateCount++
 				if newStateCount >= p.ReadsBeforeChange {
 					newStateCount = 0
+
+					// Always update internal state so preset queries stay accurate
 					mu.Lock()
 					p.Connected = connected
 					mu.Unlock()
 
-					log.Info().Msgf("pin %d state changed -> %v", p.Pin, connected)
+					// Only fire change requests if cooldown has elapsed
+					if lastChangeTime.IsZero() || time.Since(lastChangeTime) >= changeCooldown {
+						lastChangeTime = time.Now()
+						stateWhenCooldownStarted = connected
+						log.Info().Msgf("pin %d state changed -> %v, firing change requests", p.Pin, connected)
+						for i := range p.ChangeRequests {
+							go p.ChangeRequests[i].execute(p)
+						}
+					} else {
+						log.Info().Msgf("pin %d state changed -> %v, but cooldown active (%v remaining) — suppressing change requests",
+							p.Pin, connected, changeCooldown-time.Since(lastChangeTime))
+					}
+				}
+			} else {
+				// Pin matches current state — reset debounce counter
+				newStateCount = 0
+			}
+
+			// Cooldown expiry check: if cooldown just elapsed, compare current state
+			// to what it was when the cooldown started.
+			if !lastChangeTime.IsZero() && time.Since(lastChangeTime) >= changeCooldown {
+				mu.RLock()
+				curState := p.Connected
+				mu.RUnlock()
+				if curState != stateWhenCooldownStarted {
+					log.Info().Msgf("pin %d: cooldown expired, state is %v (was %v) — firing and restarting cooldown",
+						p.Pin, curState, stateWhenCooldownStarted)
+					lastChangeTime = time.Now()
+					stateWhenCooldownStarted = curState
 					for i := range p.ChangeRequests {
 						go p.ChangeRequests[i].execute(p)
 					}
+				} else {
+					log.Info().Msgf("pin %d: cooldown expired, state unchanged — clearing cooldown", p.Pin)
+					lastChangeTime = time.Time{}
 				}
 			}
-			// NOTE: parity with old behavior — we do NOT reset newStateCount when equal
 
 		case <-trueUpTick.C:
 			for i := range p.TrueUpRequests {
