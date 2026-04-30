@@ -92,6 +92,7 @@ func (p *Pin) Monitor() {
 
 	newStateCount := 0
 	var lastChangeTime time.Time
+	var stateWhenCooldownStarted bool
 	readTick := time.NewTicker(rd)
 	trueUpTick := time.NewTicker(td)
 
@@ -127,6 +128,7 @@ func (p *Pin) Monitor() {
 					// Only fire change requests if cooldown has elapsed
 					if lastChangeTime.IsZero() || time.Since(lastChangeTime) >= changeCooldown {
 						lastChangeTime = time.Now()
+						stateWhenCooldownStarted = connected
 						log.Info().Msgf("pin %d state changed -> %v, firing change requests", p.Pin, connected)
 						for i := range p.ChangeRequests {
 							go p.ChangeRequests[i].execute(p)
@@ -139,6 +141,26 @@ func (p *Pin) Monitor() {
 			} else {
 				// Pin matches current state — reset debounce counter
 				newStateCount = 0
+			}
+
+			// Cooldown expiry check: if cooldown just elapsed, compare current state
+			// to what it was when the cooldown started.
+			if !lastChangeTime.IsZero() && time.Since(lastChangeTime) >= changeCooldown {
+				mu.RLock()
+				curState := p.Connected
+				mu.RUnlock()
+				if curState != stateWhenCooldownStarted {
+					log.Info().Msgf("pin %d: cooldown expired, state is %v (was %v) — firing and restarting cooldown",
+						p.Pin, curState, stateWhenCooldownStarted)
+					lastChangeTime = time.Now()
+					stateWhenCooldownStarted = curState
+					for i := range p.ChangeRequests {
+						go p.ChangeRequests[i].execute(p)
+					}
+				} else {
+					log.Info().Msgf("pin %d: cooldown expired, state unchanged — clearing cooldown", p.Pin)
+					lastChangeTime = time.Time{}
+				}
 			}
 
 		case <-trueUpTick.C:
