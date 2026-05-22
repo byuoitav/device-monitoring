@@ -86,7 +86,7 @@ func isDeviceAPIHealthy(ctx context.Context, device model.Device) string {
 	}
 	defer resp.Body.Close()
 
-	bytes, gerr := io.ReadAll(resp.Body)
+	bytes, gerr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if gerr != nil {
 		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}

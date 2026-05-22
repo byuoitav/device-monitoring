@@ -111,7 +111,7 @@ func getHardwareInfo(ctx context.Context, device model.Device) model.HardwareInf
 	}()
 
 	// read and parse
-	body, readErr := io.ReadAll(resp.Body)
+	body, readErr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if readErr != nil {
 		slog.Warn("failed to read hardware info response",
 			slog.String("device", device.ID),

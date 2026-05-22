@@ -58,6 +58,9 @@ func RoomHealth(c *gin.Context) {
 
 // RoomState returns the AV‑API state of the room.
 func RoomState(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+	defer cancel()
+
 	roomID, err := localsystem.RoomID()
 	if err != nil {
 		slog.Error("failed to get room ID", slog.Any("error", err))
@@ -65,7 +68,7 @@ func RoomState(c *gin.Context) {
 		return
 	}
 
-	state, err := roomstate.Get(c.Request.Context(), roomID)
+	state, err := roomstate.Get(ctx, roomID)
 	if err != nil {
 		slog.Error("failed to get room state", slog.Any("error", err))
 		c.String(http.StatusInternalServerError, err.Error())
@@ -77,7 +80,10 @@ func RoomState(c *gin.Context) {
 
 // ActiveSignal returns the current active inputs in the room.
 func ActiveSignal(c *gin.Context) {
-	activeMap, err := activesignal.GetMap(c.Request.Context())
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+	defer cancel()
+
+	activeMap, err := activesignal.GetMap(ctx)
 	if err != nil {
 		slog.Error("failed to get active signals", slog.Any("error", err))
 		c.String(http.StatusInternalServerError, err.Error())
@@ -89,7 +95,10 @@ func ActiveSignal(c *gin.Context) {
 
 // DeviceHardwareInfo returns hardware info for all devices in the room.
 func DeviceHardwareInfo(c *gin.Context) {
-	info, err := hardwareinfo.RoomDevicesInfo(c.Request.Context())
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+	defer cancel()
+
+	info, err := hardwareinfo.RoomDevicesInfo(ctx)
 	if err != nil {
 		slog.Error("failed to get device hardware info", slog.Any("error", err))
 		c.String(http.StatusInternalServerError, err.Error())

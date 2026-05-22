@@ -129,6 +129,12 @@ func (p *Pinger) Ping(ctx context.Context, config Config, hosts ...Host) map[str
 		p.hostsMu.Unlock()
 
 		go func(hh *host) {
+			defer func() {
+				p.hostsMu.Lock()
+				delete(p.hosts, hh.ip.String())
+				p.hostsMu.Unlock()
+			}()
+
 			result := p.ping(ctx, hh, config)
 
 			resultsMu.Lock()
