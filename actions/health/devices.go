@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/localsystem"
@@ -19,7 +20,12 @@ const (
 	Healthy = "healthy"
 
 	healthyCommandID = "HealthCheck"
+	maxHealthBody    = 64 << 10
 )
+
+var deviceHealthHTTPClient = &http.Client{
+	Timeout: 5 * time.Second,
+}
 
 // GetDeviceAPIHealth queries all devices in the current room and returns a map
 // of deviceID -> health status string, or an error.
@@ -74,19 +80,22 @@ func isDeviceAPIHealthy(ctx context.Context, device model.Device) string {
 	// fill in the address
 	address = strings.Replace(address, ":address", device.Address, 1)
 
-	req, gerr := http.NewRequest("GET", address, nil)
+	req, gerr := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
 	if gerr != nil {
 		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}
 
-	req = req.WithContext(ctx)
-	resp, gerr := http.DefaultClient.Do(req)
+	resp, gerr := deviceHealthHTTPClient.Do(req)
 	if gerr != nil {
 		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}
 	defer resp.Body.Close()
 
+<<<<<<< HEAD
 	bytes, gerr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+=======
+	bytes, gerr := io.ReadAll(io.LimitReader(resp.Body, maxHealthBody))
+>>>>>>> 8f6d957 (adding context to health check requests with timeouts)
 	if gerr != nil {
 		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}
