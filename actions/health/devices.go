@@ -91,11 +91,7 @@ func isDeviceAPIHealthy(ctx context.Context, device model.Device) string {
 	}
 	defer resp.Body.Close()
 
-<<<<<<< HEAD
-	bytes, gerr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-=======
 	bytes, gerr := io.ReadAll(io.LimitReader(resp.Body, maxHealthBody))
->>>>>>> 8f6d957 (adding context to health check requests with timeouts)
 	if gerr != nil {
 		return fmt.Sprintf("unable to check if API is healthy: %s", gerr.Error())
 	}

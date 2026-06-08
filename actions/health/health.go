@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/byuoitav/device-monitoring/couchdb"
 	"github.com/byuoitav/device-monitoring/model"
@@ -18,8 +17,6 @@ const (
 	healthyStatus  = "healthy"
 	healthCheckCmd = "HealthCheck"
 )
-
-var healthHTTPClient = &http.Client{Timeout: 10 * time.Second}
 
 // HealthStatus is the JSON‑serializable result for one device.
 type HealthStatus struct {
@@ -75,22 +72,14 @@ func probe(ctx context.Context, device model.Device) HealthStatus {
 	}
 	// fill in the address
 	address = strings.Replace(address, ":address", device.Address, 1)
-<<<<<<< HEAD
-	req, err := http.NewRequestWithContext(ctx, "GET", address, nil)
-=======
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
->>>>>>> 8f6d957 (adding context to health check requests with timeouts)
 	if err != nil {
 		hs.Status = "error"
 		hs.Error = fmt.Sprintf("unable to create request: %s", err.Error())
 		return hs
 	}
 	req.Header.Set("User-Agent", "Device Monitoring Health Check")
-<<<<<<< HEAD
-	resp, err := healthHTTPClient.Do(req)
-=======
 	resp, err := deviceHealthHTTPClient.Do(req)
->>>>>>> 8f6d957 (adding context to health check requests with timeouts)
 	if err != nil {
 		hs.Status = "error"
 		hs.Error = fmt.Sprintf("unable to check health: %s", err.Error())
@@ -98,11 +87,7 @@ func probe(ctx context.Context, device model.Device) HealthStatus {
 	}
 	defer resp.Body.Close()
 
-<<<<<<< HEAD
-	bytes, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-=======
 	bytes, err := io.ReadAll(io.LimitReader(resp.Body, maxHealthBody))
->>>>>>> 8f6d957 (adding context to health check requests with timeouts)
 	if err != nil {
 		hs.Status = "error"
 		hs.Error = fmt.Sprintf("unable to read response: %s", err.Error())
