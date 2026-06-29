@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"text/template"
 	"time"
 
@@ -19,10 +20,15 @@ const (
 	// before accepting the change. Used as fallback when ReadsBeforeChange is 0.
 	defaultDebounceDuration = 2 * time.Second
 
-	// changeCooldown is the minimum time between firing change requests.
+	// defaultChangeCooldown is the minimum time between firing change requests.
 	// After the first change fires, subsequent changes are suppressed until
 	// this duration elapses. Internal state (p.Connected) still updates.
-	changeCooldown = 2 * time.Minute
+	defaultChangeCooldown = 15 * time.Second
+)
+
+const (
+	envDefaultDebounceDuration = "GPIO_DEFAULT_DEBOUNCE_DURATION"
+	envChangeCooldown          = "GPIO_CHANGE_COOLDOWN"
 )
 
 // Pin represents a GPIO pin configuration.
@@ -68,15 +74,17 @@ func (p *Pin) Monitor() {
 	if err != nil {
 		td = 5 * time.Minute
 	}
+	debounceDuration := durationFromEnv(envDefaultDebounceDuration, defaultDebounceDuration)
+	changeCooldown := durationFromEnv(envChangeCooldown, defaultChangeCooldown)
 
-	// If ReadsBeforeChange is not set in config, compute from defaultDebounceDuration
+	// If ReadsBeforeChange is not set in config, compute from the debounce duration.
 	if p.ReadsBeforeChange <= 0 {
-		p.ReadsBeforeChange = int(defaultDebounceDuration / rd)
+		p.ReadsBeforeChange = int(debounceDuration / rd)
 		if p.ReadsBeforeChange < 1 {
 			p.ReadsBeforeChange = 1
 		}
 		log.Info().Msgf("pin %d: reads-before-change not set, defaulting to %d (%.0fs debounce at %v interval)",
-			p.Pin, p.ReadsBeforeChange, defaultDebounceDuration.Seconds(), rd)
+			p.Pin, p.ReadsBeforeChange, debounceDuration.Seconds(), rd)
 	}
 
 	// Initial read
@@ -169,6 +177,21 @@ func (p *Pin) Monitor() {
 			}
 		}
 	}
+}
+
+func durationFromEnv(name string, fallback time.Duration) time.Duration {
+	raw := os.Getenv(name)
+	if raw == "" {
+		return fallback
+	}
+
+	parsed, err := time.ParseDuration(raw)
+	if err != nil {
+		log.Warn().Err(err).Str("env", name).Str("value", raw).Dur("fallback", fallback).Msg("invalid duration environment variable")
+		return fallback
+	}
+
+	return parsed
 }
 
 func (r *request) execute(pin *Pin) {
