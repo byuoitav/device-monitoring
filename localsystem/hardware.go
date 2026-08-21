@@ -29,12 +29,40 @@ const (
 	temperatureRootPath = "/sys/class/thermal"
 	uSleepCheckInterval = 3 * time.Second
 	uSleepResetInterval = 5 * time.Minute
+	dockerInfoTimeout   = 5 * time.Second
 )
 
 var (
 	avgProcsInit     sync.Once
 	avgProcsInUSleep float64
+	dockerClientInit sync.Once
+	dockerClient     *client.Client
+	dockerClientErr  error
 )
+
+func getDockerClient() (*client.Client, error) {
+	dockerClientInit.Do(func() {
+		cli, err := client.NewClientWithOpts(client.FromEnv)
+		if err != nil {
+			dockerClientErr = err
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), dockerInfoTimeout)
+		defer cancel()
+		cli.NegotiateAPIVersion(ctx)
+		dockerClient = cli
+	})
+
+	if dockerClientErr != nil {
+		return nil, dockerClientErr
+	}
+	if dockerClient == nil {
+		return nil, fmt.Errorf("docker client not initialized")
+	}
+
+	return dockerClient, nil
+}
 
 // CPUInfo returns per-CPU and load-average stats.
 func CPUInfo() (map[string]any, error) {
@@ -203,6 +231,8 @@ func NetworkInfo() (map[string]interface{}, error) {
 // DockerInfo returns Docker stats and the count of running containers.
 func DockerInfo() (map[string]interface{}, error) {
 	info := make(map[string]interface{})
+	ctx, cancel := context.WithTimeout(context.Background(), dockerInfoTimeout)
+	defer cancel()
 
 	stats, err := dockerstat.GetDockerStat()
 	if err != nil {
@@ -211,14 +241,13 @@ func DockerInfo() (map[string]interface{}, error) {
 	}
 	info["stats"] = stats
 
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := getDockerClient()
 	if err != nil {
 		slog.Error("failed to create Docker client", slog.Any("error", err))
 		return info, fmt.Errorf("failed to create Docker client: %w", err)
 	}
-	cli.NegotiateAPIVersion(context.Background())
 
-	containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
+	containers, err := cli.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
 		slog.Error("failed to list Docker containers", slog.Any("error", err))
 		return info, fmt.Errorf("failed to list Docker containers: %w", err)

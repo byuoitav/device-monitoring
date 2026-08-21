@@ -49,7 +49,7 @@ func GetDeviceHealth(ctx context.Context, roomID string) ([]HealthStatus, error)
 		wg.Add(1)
 		go func(d model.Device) {
 			defer wg.Done()
-			status := probe(d)
+			status := probe(ctx, d)
 			mu.Lock()
 			results = append(results, status)
 			mu.Unlock()
@@ -61,7 +61,7 @@ func GetDeviceHealth(ctx context.Context, roomID string) ([]HealthStatus, error)
 }
 
 // probe checks the health of a device by sending a GET request to its {Address}/health.
-func probe(device model.Device) HealthStatus {
+func probe(ctx context.Context, device model.Device) HealthStatus {
 	hs := HealthStatus{DeviceID: device.ID}
 
 	address, err := device.BuildCommandURL(healthCheckCmd)
@@ -72,14 +72,14 @@ func probe(device model.Device) HealthStatus {
 	}
 	// fill in the address
 	address = strings.Replace(address, ":address", device.Address, 1)
-	req, err := http.NewRequest("GET", address, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
 	if err != nil {
 		hs.Status = "error"
 		hs.Error = fmt.Sprintf("unable to create request: %s", err.Error())
 		return hs
 	}
 	req.Header.Set("User-Agent", "Device Monitoring Health Check")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := deviceHealthHTTPClient.Do(req)
 	if err != nil {
 		hs.Status = "error"
 		hs.Error = fmt.Sprintf("unable to check health: %s", err.Error())
@@ -87,7 +87,7 @@ func probe(device model.Device) HealthStatus {
 	}
 	defer resp.Body.Close()
 
-	bytes, err := io.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(io.LimitReader(resp.Body, maxHealthBody))
 	if err != nil {
 		hs.Status = "error"
 		hs.Error = fmt.Sprintf("unable to read response: %s", err.Error())

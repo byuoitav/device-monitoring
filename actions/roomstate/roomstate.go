@@ -8,9 +8,12 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/byuoitav/av-api/base"
 )
+
+var roomStateHTTPClient = &http.Client{Timeout: 10 * time.Second}
 
 // Get .
 func Get(ctx context.Context, roomID string) (base.PublicRoom, error) {
@@ -38,7 +41,7 @@ func Get(ctx context.Context, roomID string) (base.PublicRoom, error) {
 
 	// do the request
 	req = req.WithContext(ctx)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := roomStateHTTPClient.Do(req)
 	if err != nil {
 		slog.Error("Failed to get room state",
 			slog.String("roomID", roomID),
@@ -49,7 +52,7 @@ func Get(ctx context.Context, roomID string) (base.PublicRoom, error) {
 	defer resp.Body.Close()
 
 	// read the body
-	b, err := io.ReadAll(resp.Body)
+	b, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		slog.Error("Failed to read AV-API response",
 			slog.String("roomID", roomID),

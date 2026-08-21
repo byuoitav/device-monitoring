@@ -8,7 +8,14 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"time"
 )
+
+const maxServiceHealthBody = 64 << 10
+
+var serviceHealthHTTPClient = &http.Client{
+	Timeout: 10 * time.Second,
+}
 
 // ServiceCheckConfig .
 type ServiceCheckConfig struct {
@@ -70,23 +77,22 @@ func checkService(ctx context.Context, check ServiceCheckConfig) ServiceCheckRes
 		body = bytes.NewReader(b)
 	}
 
-	req, err := http.NewRequest(check.Method, check.URL, body)
+	req, err := http.NewRequestWithContext(ctx, check.Method, check.URL, body)
 	if err != nil {
 		sresp.Error = fmt.Sprintf("unable to build request: %s", err)
 		return sresp
 	}
 
-	req = req.WithContext(ctx)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := serviceHealthHTTPClient.Do(req)
 	if err != nil {
-		sresp.Error = fmt.Sprintf("unable to make reuqest: %s", err)
+		sresp.Error = fmt.Sprintf("unable to make request: %s", err)
 		return sresp
 	}
 	defer resp.Body.Close()
 
 	sresp.StatusCode = resp.StatusCode
 
-	b, err := io.ReadAll(resp.Body)
+	b, err := io.ReadAll(io.LimitReader(resp.Body, maxServiceHealthBody))
 	if err != nil {
 		sresp.Error = fmt.Sprintf("unable to read response body: %s", err)
 		return sresp

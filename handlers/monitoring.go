@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/byuoitav/device-monitoring/actions/health"
 	"github.com/byuoitav/device-monitoring/localsystem"
@@ -11,13 +13,16 @@ import (
 // GetDeviceHealth handles GET /api/v1/monitoring
 // It retrieves the health status of devices in the current room.
 func GetDeviceHealth(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+	defer cancel()
+
 	roomID, err := localsystem.RoomID()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get room ID"})
 		return
 	}
 	c.Header("Content-Type", "application/json")
-	results, err := health.GetRoomHealth(c.Request.Context(), roomID)
+	results, err := health.GetRoomHealth(ctx, roomID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get room health", "details": err.Error()})
 		return

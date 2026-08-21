@@ -49,12 +49,6 @@ func NewPinger() (*Pinger, error) {
 // Close .
 func (p *Pinger) Close() {
 	p.conn.Close()
-
-	p.hostsMu.Lock()
-	for _, host := range p.hosts {
-		close(host.replies)
-	}
-	p.hostsMu.Unlock()
 }
 
 func (p *Pinger) listen() error {
@@ -136,9 +130,15 @@ func (p *Pinger) process(source net.IP, body icmp.MessageBody, at time.Time) {
 	p.hostsMu.RLock()
 	host := p.hosts[source.String()]
 	if host != nil {
-		host.replies <- reply{
+		select {
+		case host.replies <- reply{
 			body: body,
 			at:   at,
+		}:
+		default:
+			slog.Debug("dropping ICMP reply because host reply channel is full",
+				slog.String("source", source.String()),
+			)
 		}
 	}
 	p.hostsMu.RUnlock()

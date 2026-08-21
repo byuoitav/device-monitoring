@@ -195,7 +195,7 @@ func isInputActive(ctx context.Context, src *structs.Device, dest *structs.Devic
 	}
 	defer resp.Body.Close()
 
-	bytes, readErr := io.ReadAll(resp.Body)
+	bytes, readErr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if readErr != nil {
 		l.Warn("unable to check if input was active", slog.String("error", readErr.Error()))
 		return false
